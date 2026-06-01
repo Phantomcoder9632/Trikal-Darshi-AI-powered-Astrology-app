@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Consultations | TRIKAL DARSHI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;family=Crimson+Text:ital,wght@0,400;0,600;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed-dim": "#e9c349",
+                    "primary": "#f2ca50",
+                    "primary-fixed": "#ffe088",
+                    "on-primary-fixed": "#241a00",
+                    "on-error": "#690005",
+                    "on-secondary-container": "#ff9a8a",
+                    "on-primary-container": "#554300",
+                    "tertiary-container": "#d09dff",
+                    "error": "#ffb4ab",
+                    "primary-container": "#d4af37",
+                    "background": "#12121f",
+                    "on-tertiary-container": "#602495",
+                    "on-primary": "#3c2f00",
+                    "inverse-primary": "#735c00",
+                    "surface-dim": "#12121f",
+                    "on-secondary": "#690000",
+                    "on-primary-fixed-variant": "#574500",
+                    "secondary-container": "#920703",
+                    "tertiary-fixed-dim": "#deb7ff",
+                    "surface-container-low": "#1a1a27",
+                    "on-background": "#e3e0f3",
+                    "on-secondary-fixed-variant": "#920703",
+                    "on-surface": "#e3e0f3",
+                    "secondary-fixed": "#ffdad4",
+                    "outline": "#99907c",
+                    "surface-container-highest": "#343341",
+                    "on-tertiary-fixed": "#2c0050",
+                    "surface-bright": "#383846",
+                    "surface-variant": "#343341",
+                    "surface-tint": "#e9c349",
+                    "on-error-container": "#ffdad6",
+                    "outline-variant": "#4d4635",
+                    "secondary": "#ffb4a8",
+                    "inverse-on-surface": "#2f2f3d",
+                    "surface-container-high": "#292936",
+                    "surface-container-lowest": "#0d0d19",
+                    "surface-container": "#1f1e2b",
+                    "surface": "#12121f",
+                    "on-tertiary": "#4a0080",
+                    "on-tertiary-fixed-variant": "#622698",
+                    "tertiary": "#e3c1ff",
+                    "secondary-fixed-dim": "#ffb4a8",
+                    "on-secondary-fixed": "#410000",
+                    "tertiary-fixed": "#f0dbff",
+                    "inverse-surface": "#e3e0f3",
+                    "error-container": "#93000a",
+                    "on-surface-variant": "#d0c5af"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "card-padding": "20px",
+                    "container-margin": "24px",
+                    "unit": "8px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Cinzel"],
+                    "body-md": ["Inter"],
+                    "headline-lg": ["Cinzel"],
+                    "label-sm": ["Inter"],
+                    "headline-lg-mobile": ["Cinzel"],
+                    "body-lg": ["Inter"],
+                    "accent-term": ["Crimson Text"],
+                    "display-md": ["Cinzel"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["28px", {"lineHeight": "36px", "fontWeight": "500"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "accent-term": ["20px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "display-md": ["36px", {"lineHeight": "44px", "letterSpacing": "0.02em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body { background-color: #12121f; color: #e3e0f3; overflow-x: hidden; }
+        .stellar-divider { height: 1px; width: 100%; background: linear-gradient(90deg, transparent, #4d4635, transparent); }
+        .glass-card { background: rgba(17, 17, 48, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(30, 30, 74, 0.5); }
+        .gold-glow:hover { box-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="font-body-md text-body-md">
+<!-- Top Navigation -->
+<header class="fixed top-0 z-[60] w-full bg-background/80 backdrop-blur-xl border-b border-outline-variant/30 shadow-[0_0_15px_rgba(233,195,73,0.05)]">
+<div class="flex justify-between items-center w-full px-container-margin h-20 max-w-7xl mx-auto">
+<h1 class="font-display-md text-display-md font-bold tracking-widest text-primary">TRIKAL DARSHI</h1>
+<nav class="hidden md:flex gap-8">
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed-dim transition-colors duration-300" href="#">Dashboard</a>
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed-dim transition-colors duration-300" href="#">Kundli</a>
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed-dim transition-colors duration-300" href="#">Lal Kitab</a>
+<a class="text-on-surface-variant font-medium hover:text-primary-fixed-dim transition-colors duration-300" href="#">Numerology</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 transition-colors duration-300" href="#">Consultations</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-primary hover:scale-110 transition-transform">brightness_4</button>
+<button class="material-symbols-outlined text-primary hover:scale-110 transition-transform">account_circle</button>
+</div>
+</div>
+</header>
+<!-- Side Navigation (Web Only) -->
+<aside class="fixed left-0 top-0 h-full z-50 flex flex-col pt-24 pb-4 bg-surface-container-low/90 backdrop-blur-md border-r border-outline-variant/20 shadow-[5px_0_20px_rgba(0,0,0,0.5)] w-72 hidden lg:flex">
+<div class="px-8 mb-12">
+<h2 class="font-headline-lg text-headline-lg text-primary-fixed">Trikal Darshi</h2>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Vedic Wisdom</p>
+</div>
+<nav class="flex-1 flex flex-col">
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-surface-container-highest/50 hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">space_dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-surface-container-highest/50 hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">auto_graph</span>
+<span class="font-label-sm text-label-sm">Kundli</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-surface-container-highest/50 hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-label-sm text-label-sm">Lal Kitab</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-surface-container-highest/50 hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">numbers</span>
+<span class="font-label-sm text-label-sm">Numerology</span>
+</a>
+<a class="flex items-center gap-4 bg-primary-container/20 text-primary border-r-4 border-primary px-6 py-4 shadow-[inset_0_0_10px_rgba(212,175,55,0.1)] active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined">diversity_3</span>
+<span class="font-label-sm text-label-sm">Consultations</span>
+</a>
+</nav>
+<div class="px-6 py-4 mt-auto">
+<button class="w-full bg-primary-container text-on-primary-container py-3 px-4 font-bold rounded-lg shadow-lg hover:brightness-110 transition-all">
+                Book Consultation
+            </button>
+<div class="mt-6 flex flex-col gap-2">
+<div class="flex items-center gap-2 text-on-surface-variant opacity-70">
+<span class="material-symbols-outlined text-sm">brightness_3</span>
+<span class="text-xs uppercase tracking-tighter">Moon Phase: Waxing</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant opacity-70">
+<span class="material-symbols-outlined text-sm text-primary">wb_sunny</span>
+<span class="text-xs uppercase tracking-tighter">Sun Sign: Leo</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="lg:ml-72 pt-32 px-container-margin pb-24 max-w-7xl mx-auto">
+<!-- Header & Search -->
+<section class="mb-12">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<h2 class="font-display-lg text-display-lg text-primary-fixed mb-2">Speak with the Sages</h2>
+<p class="text-body-lg text-on-surface-variant max-w-2xl font-accent-term italic">Unlock the secrets of your destiny with guidance from our most revered astrological experts.</p>
+</div>
+<div class="relative group">
+<input class="bg-surface-container-lowest border border-outline-variant/30 text-on-surface px-6 py-3 pl-12 w-full md:w-80 rounded-full focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all duration-300" placeholder="Search by name or specialty..." type="text"/>
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+</div>
+</div>
+<div class="stellar-divider mt-8"></div>
+</section>
+<!-- Filters Section -->
+<section class="mb-12 flex flex-wrap gap-4 items-center">
+<span class="text-label-sm font-label-sm uppercase tracking-widest text-outline">Filter by Wisdom:</span>
+<button class="px-6 py-2 rounded-full glass-card border-primary text-primary font-medium hover:bg-primary/10 transition-colors">Vedic</button>
+<button class="px-6 py-2 rounded-full glass-card text-on-surface-variant hover:text-primary transition-colors">Numerology</button>
+<button class="px-6 py-2 rounded-full glass-card text-on-surface-variant hover:text-primary transition-colors">Lal Kitab</button>
+<button class="px-6 py-2 rounded-full glass-card text-on-surface-variant hover:text-primary transition-colors">Vastu Shastra</button>
+<button class="px-6 py-2 rounded-full glass-card text-on-surface-variant hover:text-primary transition-colors">Palmistry</button>
+</section>
+<!-- Bento Grid of Experts -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-gutter">
+<!-- Expert Card 1 (Large Featured) -->
+<div class="md:col-span-2 xl:col-span-2 glass-card rounded-xl p-card-padding flex flex-col md:flex-row gap-8 items-center group gold-glow transition-all">
+<div class="relative flex-shrink-0">
+<div class="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-90 group-hover:scale-110 transition-transform duration-500"></div>
+<img alt="Pandit Acharya" class="w-48 h-48 object-cover rounded-full border-4 border-primary relative z-10" data-alt="A portrait of a senior Indian male astrologer with a gray beard, wearing traditional white linen attire, with a golden halo effect behind his head. The background is a dark library filled with ancient manuscripts and a celestial globe. The lighting is cinematic, highlighting the golden border of his traditional shawl." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLSR5trXk_1IHYww6H6qW4bTmKYURXGJJtxbBRlT1-AHsd3qrS6sw6J0_19SPMtVbDNj_FZYsUiSWUrnuFTXux3TMzBHdZMM2pzLrsbNOLNSwpA3Ajrx85uhvETxG11vTfy0oPV9_foOSUpiNfGHbkHXi86bMpYsRY6hUPGYlHAOh6T7eojDxUUJNm6HpUKdW266VhVOTHRryHXuouplIkdj_dnEz-niiWmeOMMaVfUVfTaPzdIPRZHbhL1dOTiXoDWmz5ENgUqTsG"/>
+<div class="absolute -bottom-2 right-4 bg-primary text-on-primary px-3 py-1 text-xs font-bold rounded-full z-20">TOP EXPERT</div>
+</div>
+<div class="flex-1 space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-lg text-headline-lg text-primary">Acharya Dr. Vikramaditya</h3>
+<p class="text-accent-term italic text-on-surface-variant">Master of Vedic Astrology &amp; Karmic Analysis</p>
+</div>
+<div class="flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-bold">4.9</span>
+</div>
+</div>
+<p class="text-body-md text-on-surface/80 line-clamp-3">With over 35 years of scholarly research in the Parasara school of thought, Acharya Vikramaditya provides precise life-path guidance and remedial measures that align with your cosmic blueprint.</p>
+<div class="flex flex-wrap gap-2">
+<span class="bg-surface-container-highest text-on-surface px-3 py-1 text-xs rounded border border-outline-variant/30">Vedic</span>
+<span class="bg-surface-container-highest text-on-surface px-3 py-1 text-xs rounded border border-outline-variant/30">Gemology</span>
+<span class="bg-surface-container-highest text-on-surface px-3 py-1 text-xs rounded border border-outline-variant/30">Kundli Dosha</span>
+</div>
+<div class="pt-4 flex items-center justify-between">
+<div>
+<span class="text-xs text-on-surface-variant uppercase tracking-widest">Starts from</span>
+<p class="text-xl font-bold text-primary">$45.00 <span class="text-sm font-normal text-outline">/ 20 min</span></p>
+</div>
+<button class="bg-primary text-on-primary px-8 py-3 font-bold rounded-lg hover:shadow-[0_0_20px_rgba(242,202,80,0.4)] transition-all active:scale-95">Book session</button>
+</div>
+</div>
+</div>
+<!-- Expert Card 2 -->
+<div class="glass-card rounded-xl p-card-padding flex flex-col gap-6 gold-glow transition-all">
+<div class="flex gap-4 items-center">
+<img alt="Srimati Ananya" class="w-20 h-20 object-cover rounded-full border-2 border-primary" data-alt="Close up portrait of an elegant Indian woman astrologer with a small gold bindi, wearing a deep indigo saree with gold embroidery. She is looking directly at the camera with a serene and knowledgeable expression. The setting is a minimalist modern room with a soft golden glow in the background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnMsqUO2Vr8wk-wVCG-SJYQ1kdn21Qpzt7HIhMFttSZk1Cp-QWw3VzPE6nYOm04i_mx2p-bz8sZyT3zi5WQaaSUMXoR0diLS9ZVBsg-5EApwedNPIfSghgHPbjonE89ug1o9xVq08in061ozp73teTMbTevNwiumEYgK7m9ErIiK6XyDOrKCEpk-mPPDF_K7jFXSGbi8prWCTc_E9iY1JrsrzLMvmRksj_vHT8h6TI5zFcEoBQSuq_mRzxCuhDNg_8stgOZht4QN6G"/>
+<div>
+<h3 class="font-headline-lg text-headline-lg-mobile text-primary">Srimati Ananya</h3>
+<p class="text-label-sm text-on-surface-variant">Numerology Expert</p>
+</div>
+</div>
+<p class="text-body-md text-on-surface/70">Expert in Chaldean numerology and name correction to sync with your planetary vibrations.</p>
+<div class="mt-auto border-t border-outline-variant/20 pt-4 flex justify-between items-center">
+<span class="font-bold text-primary">$30.00 <small class="text-outline font-normal">/ session</small></span>
+<button class="text-primary font-bold hover:underline transition-all">View Profile</button>
+</div>
+</div>
+<!-- Expert Card 3 -->
+<div class="glass-card rounded-xl p-card-padding flex flex-col gap-6 gold-glow transition-all">
+<div class="flex gap-4 items-center">
+<img alt="Shastri Ji" class="w-20 h-20 object-cover rounded-full border-2 border-primary" data-alt="A portrait of a middle-aged male astrologer with kind eyes and a welcoming smile. He wears a dark maroon kurta with intricate gold trim. The lighting is low and moody, reminiscent of a midnight study, with a focus on his warm expression. High-end, professional photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAAthWLGisz32hrn0MeM57ccmcoIs6px0hjmKaemZC1EZiNXcC779U-ABuF3HhFHweXEvKofXLwR-exmef0xp7t2Z2VTZEBdm34HFbhX-nZgPi8JJM5vOpZ-KIK8kEYh7wfgziiBRAJn8juXoruX7-sne5uekyUcZttyyyu_tuzyzhkTm4rTrkwf3TOYnrw8qSk99GYCMDRS71wRioE6yoH0MhCRrDH7vzjXkxkgJm0_UA9AgZ9JqNfLxU5tYvsEaXzTJ5k_rD33l8"/>
+<div>
+<h3 class="font-headline-lg text-headline-lg-mobile text-primary">Shastri Rahul</h3>
+<p class="text-label-sm text-on-surface-variant">Lal Kitab Specialist</p>
+</div>
+</div>
+<p class="text-body-md text-on-surface/70">Specializing in simple, effective Lal Kitab remedies for household and financial prosperity.</p>
+<div class="mt-auto border-t border-outline-variant/20 pt-4 flex justify-between items-center">
+<span class="font-bold text-primary">$35.00 <small class="text-outline font-normal">/ session</small></span>
+<button class="text-primary font-bold hover:underline transition-all">View Profile</button>
+</div>
+</div>
+<!-- Availability Calendar Section (Bento element) -->
+<div class="md:col-span-2 xl:col-span-1 glass-card rounded-xl p-card-padding space-y-6">
+<div class="flex justify-between items-center">
+<h4 class="font-headline-lg text-headline-lg-mobile text-primary">Quick Availability</h4>
+<span class="material-symbols-outlined text-outline">calendar_month</span>
+</div>
+<div class="grid grid-cols-7 gap-2 text-center text-xs font-bold text-outline">
+<div>MO</div><div>TU</div><div>WE</div><div>TH</div><div>FR</div><div>SA</div><div>SU</div>
+</div>
+<div class="grid grid-cols-7 gap-2">
+<!-- Calendar days -->
+<div class="aspect-square flex items-center justify-center text-outline-variant">14</div>
+<div class="aspect-square flex items-center justify-center text-outline-variant">15</div>
+<div class="aspect-square flex items-center justify-center text-outline-variant">16</div>
+<div class="aspect-square flex items-center justify-center text-on-surface border border-outline-variant/30 rounded-lg">17</div>
+<div class="aspect-square flex items-center justify-center bg-primary-container text-on-primary-container font-bold rounded-lg shadow-sm">18</div>
+<div class="aspect-square flex items-center justify-center border border-primary/40 text-primary font-bold rounded-lg bg-primary/5">19</div>
+<div class="aspect-square flex items-center justify-center border border-primary/40 text-primary font-bold rounded-lg bg-primary/5">20</div>
+</div>
+<div class="space-y-3">
+<p class="text-label-sm text-on-surface-variant font-medium">AVAILABLE SLOTS TODAY</p>
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1.5 text-xs bg-surface-container-highest hover:bg-primary hover:text-on-primary transition-all rounded">10:30 AM</button>
+<button class="px-3 py-1.5 text-xs bg-surface-container-highest hover:bg-primary hover:text-on-primary transition-all rounded">12:15 PM</button>
+<button class="px-3 py-1.5 text-xs bg-primary text-on-primary font-bold rounded">03:00 PM</button>
+<button class="px-3 py-1.5 text-xs bg-surface-container-highest hover:bg-primary hover:text-on-primary transition-all rounded">05:45 PM</button>
+</div>
+</div>
+</div>
+<!-- More Experts -->
+<div class="glass-card rounded-xl p-card-padding flex flex-col gap-6 gold-glow transition-all">
+<div class="flex gap-4 items-center">
+<img alt="Guru Meera" class="w-20 h-20 object-cover rounded-full border-2 border-primary" data-alt="Portrait of a young female astrologer with vibrant energy, wearing a saffron yellow traditional dress and gold jewelry. She has a bright smile and is surrounded by floating digital astrological symbols and star maps. The style is modern, sleek, and premium with a cosmic midnight background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0vaDIB6aaYnYObP0byE1fmQWCTRMpVKpTzjOJyBIrJFXPS9eeGKeF0pQoIboPuv-CLhtmp9iWGpokWV5iFC31b4mwxjvAA_11qZlFEAHet35CTkVrn8bcaGu6QRs_Ogh53LZJWqGLlwbLg7Evxan9-5_OXeu6Mf_0RXjuEpeTP7Zmtc_S4nzWn7b-f0fBzP7jCy0Y6d15e9s5Ukb89L318Aedxy_Z7hB8ymKfwvpFkhUEp9v63SaT2czQ-eddqe2sjOFU6OotjT7w"/>
+<div>
+<h3 class="font-headline-lg text-headline-lg-mobile text-primary">Guru Meera</h3>
+<p class="text-label-sm text-on-surface-variant">Career &amp; Financial Astrology</p>
+</div>
+</div>
+<p class="text-body-md text-on-surface/70">Strategic guidance for business expansion and career breakthroughs using cosmic timing.</p>
+<div class="mt-auto border-t border-outline-variant/20 pt-4 flex justify-between items-center">
+<span class="font-bold text-primary">$40.00 <small class="text-outline font-normal">/ session</small></span>
+<button class="text-primary font-bold hover:underline transition-all">View Profile</button>
+</div>
+</div>
+</div>
+<!-- Call to Action Banner -->
+<section class="mt-24 glass-card rounded-2xl overflow-hidden relative border-none">
+<div class="absolute inset-0 opacity-20">
+<div class="absolute inset-0 bg-gradient-to-r from-primary/30 to-transparent"></div>
+</div>
+<div class="relative z-10 p-12 flex flex-col md:flex-row items-center justify-between gap-8">
+<div class="max-w-xl">
+<h2 class="font-display-md text-display-md text-primary mb-4">Unsure who to consult?</h2>
+<p class="text-body-lg text-on-surface/90">Our 'Stellar Match' algorithm analyzes your birth chart and current challenges to recommend the perfect sage for your journey.</p>
+</div>
+<button class="bg-primary text-on-primary px-10 py-5 font-bold text-lg rounded-xl hover:shadow-[0_0_30px_rgba(242,202,80,0.5)] transition-all hover:-translate-y-1">Find My Match</button>
+</div>
+</section>
+</main>
+<!-- Footer Space -->
+<footer class="lg:ml-72 border-t border-outline-variant/10 py-12 px-container-margin text-center text-outline text-label-sm">
+<p>© 2024 TRIKAL DARSHI - CELESTIAL WISDOM FOR THE MODERN SOUL</p>
+<div class="mt-4 flex justify-center gap-6">
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-primary transition-colors" href="#">Contact Support</a>
+</div>
+</footer>
+<!-- Mobile Navigation Shell -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-low backdrop-blur-lg border-t border-outline-variant/30 flex justify-around items-center h-16 z-[70] px-4">
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">space_dashboard</span>
+<span class="text-[10px] uppercase font-bold">Dash</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">auto_graph</span>
+<span class="text-[10px] uppercase font-bold">Kundli</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">diversity_3</span>
+<span class="text-[10px] uppercase font-bold">Consult</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-[10px] uppercase font-bold">Kitab</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="text-[10px] uppercase font-bold">Profile</span>
+</button>
+</nav>
+<script>
+        // Micro-interactions
+        document.querySelectorAll('button, a').forEach(el => {
+            el.addEventListener('mousedown', () => {
+                el.classList.add('scale-95');
+            });
+            el.addEventListener('mouseup', () => {
+                el.classList.remove('scale-95');
+            });
+            el.addEventListener('mouseleave', () => {
+                el.classList.remove('scale-95');
+            });
+        });
+
+        // Simple tab switching simulation for filters
+        const filterBtns = document.querySelectorAll('button.rounded-full');
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => {
+                    b.classList.remove('text-primary', 'border-primary');
+                    b.classList.add('text-on-surface-variant');
+                });
+                btn.classList.add('text-primary', 'border-primary');
+                btn.classList.remove('text-on-surface-variant');
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+asyncpg
+redis
+httpx
+python-dotenv
+openai
+pyswisseph
+python-multipart
+langchain
+langchain-community
+langchain-groq
+chromadb
+sentence-transformers
+pymupdf
+groq
+tqdm

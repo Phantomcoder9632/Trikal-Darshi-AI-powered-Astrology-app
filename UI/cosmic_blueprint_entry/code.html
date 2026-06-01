@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TRIKAL DARSHI - Your Cosmic Blueprint</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=Crimson+Text:ital,wght@0,400;0,600;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface": "#e3e0f3",
+                    "on-secondary": "#690000",
+                    "outline": "#99907c",
+                    "tertiary": "#e3c1ff",
+                    "inverse-surface": "#e3e0f3",
+                    "secondary": "#ffb4a8",
+                    "tertiary-fixed": "#f0dbff",
+                    "on-surface-variant": "#d0c5af",
+                    "tertiary-container": "#d09dff",
+                    "surface-bright": "#383846",
+                    "on-error": "#690005",
+                    "secondary-fixed-dim": "#ffb4a8",
+                    "surface-tint": "#e9c349",
+                    "on-tertiary": "#4a0080",
+                    "on-background": "#e3e0f3",
+                    "secondary-fixed": "#ffdad4",
+                    "on-tertiary-fixed-variant": "#622698",
+                    "primary": "#f2ca50",
+                    "primary-fixed-dim": "#e9c349",
+                    "on-tertiary-container": "#602495",
+                    "surface-container-high": "#292936",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-highest": "#343341",
+                    "on-secondary-container": "#ff9a8a",
+                    "on-primary-fixed-variant": "#574500",
+                    "surface-dim": "#12121f",
+                    "surface-container-lowest": "#0d0d19",
+                    "on-primary-fixed": "#241a00",
+                    "inverse-primary": "#735c00",
+                    "secondary-container": "#920703",
+                    "on-secondary-fixed": "#410000",
+                    "on-primary-container": "#554300",
+                    "surface": "#12121f",
+                    "error-container": "#93000a",
+                    "surface-variant": "#343341",
+                    "background": "#12121f",
+                    "tertiary-fixed-dim": "#deb7ff",
+                    "surface-container-low": "#1a1a27",
+                    "primary-fixed": "#ffe088",
+                    "primary-container": "#d4af37",
+                    "outline-variant": "#4d4635",
+                    "on-tertiary-fixed": "#2c0050",
+                    "on-primary": "#3c2f00",
+                    "surface-container": "#1f1e2b",
+                    "on-secondary-fixed-variant": "#920703",
+                    "inverse-on-surface": "#2f2f3d",
+                    "error": "#ffb4ab"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem",
+                    "card": "20px"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "container-margin": "24px",
+                    "unit": "8px",
+                    "card-padding": "20px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": ["Cinzel"],
+                    "body-md": ["Inter"],
+                    "accent-term": ["Crimson Text"],
+                    "display-md": ["Cinzel"],
+                    "label-sm": ["Inter"],
+                    "headline-lg": ["Cinzel"],
+                    "display-lg": ["Cinzel"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "accent-term": ["20px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "display-md": ["36px", {"lineHeight": "44px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                    "headline-lg": ["28px", {"lineHeight": "36px", "fontWeight": "500"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>body {
+    background-color: #050510;
+    overflow-x: hidden;
+    color: #e3e0f3
+    }
+.star-field {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none
+    }
+.sri-yantra-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80vh;
+    height: 80vh;
+    opacity: 0.03;
+    z-index: 1;
+    pointer-events: none;
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuBw9Cb5xcTkV2qV1YADSFSTeAHW6pprOBahTHhqof76VBOUdZ9ipjJblKHjB3jTpd4iV39jKMg2achvFIWVHWjeqpc6aUC8B1sD64EpnMx3UnJtlQndBB1xwZDgTTHRhTxvcpkYVCJa8R--pQyC8qaiXHziKjVawuvOWAhYmjcbpoI6afSBSA8qpjEGwEFG4FTMhq1ccBWs3nefsaUWXAP1-HpZzTQDCJ9DoZ6nY7qjO7kZ_1ROWIQfFFEpUSvrlwqFYeQt3CGRU4Ds);
+    /* Fallback pattern representation */
+    background-size: contain;
+    background-repeat: no-repeat
+    }
+.glass-card {
+    background: #111130;
+    border: 1px solid #1E1E4A;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease
+    }
+.glass-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.15)
+    }
+.stellar-divider {
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, #1E1E4A, transparent);
+    margin: 24px 0
+    }
+.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24
+    }
+.btn-gold {
+    background: linear-gradient(135deg, #D4AF37 0%, #F0D060 100%);
+    transition: all 0.3s ease
+    }
+.btn-gold:hover {
+    filter: brightness(1.1);
+    transform: translatey(-1px);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4)
+    }
+input:focus {
+    outline: none;
+    border-color: #D4AF37 !important;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2)
+    }
+@keyframes constellationRotate {
+    0% {
+        transform: rotate(0deg) scale(1);
+        } 50% {
+        transform: rotate(180deg) scale(1.1);
+        } 100% {
+        transform: rotate(360deg) scale(1);
+        }
+    }
+.constellation-icon {
+    animation: constellationRotate 20s linear infinite
+    }</style>
+</head>
+<body class="font-body-md text-body-md">
+<!-- Background Elements -->
+<canvas class="star-field" id="starCanvas"></canvas>
+<div class="sri-yantra-overlay">
+<img alt="Sri Yantra" class="w-full h-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9DHcp-iHFmhP-DGsLaDBIXCTKLr2CFr3t9nOXxetTTN_3tHIKzXhCmM7NEqvLejN5TClp3VmT9I5_d_2TJBFDDSPnZd8TMpRD2_hwsmTjaGAKUhfxAMBexgAgX9io0QL1fXK2V32HRY5rvz5hBZw1gsnQ5tQhmAhcPjPPSELJ2JN5PPdMoVekqdMH7mujMcDgd-pVZEfPFUGQdiW7hVi5KCJ2cwSuc66LM6nmPaG6hM-hDBL_kvRViAWvDxItO-3rBOnyyDIC_sb-"/>
+</div>
+<main class="relative z-10 min-h-screen flex flex-col items-center justify-center px-container-margin py-10">
+<!-- Central Birth Data Card -->
+<div class="glass-card w-full max-w-[480px] rounded-card p-10 flex flex-col items-center">
+<!-- Brand Section -->
+<div class="text-center mb-8">
+<div class="constellation-icon mb-4 inline-block">
+<span class="material-symbols-outlined text-primary text-5xl" style="font-variation-settings: 'FILL' 0, 'wght' 200;">
+                        auto_awesome
+                    </span>
+</div>
+<h1 class="font-display-md text-display-md text-primary tracking-[0.1em] mb-1">
+                    ✦ TRIKAL DARSHI ✦
+                </h1>
+<p class="font-label-sm text-label-sm uppercase tracking-[0.2em] text-on-surface-variant">
+                    Vedic Jyotish • Lal Kitab • Numerology
+                </p>
+</div>
+<!-- Form -->
+<form class="w-full space-y-6" onsubmit="return false">
+<!-- Name Field -->
+<div class="space-y-2">
+<label class="font-label-sm text-label-sm text-on-surface-variant/80 ml-1">FULL NAME</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">person</span>
+<input class="w-full bg-[#0D0D2B] border border-[#1E1E4A] rounded-xl py-3.5 pl-12 pr-4 text-on-surface placeholder:text-outline-variant/50 transition-all" placeholder="Arjun Sharma" type="text"/>
+</div>
+</div>
+<!-- Date of Birth -->
+<div class="space-y-2">
+<label class="font-label-sm text-label-sm text-on-surface-variant/80 ml-1">DATE OF BIRTH</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">calendar_month</span>
+<input class="w-full bg-[#0D0D2B] border border-[#1E1E4A] rounded-xl py-3.5 pl-12 pr-4 text-on-surface transition-all [color-scheme:dark]" type="date"/>
+</div>
+</div>
+<!-- Time of Birth & Confidence -->
+<div class="space-y-2">
+<div class="flex justify-between items-center ml-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant/80">TIME OF BIRTH</label>
+</div>
+<div class="grid grid-cols-1 gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">schedule</span>
+<input class="w-full bg-[#0D0D2B] border border-[#1E1E4A] rounded-xl py-3.5 pl-12 pr-4 text-on-surface transition-all [color-scheme:dark]" type="time"/>
+</div>
+<!-- Confidence Pill Selector -->
+<div class="flex bg-[#0D0D2B] p-1 rounded-full border border-[#1E1E4A] gap-1">
+<button class="confidence-btn flex-1 py-1.5 rounded-full text-[10px] font-bold transition-all bg-primary-container/20 text-primary border border-primary/20" onclick="selectConfidence(this)" type="button">EXACT</button>
+<button class="confidence-btn flex-1 py-1.5 rounded-full text-[10px] font-bold transition-all text-on-surface-variant hover:bg-surface-container-highest" onclick="selectConfidence(this)" type="button">APPROXIMATE</button>
+<button class="confidence-btn flex-1 py-1.5 rounded-full text-[10px] font-bold transition-all text-on-surface-variant hover:bg-surface-container-highest" onclick="selectConfidence(this)" type="button">UNKNOWN</button>
+</div>
+</div>
+</div>
+<!-- City of Birth -->
+<div class="space-y-2">
+<label class="font-label-sm text-label-sm text-on-surface-variant/80 ml-1">CITY OF BIRTH</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">location_on</span>
+<input class="w-full bg-[#0D0D2B] border border-[#1E1E4A] rounded-xl py-3.5 pl-12 pr-4 text-on-surface placeholder:text-outline-variant/50 transition-all" placeholder="Search city..." type="text"/>
+</div>
+</div>
+<!-- Submit Button -->
+<button class="btn-gold w-full py-5 rounded-xl font-display-md text-[14px] text-on-primary-fixed font-bold tracking-[0.15em] flex items-center justify-center gap-2 group mt-4" type="submit">
+                    GENERATE MY COSMIC BLUEPRINT
+                    <span class="material-symbols-outlined text-[20px] transition-transform group-hover:translate-x-1">auto_graph</span>
+</button>
+</form>
+<div class="stellar-divider"></div>
+<!-- Muted Features Row -->
+<div class="flex justify-between w-full px-2">
+<div class="flex flex-col items-center gap-1.5 group cursor-help">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors text-[20px]">stars</span>
+<span class="text-[10px] font-bold text-outline-variant tracking-wider uppercase">Vedic Jyotish</span>
+</div>
+<div class="flex flex-col items-center gap-1.5 group cursor-help">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors text-[20px]">menu_book</span>
+<span class="text-[10px] font-bold text-outline-variant tracking-wider uppercase">Lal Kitab</span>
+</div>
+<div class="flex flex-col items-center gap-1.5 group cursor-help">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors text-[20px]">calculate</span>
+<span class="text-[10px] font-bold text-outline-variant tracking-wider uppercase">Numerology</span>
+</div>
+</div>
+</div>
+<!-- Footnote -->
+<p class="mt-8 text-on-surface-variant/40 font-label-sm text-[11px] tracking-widest text-center max-w-xs">
+            SECURE &amp; ENCRYPTED BIRTH DATA PROCESSING FOR PRECISION ASTROLOGICAL CALCULATIONS
+        </p>
+</main>
+<script>
+        // Starfield Animation
+        const canvas = document.getElementById('starCanvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        const numStars = 250;
+
+        function initStars() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            stars = [];
+            for (let i = 0; i < numStars; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.5,
+                    opacity: Math.random(),
+                    speed: Math.random() * 0.05
+                });
+            }
+        }
+
+        function animateStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(star => {
+                ctx.fillStyle = `rgba(212, 175, 55, ${star.opacity})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                star.opacity += (Math.random() - 0.5) * 0.02;
+                if (star.opacity < 0.1) star.opacity = 0.1;
+                if (star.opacity > 0.8) star.opacity = 0.8;
+            });
+            requestAnimationFrame(animateStars);
+        }
+
+        window.addEventListener('resize', initStars);
+        initStars();
+        animateStars();
+
+        // Interaction Logic
+        function selectConfidence(btn) {
+            document.querySelectorAll('.confidence-btn').forEach(b => {
+                b.classList.remove('bg-primary-container/20', 'text-primary', 'border', 'border-primary/20');
+                b.classList.add('text-on-surface-variant');
+            });
+            btn.classList.add('bg-primary-container/20', 'text-primary', 'border', 'border-primary/20');
+            btn.classList.remove('text-on-surface-variant');
+        }
+
+        // Add 3D card tilt effect subtly
+        const card = document.querySelector('.glass-card');
+        document.addEventListener('mousemove', (e) => {
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 100;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 100;
+            card.style.transform = `scale(1.02) rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+        });
+
+        document.addEventListener('mouseleave', () => {
+            card.style.transform = `scale(1) rotateY(0deg) rotateX(0deg)`;
+        });
+    </script>
+</body></html>

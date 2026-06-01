@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trikal Darshi — Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&amp;family=Inter:wght@300..700&amp;family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-surface": "#e3e0f3",
+                      "on-secondary": "#690000",
+                      "outline": "#99907c",
+                      "tertiary": "#e3c1ff",
+                      "inverse-surface": "#e3e0f3",
+                      "secondary": "#ffb4a8",
+                      "tertiary-fixed": "#f0dbff",
+                      "on-surface-variant": "#d0c5af",
+                      "tertiary-container": "#d09dff",
+                      "surface-bright": "#383846",
+                      "on-error": "#690005",
+                      "secondary-fixed-dim": "#ffb4a8",
+                      "surface-tint": "#e9c349",
+                      "on-tertiary": "#4a0080",
+                      "on-background": "#e3e0f3",
+                      "secondary-fixed": "#ffdad4",
+                      "on-tertiary-fixed-variant": "#622698",
+                      "primary": "#f2ca50",
+                      "primary-fixed-dim": "#e9c349",
+                      "on-tertiary-container": "#602495",
+                      "surface-container-high": "#292936",
+                      "on-error-container": "#ffdad6",
+                      "surface-container-highest": "#343341",
+                      "on-secondary-container": "#ff9a8a",
+                      "on-primary-fixed-variant": "#574500",
+                      "surface-dim": "#12121f",
+                      "surface-container-lowest": "#0d0d19",
+                      "on-primary-fixed": "#241a00",
+                      "inverse-primary": "#735c00",
+                      "secondary-container": "#920703",
+                      "on-secondary-fixed": "#410000",
+                      "on-primary-container": "#554300",
+                      "surface": "#12121f",
+                      "error-container": "#93000a",
+                      "surface-variant": "#343341",
+                      "background": "#12121f",
+                      "tertiary-fixed-dim": "#deb7ff",
+                      "surface-container-low": "#1a1a27",
+                      "primary-fixed": "#ffe088",
+                      "primary-container": "#d4af37",
+                      "outline-variant": "#4d4635",
+                      "on-tertiary-fixed": "#2c0050",
+                      "on-primary": "#3c2f00",
+                      "surface-container": "#1f1e2b",
+                      "on-secondary-fixed-variant": "#920703",
+                      "inverse-on-surface": "#2f2f3d",
+                      "error": "#ffb4ab"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": ["Cinzel"],
+                      "body-md": ["Inter"],
+                      "accent-term": ["Crimson Text"],
+                      "display-md": ["Cinzel"],
+                      "label-sm": ["Inter"],
+                      "headline-lg": ["Cinzel"],
+                      "display-lg": ["Cinzel"],
+                      "body-lg": ["Inter"]
+              }
+            },
+          }
+        }
+    </script>
+<style>
+    body {
+        background-color: #050510;
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+
+    /* 3-Layer Drifting Star Field */
+    .star-layer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 200%;
+        height: 200%;
+        pointer-events: none;
+        z-index: -1;
+    }
+    .stars-1 { background-image: radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)); background-size: 200px 200px; animation: drift 120s linear infinite; }
+    .stars-2 { background-image: radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)); background-size: 300px 300px; animation: drift 180s linear infinite; opacity: 0.5; }
+    .stars-3 { background-image: radial-gradient(1px 1px at 50px 160px, #fff, rgba(0,0,0,0)); background-size: 150px 150px; animation: drift 240s linear infinite; opacity: 0.3; }
+    
+    @keyframes drift {
+        from { transform: translate(0, 0); }
+        to { transform: translate(-50%, -50%); }
+    }
+
+    /* Sri Yantra Overlay */
+    .sri-yantra-overlay {
+        position: fixed;
+        inset: 0;
+        background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCwuEWOi9GITUN218BFyQ1UXgfnh91A_QmHh5NyM6p355aDbigT9r5mmirc4L-GIsjtBjBmu7gVgTAPRKAStXmnmbGiIymjl_YiTTSL-FS_-afcJ3iozvoQ3A9pNjVHMAWJDBnib6_kLHB5o4oo4oOS6oIOF1xdm1x3ZZaKGmgwIokjddmdyBYiKPJQ9hMzwk63XeCcjGTKkRO_CBKrCEB6ZKVz3Q_FKmlnnvgLaTkfS40yC6n-u3g5T0zoIx-nVDnkXtkpu081ETvh');
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 80%;
+        opacity: 0.03;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0D0D2B; }
+    ::-webkit-scrollbar-thumb { background: #2A2A6A; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #D4AF37; }
+
+    .glass-card {
+        background: #111130;
+        border: 1px solid #1E1E4A;
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+    .glass-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(212, 175, 55, 0.4);
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 15px rgba(212, 175, 55, 0.1);
+    }
+
+    .transit-shimmer {
+        position: relative;
+        overflow: hidden;
+        background: #920703; /* Fallback */
+        background: linear-gradient(90deg, #690000 0%, #d4af37 50%, #690000 100%);
+        background-size: 200% auto;
+        animation: bannerShimmer 4s linear infinite;
+    }
+    @keyframes bannerShimmer {
+        to { background-position: 200% center; }
+    }
+
+    .pulse-gold-dot {
+        width: 12px;
+        height: 12px;
+        background-color: #D4AF37;
+        border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7);
+        animation: pulseDot 2s infinite;
+    }
+    @keyframes pulseDot {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(212, 175, 55, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+    }
+
+    /* Tab Transitions */
+    #tab-content-wrapper {
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .tab-entering {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    .spinner-gold {
+        border: 2px solid rgba(212, 175, 55, 0.1);
+        border-top: 2px solid #D4AF37;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .exalted-glow { filter: drop-shadow(0 0 4px #D4AF37); }
+</style>
+</head>
+<body class="font-body-md text-on-surface selection:bg-primary-container/30">
+<!-- Background Layers -->
+<div class="star-layer stars-1"></div>
+<div class="star-layer stars-2"></div>
+<div class="star-layer stars-3"></div>
+<div class="sri-yantra-overlay"></div>
+<!-- Top Navigation Anchor -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-[#0D0D2B]/80 backdrop-blur-xl border-b border-[#1A1A4A] h-20 shadow-[0_0_15px_rgba(233,195,73,0.05)]">
+<div class="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-3xl">flare</span>
+<h1 class="font-display-md text-display-md font-bold tracking-widest text-primary">TRIKAL DARSHI</h1>
+</div>
+<div class="hidden lg:flex flex-col items-center">
+<div class="font-headline-lg text-primary text-xl">Arjun Varma</div>
+<div class="font-label-sm text-on-surface-variant text-[10px] uppercase tracking-[0.2em]">14 Oct 1992 • 05:45 AM • Delhi, IN</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="bg-primary-container/10 border border-primary/20 px-4 py-1.5 rounded-full flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-sm text-primary text-[10px] tracking-wider uppercase">Rahu Mahadasha • Mars Antardasha</span>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">account_circle</button>
+</div>
+</div>
+</header>
+<main class="pt-28 pb-12 max-w-7xl mx-auto px-6 space-y-8">
+<!-- Jupiter Transit Banner -->
+<section class="w-full rounded-xl p-6 transit-shimmer flex flex-col md:flex-row items-center justify-between gap-4 border border-primary/30 relative overflow-hidden group">
+<div class="flex items-center gap-4 z-10">
+<span class="material-symbols-outlined text-on-primary text-3xl">bolt</span>
+<div>
+<h2 class="font-display-md text-xl font-bold text-on-primary tracking-wide">JUPITER EXALTATION WINDOW</h2>
+<p class="font-body-md text-on-primary/80">Rare celestial alignment for wealth and spiritual expansion.</p>
+</div>
+</div>
+<div class="bg-on-primary/10 backdrop-blur-md border border-on-primary/20 px-6 py-2 rounded-full flex items-center gap-3 z-10">
+<span class="font-headline-lg text-on-primary text-lg">13 months remaining</span>
+<span class="pulse-gold-dot shadow-lg"></span>
+</div>
+<!-- Background element for texture -->
+<div class="absolute inset-0 opacity-10 pointer-events-none mix-blend-overlay" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png');"></div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-8">
+<!-- Left Column -->
+<div class="space-y-8">
+<!-- JANMA KUNDALI Card -->
+<div class="glass-card rounded-xl p-6 relative overflow-hidden">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-display-md text-xl text-primary">JANMA KUNDALI</h3>
+<span class="material-symbols-outlined text-on-surface-variant/40">grid_view</span>
+</div>
+<div class="aspect-square w-full relative">
+<!-- Enhanced SVG Chart -->
+<svg class="w-full h-full fill-none stroke-[#2A2A6A] stroke-2" viewbox="0 0 400 400">
+<rect height="400" width="400"></rect>
+<path d="M0 0 L400 400 M0 400 L400 0"></path>
+<path d="M200 0 L400 200 L200 400 L0 200 Z"></path>
+<!-- Highlighted Ascendant (1st House) with subtle gold glow -->
+<path class="fill-primary/5 stroke-primary/30" d="M200 0 L300 100 L200 200 L100 100 Z" style="filter: drop-shadow(0 0 5px rgba(212,175,55,0.2));"></path>
+<!-- Planet Placements -->
+<text class="fill-primary font-bold text-lg" x="185" y="110">Asc</text>
+<text class="fill-primary font-bold text-sm" x="185" y="60">6</text>
+<text class="fill-[#8B0000] font-bold text-xs" x="310" y="70">Ma</text> <!-- Debilitated -->
+<text class="fill-[#10B981] font-bold text-xs" x="310" y="330">Sa</text> <!-- Own Sign -->
+<text class="fill-[#D4AF37] font-bold text-xs exalted-glow" x="185" y="360">Ju</text> <!-- Exalted + Glow -->
+<text class="fill-on-surface-variant font-bold text-xs" x="70" y="330">Su</text>
+</svg>
+</div>
+<p class="mt-4 font-label-sm text-[10px] text-center text-on-surface-variant tracking-widest">KANYA LAGNA • D1 CHART</p>
+</div>
+<!-- PLANETARY POSITIONS Card -->
+<div class="glass-card rounded-xl overflow-hidden">
+<div class="p-6 pb-2">
+<h3 class="font-display-md text-xl text-primary">PLANETARY STATUS</h3>
+</div>
+<table class="w-full text-left font-label-sm">
+<thead class="bg-[#1a1a4a]/40 text-primary border-b border-[#1E1E4A]">
+<tr>
+<th class="px-6 py-3 font-semibold uppercase tracking-wider">Graha</th>
+<th class="px-6 py-3 font-semibold uppercase tracking-wider">Rashi</th>
+<th class="px-6 py-3 font-semibold uppercase tracking-wider">Deg</th>
+<th class="px-6 py-3 font-semibold uppercase tracking-wider">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#1E1E4A]/30">
+<tr class="bg-transparent hover:bg-white/5 transition-colors">
+<td class="px-6 py-4 font-accent-term text-on-surface">Surya</td>
+<td class="px-6 py-4 text-on-surface-variant">Kanya</td>
+<td class="px-6 py-4 text-on-surface-variant">23° 41'</td>
+<td class="px-6 py-4 text-on-surface-variant">—</td>
+</tr>
+<tr class="bg-[#1a1a4a]/20 hover:bg-white/5 transition-colors">
+<td class="px-6 py-4 font-accent-term text-on-surface">Chandra</td>
+<td class="px-6 py-4 text-on-surface-variant">Mesha</td>
+<td class="px-6 py-4 text-on-surface-variant">12° 05'</td>
+<td class="px-6 py-4 text-[#10B981]">Mool</td>
+</tr>
+<tr class="bg-transparent hover:bg-white/5 transition-colors">
+<td class="px-6 py-4 font-accent-term text-on-surface">Guru</td>
+<td class="px-6 py-4 text-on-surface-variant">Karka</td>
+<td class="px-6 py-4 text-on-surface-variant">05° 12'</td>
+<td class="px-6 py-4 text-[#D4AF37] font-bold italic exalted-glow">Exalted</td>
+</tr>
+<tr class="bg-[#1a1a4a]/20 hover:bg-white/5 transition-colors">
+<td class="px-6 py-4 font-accent-term text-on-surface">Mangal</td>
+<td class="px-6 py-4 text-on-surface-variant">Karka</td>
+<td class="px-6 py-4 text-on-surface-variant">28° 30'</td>
+<td class="px-6 py-4 text-[#8B0000]">Debil</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right Column -->
+<div class="space-y-8">
+<!-- COSMIC BLUEPRINT -->
+<div class="glass-card rounded-xl p-8 border-t-[3px] border-primary relative overflow-hidden bg-gradient-to-br from-[#111130] to-[#1a1a4a]">
+<div class="lotus-watermark absolute inset-0 opacity-5 pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCwuEWOi9GITUN218BFyQ1UXgfnh91A_QmHh5NyM6p355aDbigT9r5mmirc4L-GIsjtBjBmu7gVgTAPRKAStXmnmbGiIymjl_YiTTSL-FS_-afcJ3iozvoQ3A9pNjVHMAWJDBnib6_kLHB5o4oo4oOS6oIOF1xdm1x3ZZaKGmgwIokjddmdyBYiKPJQ9hMzwk63XeCcjGTKkRO_CBKrCEB6ZKVz3Q_FKmlnnvgLaTkfS40yC6n-u3g5T0zoIx-nVDnkXtkpu081ETvh'); background-size: contain; background-repeat: no-repeat; background-position: center;"></div>
+<div class="relative z-10">
+<h3 class="font-display-md text-2xl text-primary mb-6">YOUR COSMIC BLUEPRINT</h3>
+<ul class="space-y-4">
+<li class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary text-sm mt-1">star</span>
+<p class="italic text-on-surface-variant font-body-lg">Mercury in the 1st house grants a sharp, analytical mind with a penchant for high-level logic.</p>
+</li>
+<li class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary text-sm mt-1">star</span>
+<p class="italic text-on-surface-variant font-body-lg">Jupiter’s aspect on your 9th house indicates a deep-seated spiritual protection from ancestors.</p>
+</li>
+<li class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary text-sm mt-1">star</span>
+<p class="italic text-on-surface-variant font-body-lg">The current Rahu period demands caution in financial ventures; prioritize research over impulse.</p>
+</li>
+<li class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary text-sm mt-1">star</span>
+<p class="italic text-on-surface-variant font-body-lg">Mars in debilitation suggests managing suppressed anger through rhythmic physical activity.</p>
+</li>
+<li class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary text-sm mt-1">star</span>
+<p class="italic text-on-surface-variant font-body-lg">Exalted Jupiter transit will open a transformative door for career advancement in exactly 3 months.</p>
+</li>
+</ul>
+</div>
+</div>
+<!-- 8-Tab Navigation -->
+<div class="space-y-6">
+<nav class="flex border-b border-[#1E1E4A] overflow-x-auto no-scrollbar">
+<button class="tab-btn px-6 py-3 font-label-sm whitespace-nowrap transition-all duration-300 text-primary border-b-2 border-primary" data-tab="lagna" onclick="switchTab('lagna')">Lagna &amp; Soul</button>
+<button class="tab-btn px-6 py-3 font-label-sm whitespace-nowrap transition-all duration-300 text-on-surface-variant hover:text-primary" data-tab="lalkitab" onclick="switchTab('lalkitab')">Lal Kitab</button>
+<button class="tab-btn px-6 py-3 font-label-sm whitespace-nowrap transition-all duration-300 text-on-surface-variant hover:text-primary" data-tab="numerology" onclick="switchTab('numerology')">Numerology</button>
+<button class="tab-btn px-6 py-3 font-label-sm whitespace-nowrap transition-all duration-300 text-on-surface-variant hover:text-primary" data-tab="career" onclick="switchTab('career')">Career</button>
+<button class="tab-btn px-6 py-3 font-label-sm whitespace-nowrap transition-all duration-300 text-on-surface-variant hover:text-primary" data-tab="wealth" onclick="switchTab('wealth')">Wealth</button>
+<button class="tab-btn px-6 py-3 font-label-sm whitespace-nowrap transition-all duration-300 text-on-surface-variant hover:text-primary" data-tab="love" onclick="switchTab('love')">Love</button>
+<button class="tab-btn px-6 py-3 font-label-sm whitespace-nowrap transition-all duration-300 text-on-surface-variant hover:text-primary" data-tab="health" onclick="switchTab('health')">Health</button>
+<button class="tab-btn px-6 py-3 font-label-sm whitespace-nowrap transition-all duration-300 text-on-surface-variant hover:text-primary" data-tab="remedies" onclick="switchTab('remedies')">Remedies</button>
+</nav>
+<div class="min-h-[300px]" id="tab-content">
+<div class="flex flex-col gap-6" id="tab-content-wrapper">
+<header class="flex justify-between items-center">
+<h4 class="font-display-md text-3xl text-primary" id="content-header">Lagna Analysis</h4>
+<div class="flex items-center gap-3 bg-primary/5 px-4 py-2 rounded-full hidden" id="loading-spinner">
+<div class="spinner-gold"></div>
+<span class="font-label-sm text-primary text-[10px] uppercase">Groq is reading the stars...</span>
+</div>
+</header>
+<p class="font-body-lg text-on-surface-variant leading-relaxed max-w-3xl" id="content-body">
+    Your ascendant (Lagna) is Virgo (Kanya), the sign of the cosmic analyst. This placement suggests a soul journey centered around refinement, service, and the pursuit of perfection. Mercury, as your Lagna Lord, is positioned in your first house, creating a powerful Bhadra Yoga. This makes you exceptionally articulate and gives you a magnetic, youthful energy that persists throughout your life.
+</p>
+<div class="grid grid-cols-2 gap-4 mt-4">
+<div class="bg-surface-container-low border border-outline-variant/30 p-4 rounded-lg">
+<div class="text-[10px] text-primary uppercase tracking-widest mb-1">Soul Planet (Atmakaraka)</div>
+<div class="font-accent-term text-xl">Saturn (Shani)</div>
+</div>
+<div class="bg-surface-container-low border border-outline-variant/30 p-4 rounded-lg">
+<div class="text-[10px] text-primary uppercase tracking-widest mb-1">Life Purpose (Dharma)</div>
+<div class="font-accent-term text-xl">Spiritual Guidance</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Side Nav -->
+<aside class="fixed left-0 top-0 h-full z-40 flex flex-col pt-24 pb-8 w-16 hover:w-64 transition-all duration-500 bg-surface-container-low/90 backdrop-blur-md border-r border-outline-variant/20 shadow-[5px_0_20px_rgba(0,0,0,0.5)] group">
+<nav class="flex flex-col h-full">
+<a class="flex items-center gap-4 bg-primary-container/20 text-primary border-r-4 border-primary px-6 py-4 shadow-[inset_0_0_10px_rgba(212,175,55,0.1)]" href="#">
+<span class="material-symbols-outlined">space_dashboard</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-surface-container-highest/50 hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">auto_graph</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-label-sm">Kundli</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-surface-container-highest/50 hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-label-sm">Lal Kitab</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-surface-container-highest/50 hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">numbers</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-label-sm">Numerology</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant px-6 py-4 hover:bg-surface-container-highest/50 hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">diversity_3</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity font-label-sm">Consultations</span>
+</a>
+<div class="mt-auto space-y-2 border-t border-outline-variant/20 pt-4">
+<div class="flex items-center gap-4 px-6 py-2 text-on-surface-variant text-[10px]">
+<span class="material-symbols-outlined text-sm">brightness_3</span>
+<span class="opacity-0 group-hover:opacity-100 whitespace-nowrap">Moon: Waxing</span>
+</div>
+<div class="flex items-center gap-4 px-6 py-2 text-on-surface-variant text-[10px]">
+<span class="material-symbols-outlined text-sm">wb_sunny</span>
+<span class="opacity-0 group-hover:opacity-100 whitespace-nowrap">Sun: Libra</span>
+</div>
+</div>
+</nav>
+</aside>
+<script>
+    const tabData = {
+        lagna: {
+            title: "Lagna Analysis",
+            body: "Your ascendant (Lagna) is Virgo (Kanya), the sign of the cosmic analyst. This placement suggests a soul journey centered around refinement, service, and the pursuit of perfection. Mercury, as your Lagna Lord, is positioned in your first house, creating a powerful Bhadra Yoga.",
+            stats: ["Saturn (Shani)", "Spiritual Guidance"]
+        },
+        lalkitab: {
+            title: "Lal Kitab Insights",
+            body: "Your 4th house shows a 'Blind Planet' condition according to Lal Kitab principles. This suggests that while your intentions are pure, your efforts for domestic peace often go unrecognized. Performing the 'Honey in a silver vessel' remedy will neutralize this specific ancestral debt.",
+            stats: ["Mars (Debilitated)", "Household Peace"]
+        },
+        numerology: {
+            title: "Destiny Number 7",
+            body: "Number 7 is ruled by Ketu. This gives you a natural inclination towards research, solitude, and the mystical arts. You possess an 'internal compass' that others often lack. Use this year (a personal year 5) to travel and break free from stagnant routines.",
+            stats: ["Ketu", "The Seeker"]
+        },
+        career: {
+            title: "Professional Path",
+            body: "With the 10th Lord Mercury in the 1st house, your identity is inextricably linked to your profession. You excel in communication-heavy roles, technical writing, or analytical consultancy. A major breakthrough is predicted during the Saturn-Jupiter sub-period.",
+            stats: ["Mercury", "Analytical Leadership"]
+        },
+        wealth: {
+            title: "Financial Horizons",
+            body: "The 2nd house is ruled by Venus. Though you enjoy comforts, Rahu's presence suggests volatile gains. High-tech stocks or international investments will yield better results than traditional real estate for your specific planetary configuration.",
+            stats: ["Venus", "Diversified Assets"]
+        },
+        love: {
+            title: "Relationships",
+            body: "Jupiter’s aspect on the 7th house ensures a stable and wise partner. However, Mars' position suggests occasional heated debates. Communication is your remedy; do not let silence build walls where words can build bridges.",
+            stats: ["Jupiter", "Devotional Bond"]
+        },
+        health: {
+            title: "Vitality & Wellness",
+            body: "Focus on the nervous system and digestive health. Mercury's dominance can lead to overthinking, which manifests as stomach acidity. Incorporate Brahmari Pranayama and drink from copper vessels to balance your internal Agni.",
+            stats: ["Nervous System", "Vata Balance"]
+        },
+        remedies: {
+            title: "Prescribed Upayas",
+            body: "To strengthen your debilitated Mars, donate red lentils on Tuesdays. To appease your Atmakaraka Saturn, serve the elderly and provide water to stray animals. Wear an Emerald of 4.5 carats set in gold on your little finger for mental clarity.",
+            stats: ["Red Lentils", "Emerald Gemstone"]
+        }
+    };
+
+    function switchTab(tabId) {
+        const wrapper = document.getElementById('tab-content-wrapper');
+        const spinner = document.getElementById('loading-spinner');
+        const header = document.getElementById('content-header');
+        const body = document.getElementById('content-body');
+        const btns = document.querySelectorAll('.tab-btn');
+
+        // Update button styles
+        btns.forEach(btn => {
+            if (btn.getAttribute('data-tab') === tabId) {
+                btn.classList.add('text-primary', 'border-b-2', 'border-primary');
+                btn.classList.remove('text-on-surface-variant');
+            } else {
+                btn.classList.remove('text-primary', 'border-b-2', 'border-primary');
+                btn.classList.add('text-on-surface-variant');
+            }
+        });
+
+        // Tab Content Switching with animation
+        wrapper.classList.add('tab-entering');
+        spinner.classList.remove('hidden');
+
+        setTimeout(() => {
+            const data = tabData[tabId];
+            header.innerText = data.title;
+            body.innerText = data.body;
+            
+            spinner.classList.add('hidden');
+            wrapper.classList.remove('tab-entering');
+        }, 200);
+    }
+</script>
+</body></html>

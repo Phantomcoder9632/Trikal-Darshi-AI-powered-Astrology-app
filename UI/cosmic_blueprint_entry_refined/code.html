@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&amp;family=Cinzel+Decorative:wght@400;700&amp;family=Inter:wght@400;600;700&amp;family=Crimson+Text:ital@0;1&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@100..900&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<style>
+        :root {
+            --yantra-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0 L100 50 L50 100 L0 50 Z' fill='none' stroke='%237c5800' stroke-width='0.5' opacity='0.2'/%3E%3Ccircle cx='50' cy='50' r='10' fill='none' stroke='%237c5800' stroke-width='0.5' opacity='0.2'/%3E%3C/svg%3E");
+        }
+        body {
+            background-color: #f9f9f6;
+            background-image: var(--yantra-pattern);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .shimmer-button {
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer-button::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to bottom right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.2) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(45deg);
+            animation: shimmer 4s infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e2e3e0",
+                        "outline": "#817563",
+                        "tertiary-fixed": "#ffe088",
+                        "on-secondary-fixed": "#1a1a2d",
+                        "on-primary-fixed-variant": "#5e4200",
+                        "surface-container-high": "#e8e8e5",
+                        "inverse-primary": "#f6bd50",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f4f4f1",
+                        "surface-variant": "#e2e3e0",
+                        "error": "#ba1a1a",
+                        "surface-container": "#eeeeeb",
+                        "inverse-on-surface": "#f1f1ee",
+                        "on-surface": "#1a1c1b",
+                        "on-primary-fixed": "#271900",
+                        "outline-variant": "#d3c4b0",
+                        "surface-tint": "#7c5800",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#2f312f",
+                        "tertiary-fixed-dim": "#e9c349",
+                        "surface-dim": "#dadad7",
+                        "secondary": "#5d5c73",
+                        "primary-fixed": "#ffdea8",
+                        "tertiary": "#735c00",
+                        "on-background": "#1a1c1b",
+                        "secondary-fixed": "#e2e0fb",
+                        "on-secondary-fixed-variant": "#45455a",
+                        "on-primary-container": "#483100",
+                        "tertiary-container": "#bd9a22",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#241a00",
+                        "on-secondary-container": "#636279",
+                        "primary": "#7c5800",
+                        "primary-container": "#c9952a",
+                        "background": "#f9f9f6",
+                        "surface-bright": "#f9f9f6",
+                        "secondary-fixed-dim": "#c6c4de",
+                        "surface": "#f9f9f6",
+                        "primary-fixed-dim": "#f6bd50",
+                        "secondary-container": "#e2e0fb",
+                        "on-tertiary-container": "#423300",
+                        "on-tertiary-fixed-variant": "#574500",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#4f4536"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "margin-desktop": "48px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "container-max-width": "1280px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Cinzel"],
+                        "label-sm": ["Inter"],
+                        "wordmark": ["Cinzel Decorative"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "accent-italic": ["Crimson Text"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg": ["36px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "wordmark": ["22px", {"lineHeight": "1.2", "letterSpacing": "0.15em", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="flex flex-col items-center justify-center font-body-md text-on-background px-4">
+<!-- Global Layout Container -->
+<main class="w-full max-w-[520px] py-12 flex flex-col items-center space-y-10 animate-fade-in">
+<!-- Hero Section -->
+<header class="flex flex-col items-center text-center space-y-4">
+<div class="relative w-16 h-16 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-[48px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<div class="absolute inset-0 border border-primary/20 rounded-full animate-pulse"></div>
+</div>
+<h1 class="font-wordmark text-[32px] text-primary-container tracking-[0.2em] uppercase">TRIKAL DARSHI</h1>
+<p class="font-accent-italic italic text-secondary text-lg">Vedic Jyotish · Lal Kitab · Numerology</p>
+</header>
+<!-- Form Card -->
+<section class="glass-card w-full p-10 rounded-[20px] border border-outline-variant/30 shadow-xl shadow-secondary/5">
+<form class="space-y-8" id="birthForm" onsubmit="event.preventDefault();">
+<!-- Full Name -->
+<div class="group">
+<label class="block font-label-sm text-on-surface-variant uppercase mb-2">Full Name</label>
+<input class="w-full bg-transparent border-b border-outline-variant/50 focus:border-primary focus:ring-0 px-0 py-2 transition-all duration-300 placeholder:text-outline/40" placeholder="Enter your full name" type="text"/>
+</div>
+<!-- Date of Birth -->
+<div class="group">
+<label class="block font-label-sm text-on-surface-variant uppercase mb-2">Date of Birth</label>
+<div class="relative">
+<input class="w-full bg-transparent border-b border-outline-variant/50 focus:border-primary focus:ring-0 px-0 py-2 transition-all duration-300" type="date"/>
+</div>
+</div>
+<!-- Time of Birth & Confidence -->
+<div class="space-y-4">
+<div class="group">
+<label class="block font-label-sm text-on-surface-variant uppercase mb-2">Time of Birth</label>
+<input class="w-full bg-transparent border-b border-outline-variant/50 focus:border-primary focus:ring-0 px-0 py-2 transition-all duration-300" type="time"/>
+</div>
+<div class="flex flex-wrap gap-2 pt-2">
+<button class="confidence-pill px-4 py-2 rounded-full border border-outline-variant/30 font-label-sm text-on-surface-variant hover:border-primary transition-all" onclick="setActivePill(this)" type="button">Exact</button>
+<button class="confidence-pill px-4 py-2 rounded-full border border-outline-variant/30 font-label-sm text-on-surface-variant hover:border-primary transition-all" onclick="setActivePill(this)" type="button">Approximate</button>
+<button class="confidence-pill px-4 py-2 rounded-full border border-outline-variant/30 font-label-sm text-on-surface-variant hover:border-primary transition-all" onclick="setActivePill(this)" type="button">Unknown</button>
+</div>
+</div>
+<!-- City of Birth -->
+<div class="group relative">
+<label class="block font-label-sm text-on-surface-variant uppercase mb-2">City of Birth</label>
+<div class="flex items-center border-b border-outline-variant/50 group-focus-within:border-primary transition-all">
+<span class="material-symbols-outlined text-outline mr-2">location_on</span>
+<input class="w-full bg-transparent border-none focus:ring-0 px-0 py-2 placeholder:text-outline/40" placeholder="Search birthplace" type="text"/>
+</div>
+</div>
+<!-- Sacred Divider -->
+<div class="relative flex items-center justify-center py-4">
+<div class="w-full h-[1px] bg-gradient-to-r from-transparent via-outline-variant/40 to-transparent"></div>
+<div class="absolute w-2 h-2 bg-primary-container rounded-sm rotate-45 border border-primary/20"></div>
+</div>
+<!-- Action Button -->
+<button class="shimmer-button w-full bg-primary-container text-on-primary py-5 rounded-lg font-headline-md text-base tracking-wider shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2" type="submit">
+                    GENERATE MY COSMIC BLUEPRINT <span class="material-symbols-outlined text-sm">flare</span>
+</button>
+</form>
+</section>
+<!-- Footer -->
+<footer class="text-center">
+<div class="flex items-center justify-center gap-4 text-outline/60 font-label-sm tracking-widest uppercase">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">star</span> Vedic Jyotish</span>
+<span class="w-1 h-1 bg-outline-variant/50 rounded-full"></span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">star</span> Lal Kitab</span>
+<span class="w-1 h-1 bg-outline-variant/50 rounded-full"></span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">star</span> Numerology</span>
+</div>
+<p class="mt-8 text-outline/30 font-body-md text-xs">© 2024 TRIKAL DARSHI - Ancient Wisdom, Modern Precision</p>
+</footer>
+</main>
+<script>
+        function setActivePill(element) {
+            document.querySelectorAll('.confidence-pill').forEach(pill => {
+                pill.classList.remove('bg-primary-container', 'text-on-primary', 'border-primary');
+                pill.classList.add('border-outline-variant/30', 'text-on-surface-variant');
+            });
+            element.classList.add('bg-primary-container', 'text-on-primary', 'border-primary');
+            element.classList.remove('border-outline-variant/30', 'text-on-surface-variant');
+        }
+
+        // Default state
+        window.onload = () => {
+            setActivePill(document.querySelector('.confidence-pill'));
+        }
+    </script>
+</body></html>

@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS charts (
 CREATE TABLE IF NOT EXISTS interpretations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   chart_id UUID REFERENCES charts(id),
-  tab_number INTEGER NOT NULL CHECK (tab_number BETWEEN 1 AND 8),
+  tab_number INTEGER NOT NULL CHECK (tab_number BETWEEN 1 AND 10),
   tab_name TEXT NOT NULL,
   content TEXT NOT NULL,
   model_used TEXT NOT NULL,

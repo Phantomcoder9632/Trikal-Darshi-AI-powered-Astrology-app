@@ -22,6 +22,18 @@ const CHART_TYPE_LABELS = {
   gochar: "Gochar (Transits)",
 };
 
+const CHART_PURPOSES = {
+  D1: "Best for overall physical destiny, physical body, general health, life path, and baseline financial potential.",
+  D9: "Best for marriage happiness, relationship dynamics, spouse attributes, inner potential, and soul's dharma.",
+  D10: "Best for career direction, profession, social status, job cycles, and public reputation.",
+  D4: "Best for fixed assets, real estate property, home ownership, conveyances (vehicles), and stability.",
+  D7: "Best for progeny (children), relationship with offspring, legacy, and creative potential.",
+  D30: "Best for physical ailments, chronic illnesses, hidden vulnerabilities, obstacles, and debts.",
+  chandra: "Best for emotional framework, mental health, cognitive perception, and overall mind state.",
+  surya: "Best for professional visibility, ego, authority figures, vitality, and soul purpose.",
+  gochar: "Best for real-time planetary transits and timing daily life events relative to your birth chart.",
+};
+
 // North Indian house layout centers (400×400 SVG)
 const HOUSE_COORDS = {
   1:  { cx: 200, cy: 105, labelY: 140 },
@@ -146,26 +158,28 @@ export default function DivisionalChart({ chartData, chartType = "D1", natalData
     : null;
 
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex flex-col items-center w-full" style={{ gap: '8px' }}>
+
       {/* Chart type label */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="font-headline-md text-[11px] text-primary font-bold tracking-widest uppercase">
-          ✦ {chartLabel} ✦
+      <div className="flex items-center justify-center gap-2 flex-wrap w-full">
+        <span className="font-headline-md text-primary font-bold tracking-widest uppercase text-center"
+          style={{ fontSize: '10px' }}>
+          {chartLabel}
         </span>
         {isGochar && computedAt && (
-          <span className="text-[9px] text-primary/60 font-semibold bg-primary/8 px-1.5 py-0.5 rounded-full border border-primary/20">
-            Live · {computedAt} IST
+          <span style={{ fontSize: '9px' }}
+            className="text-primary/60 font-semibold bg-primary/8 px-1.5 py-0.5 rounded-full border border-primary/20 whitespace-nowrap">
+            Live &middot; {computedAt} IST
           </span>
         )}
       </div>
 
-      {/* SVG Chart */}
-      <div className="w-full flex items-center justify-center p-1">
+      {/* SVG Chart — square via padding-bottom trick */}
+      <div style={{ position: 'relative', width: '100%', paddingBottom: '100%' }}>
         <svg
           viewBox="0 0 400 400"
-          width="100%"
-          height="100%"
-          className="opacity-90 overflow-visible transition-all duration-300"
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+          className="opacity-90"
         >
           <defs>
             <filter id={`gold-glow-${chartType}`} x="-20%" y="-20%" width="140%" height="140%">
@@ -176,19 +190,15 @@ export default function DivisionalChart({ chartData, chartType = "D1", natalData
 
           {/* Background */}
           <rect x="2" y="2" width="396" height="396" fill="#ffffff" stroke="#d3c4b0" strokeWidth="1" />
-
           {/* Diagonal lines */}
           <line x1="2" y1="2" x2="398" y2="398" stroke="#d3c4b0" strokeWidth="0.8" />
           <line x1="398" y1="2" x2="2" y2="398" stroke="#d3c4b0" strokeWidth="0.8" />
-
           {/* Inner diamond */}
           <path d="M200 2 L398 200 L200 398 L2 200 Z" fill="#fcfcf9" stroke="#d3c4b0" strokeWidth="0.8" />
+          {/* Center dot */}
+          <circle cx="200" cy="200" r="3" fill="#7c5800" opacity="0.8" />
+          <circle cx="200" cy="200" r="8" fill="none" stroke="#7c5800" strokeWidth="0.5" opacity="0.4" />
 
-          {/* Center sacred dot */}
-          <circle cx="200" cy="200" r="3" fill="#7c5800" className="opacity-80" />
-          <circle cx="200" cy="200" r="8" fill="none" stroke="#7c5800" strokeWidth="0.5" className="opacity-40" />
-
-          {/* Render houses */}
           {Object.entries(HOUSE_COORDS).map(([houseStr, coord]) => {
             const houseNum = parseInt(houseStr);
             const rashiNum = houseSigns[houseNum];
@@ -196,35 +206,24 @@ export default function DivisionalChart({ chartData, chartType = "D1", natalData
 
             return (
               <g key={houseNum}>
-                {/* Rashi sign number */}
                 <text
-                  x={coord.cx}
-                  y={coord.labelY}
-                  fill="#7c5800"
-                  fontSize="11"
-                  textAnchor="middle"
-                  fontWeight="700"
-                  fontFamily="Cinzel"
+                  x={coord.cx} y={coord.labelY}
+                  fill="#7c5800" fontSize="11" textAnchor="middle"
+                  fontWeight="700" fontFamily="Cinzel"
                   style={{ userSelect: 'none' }}
                 >
                   {rashiNum}
                 </text>
-
-                {/* Planets */}
                 {planetsInHouse.map((p, index) => {
                   const offsetStep = 14;
                   const totalOffset = (planetsInHouse.length - 1) * offsetStep;
                   const py = coord.cy - (totalOffset / 2) + (index * offsetStep);
-
                   return (
                     <text
                       key={p.name}
-                      x={coord.cx}
-                      y={py}
+                      x={coord.cx} y={py}
                       fill={p.color}
-                      fontSize="11"
-                      fontWeight="700"
-                      fontFamily="Inter"
+                      fontSize="11" fontWeight="700" fontFamily="Inter"
                       textAnchor="middle"
                       filter={p.glow ? `url(#gold-glow-${chartType})` : undefined}
                       style={{ transition: 'all 0.3s ease', userSelect: 'none' }}
@@ -239,21 +238,48 @@ export default function DivisionalChart({ chartData, chartType = "D1", natalData
         </svg>
       </div>
 
-      {/* Legend: color coding */}
-      <div className="flex gap-3 mt-1 flex-wrap justify-center">
-        <span className="flex items-center gap-1 text-[9px] text-[#7c5800] font-semibold">
-          <span className="w-2 h-2 rounded-full bg-[#7c5800] inline-block" /> Exalted
-        </span>
-        <span className="flex items-center gap-1 text-[9px] text-[#166534] font-semibold">
-          <span className="w-2 h-2 rounded-full bg-[#166534] inline-block" /> Own Sign
-        </span>
-        <span className="flex items-center gap-1 text-[9px] text-[#ba1a1a] font-semibold">
-          <span className="w-2 h-2 rounded-full bg-[#ba1a1a] inline-block" /> Debilitated
-        </span>
-        <span className="flex items-center gap-1 text-[9px] text-[#5d5c73] font-semibold">
-          <span className="w-2 h-2 rounded-full bg-[#5d5c73] inline-block" /> Retrograde
-        </span>
+      {/* Legend */}
+      <div className="flex gap-3 flex-wrap justify-center w-full px-1" style={{ marginTop: '4px' }}>
+        {[
+          { color: '#7c5800', label: 'Exalted'     },
+          { color: '#166534', label: 'Own Sign'    },
+          { color: '#ba1a1a', label: 'Debilitated' },
+          { color: '#5d5c73', label: 'Retro'       },
+        ].map(({ color, label }) => (
+          <span key={label}
+            className="flex items-center gap-1"
+            style={{ fontSize: '9px', color, fontWeight: 600 }}
+          >
+            <span
+              className="inline-block rounded-full"
+              style={{ width: 6, height: 6, background: color, flexShrink: 0 }}
+            />
+            {label}
+          </span>
+        ))}
       </div>
+
+      {/* Best Used For */}
+      <div className="w-full px-1" style={{ marginTop: '2px' }}>
+        <div
+          className="w-full text-center rounded-xl border border-primary/15"
+          style={{ background: 'rgba(124,88,0,0.04)', padding: '8px 12px' }}
+        >
+          <span
+            className="block font-bold uppercase tracking-widest text-primary"
+            style={{ fontSize: '9px', marginBottom: '3px' }}
+          >
+            Best Used For
+          </span>
+          <span
+            className="font-accent-italic italic text-on-surface-variant"
+            style={{ fontSize: '10px', lineHeight: '1.5', display: 'block', wordBreak: 'break-word' }}
+          >
+            {CHART_PURPOSES[chartType] || 'Analyzes astrological dimensions for this life area.'}
+          </span>
+        </div>
+      </div>
+
     </div>
   );
 }

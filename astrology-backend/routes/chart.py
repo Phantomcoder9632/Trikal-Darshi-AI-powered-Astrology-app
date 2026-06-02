@@ -12,8 +12,8 @@ import asyncpg
 from db.database import get_db
 from services.hybrid import get_complete_chart
 from services.numerology import get_numerology
-from services.cache import cache_chart, get_cached_chart, generate_chart_cache_key
-from services.ephemeris import compute_divisional_chart, compute_gochar_chart
+from services.cache import cache_chart, get_cached_chart, generate_chart_cache_key, get_redis
+from services.ephemeris import compute_divisional_chart, compute_gochar_chart, ZODIAC_SIGNS
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,109 @@ async def get_gochar_chart(lat: float = 28.6139, lng: float = 77.2090):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to compute Gochar chart: {str(e)}"
         )
+
+
+async def ensure_chart_complete(
+    chart_data: dict,
+    conn: asyncpg.Connection,
+    chart_uuid: uuid.UUID
+) -> dict:
+    """
+    Checks if a chart has all required divisional charts.
+    If any are missing (legacy charts), computes them on the fly,
+    saves the updated chart to the database, and returns the complete chart.
+    """
+    required_keys = ["navamsha", "dashamsha", "chaturthamsa", "saptamsha", "trimsamsa", "chandra_kundali", "surya_kundali", "gochar"]
+    
+    # Check if any required keys are missing
+    missing = [k for k in required_keys if k not in chart_data]
+    
+    # Check if planets contains "Ascendant" to clean it up
+    natal_planets = chart_data.get("planets", [])
+    has_asc_in_planets = any(p.get("name") == "Ascendant" for p in natal_planets)
+    
+    if not missing and not has_asc_in_planets:
+        return chart_data
+
+    logger.info(f"Chart {chart_uuid} needs update. Missing keys: {missing}, Has Ascendant in planets: {has_asc_in_planets}")
+    
+    # Reconstruct/Heal natal_asc if needed
+    natal_asc = chart_data.get("ascendant", {})
+    asc_planet = next((p for p in natal_planets if p.get("name") == "Ascendant"), None)
+    if asc_planet and not (natal_asc.get("full_degree") or natal_asc.get("fullDegree")):
+        natal_asc = {
+            "sign": asc_planet.get("sign"),
+            "degree": asc_planet.get("normDegree"),
+            "full_degree": asc_planet.get("fullDegree"),
+            "fullDegree": asc_planet.get("fullDegree"),
+            "nakshatra": asc_planet.get("nakshatra"),
+            "nakshatra_lord": asc_planet.get("nakshatraLord"),
+            "nakshatra_pada": asc_planet.get("nakshatra_pad"),
+        }
+        chart_data["ascendant"] = natal_asc
+
+    # Filter out Ascendant from planets to behave consistently
+    clean_planets = [p for p in natal_planets if p.get("name") != "Ascendant"]
+    
+    # Extract coordinates
+    lat = chart_data.get("lat") or chart_data.get("latitude") or 28.6139
+    lng = chart_data.get("lng") or chart_data.get("longitude") or 77.2090
+    lat, lng = float(lat), float(lng)
+
+    # Compute missing charts
+    if "navamsha" in missing or not chart_data.get("navamsha"):
+        chart_data["navamsha"] = compute_divisional_chart(clean_planets, natal_asc, "D9")
+    if "dashamsha" in missing or not chart_data.get("dashamsha"):
+        chart_data["dashamsha"] = compute_divisional_chart(clean_planets, natal_asc, "D10")
+    if "chaturthamsa" in missing or not chart_data.get("chaturthamsa"):
+        chart_data["chaturthamsa"] = compute_divisional_chart(clean_planets, natal_asc, "D4")
+    if "saptamsha" in missing or not chart_data.get("saptamsha"):
+        chart_data["saptamsha"] = compute_divisional_chart(clean_planets, natal_asc, "D7")
+    if "trimsamsa" in missing or not chart_data.get("trimsamsa"):
+        chart_data["trimsamsa"] = compute_divisional_chart(clean_planets, natal_asc, "D30")
+    if "chandra_kundali" in missing or not chart_data.get("chandra_kundali"):
+        chart_data["chandra_kundali"] = compute_divisional_chart(clean_planets, natal_asc, "chandra")
+    if "surya_kundali" in missing or not chart_data.get("surya_kundali"):
+        chart_data["surya_kundali"] = compute_divisional_chart(clean_planets, natal_asc, "surya")
+    if "gochar" in missing or not chart_data.get("gochar"):
+        chart_data["gochar"] = compute_gochar_chart(lat, lng)
+
+    # Clean up planets array in chart_data
+    chart_data["planets"] = clean_planets
+
+    # Update PostgreSQL with the complete chart data
+    try:
+        await conn.execute(
+            "UPDATE charts SET raw_chart_data = $1 WHERE id = $2",
+            json.dumps(chart_data, default=str),
+            chart_uuid
+        )
+        logger.info(f"Updated PostgreSQL chart record {chart_uuid} with missing divisional charts.")
+    except Exception as db_err:
+        logger.error(f"Failed to update PostgreSQL chart {chart_uuid}: {db_err}")
+
+    # Invalidate stale interpretations that were generated without divisional chart data.
+    # These need to be regenerated so the AI can reference the now-complete charts.
+    try:
+        deleted_count = await conn.execute(
+            "DELETE FROM interpretations WHERE chart_id = $1",
+            chart_uuid
+        )
+        logger.info(f"Invalidated stale interpretations for chart {chart_uuid}: {deleted_count}")
+        
+        # Also clear Redis interpretation cache for all tabs
+        try:
+            redis_client = await get_redis()
+            chart_id_str = str(chart_uuid)
+            for tab_num in range(1, 11):
+                await redis_client.delete(f"interpretation:{chart_id_str}:{tab_num}")
+            logger.info(f"Cleared Redis interpretation cache for chart {chart_uuid}")
+        except Exception as redis_err:
+            logger.error(f"Failed to clear Redis interpretation cache: {redis_err}")
+    except Exception as interp_err:
+        logger.error(f"Failed to invalidate stale interpretations for chart {chart_uuid}: {interp_err}")
+
+    return chart_data
 
 
 class ChartGenerateRequest(BaseModel):
@@ -95,9 +198,57 @@ async def generate_chart(
     # ── c. Check Redis Cache for hit ────────────────────────────────────────
     cached_chart = await get_cached_chart(cache_key)
     if cached_chart:
-        logger.info(f"Redis cache hit under coordinate key: {cache_key}")
-        # Directly return cached complete chart
-        return cached_chart
+        # Verify that the cached chart is complete (has all divisional charts)
+        required_keys = ["navamsha", "dashamsha", "chaturthamsa", "saptamsha", "trimsamsa", "chandra_kundali", "surya_kundali"]
+        is_complete = all(k in cached_chart for k in required_keys)
+        if is_complete:
+            logger.info(f"Redis cache hit under coordinate key: {cache_key}")
+            return cached_chart
+        else:
+            logger.info(f"Redis cache hit but chart incomplete (missing divisional charts), falling through to PostgreSQL: {cache_key}")
+
+    # ── c2. Check PostgreSQL Database for hit ─────────────────────────────────
+    parsed_dob = date.fromisoformat(dob_str)
+    parsed_tob = time.fromisoformat(tob_str)
+    try:
+        row = await conn.fetchrow(
+            """
+            SELECT id, raw_chart_data FROM charts 
+            WHERE LOWER(full_name) = LOWER($1)
+              AND date_of_birth = $2 
+              AND time_of_birth = $3 
+              AND birth_time_confidence = $4
+              AND ABS(latitude - $5) < 0.0001 
+              AND ABS(longitude - $6) < 0.0001
+            ORDER BY created_at DESC LIMIT 1
+            """,
+            payload.full_name,
+            parsed_dob,
+            parsed_tob,
+            payload.birth_time_confidence,
+            lat,
+            lng
+        )
+        if row:
+            logger.info(f"PostgreSQL chart hit under matching inputs: id={row['id']}")
+            raw_data = row["raw_chart_data"]
+            if isinstance(raw_data, str):
+                chart_data = json.loads(raw_data)
+            else:
+                chart_data = dict(raw_data) if raw_data else {}
+            
+            # Ensure correct chart_id matching the database UUID is present in chart_id field
+            chart_data["chart_id"] = str(row["id"])
+            
+            # Heal legacy chart if incomplete
+            chart_data = await ensure_chart_complete(chart_data, conn, row["id"])
+
+            # Cache in Redis so subsequent requests hit Redis instantly
+            await cache_chart(cache_key, chart_data)
+            
+            return chart_data
+    except Exception as e:
+        logger.error(f"Failed to query existing chart from PostgreSQL: {e}")
 
     # ── d. Call hybrid.get_complete_chart() ────────────────────────────────
     user_input = {
@@ -216,5 +367,8 @@ async def get_chart(
     chart_data["time_of_birth"] = chart_data.get("time_of_birth") or (str(row["time_of_birth"]) if row["time_of_birth"] else None)
     chart_data["city_of_birth"] = chart_data.get("city_of_birth") or row["city_of_birth"]
     chart_data["current_city"] = chart_data.get("current_city") or row["current_city"]
+
+    # Heal legacy chart if incomplete
+    chart_data = await ensure_chart_complete(chart_data, conn, chart_id)
 
     return chart_data

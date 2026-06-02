@@ -1,137 +1,138 @@
 import React from 'react';
 
 const SANSKRIT_NAMES = {
-  "Sun": "Surya",
-  "Moon": "Chandra",
-  "Mars": "Mangal",
-  "Mercury": "Budha",
-  "Jupiter": "Guru",
-  "Venus": "Shukra",
-  "Saturn": "Shani",
-  "Rahu": "Rahu",
-  "Ketu": "Ketu"
+  Sun: 'Surya', Moon: 'Chandra', Mars: 'Mangal',
+  Mercury: 'Budha', Jupiter: 'Guru', Venus: 'Shukra',
+  Saturn: 'Shani', Rahu: 'Rahu', Ketu: 'Ketu',
 };
 
 const EXALTED_SIGNS = {
-  "Sun": "Aries",
-  "Moon": "Taurus",
-  "Mars": "Capricorn",
-  "Mercury": "Virgo",
-  "Jupiter": "Cancer",
-  "Venus": "Pisces",
-  "Saturn": "Libra",
-  "Rahu": "Taurus",
-  "Ketu": "Scorpio"
+  Sun: 'Aries', Moon: 'Taurus', Mars: 'Capricorn',
+  Mercury: 'Virgo', Jupiter: 'Cancer', Venus: 'Pisces',
+  Saturn: 'Libra', Rahu: 'Taurus', Ketu: 'Scorpio',
 };
 
 const DEBILITATED_SIGNS = {
-  "Sun": "Libra",
-  "Moon": "Scorpio",
-  "Mars": "Cancer",
-  "Mercury": "Pisces",
-  "Jupiter": "Capricorn",
-  "Venus": "Virgo",
-  "Saturn": "Aries",
-  "Rahu": "Scorpio",
-  "Ketu": "Taurus"
+  Sun: 'Libra', Moon: 'Scorpio', Mars: 'Cancer',
+  Mercury: 'Pisces', Jupiter: 'Capricorn', Venus: 'Virgo',
+  Saturn: 'Aries', Rahu: 'Scorpio', Ketu: 'Taurus',
 };
 
 const OWN_SIGNS = {
-  "Sun": ["Leo"],
-  "Moon": ["Cancer"],
-  "Mars": ["Aries", "Scorpio"],
-  "Mercury": ["Gemini", "Virgo"],
-  "Jupiter": ["Sagittarius", "Pisces"],
-  "Venus": ["Taurus", "Libra"],
-  "Saturn": ["Capricorn", "Aquarius"]
+  Sun: ['Leo'], Moon: ['Cancer'], Mars: ['Aries', 'Scorpio'],
+  Mercury: ['Gemini', 'Virgo'], Jupiter: ['Sagittarius', 'Pisces'],
+  Venus: ['Taurus', 'Libra'], Saturn: ['Capricorn', 'Aquarius'],
 };
 
-/**
- * Determine planetary dignity details.
- */
-function getDignityDetails(planetName, signName) {
-  if (EXALTED_SIGNS[planetName] === signName) {
-    return { text: "UCHA (EXALT)", badgeClass: "bg-primary/10 text-primary border border-primary/20" };
-  }
-  if (DEBILITATED_SIGNS[planetName] === signName) {
-    return { text: "NEECHA (DEB)", badgeClass: "bg-error/10 text-error border border-error/20" };
-  }
-  if (OWN_SIGNS[planetName] && OWN_SIGNS[planetName].includes(signName)) {
-    return { text: "SWAKSHETRA", badgeClass: "bg-[#166534]/10 text-[#166534] border border-[#166534]/20" };
-  }
-  return { text: "NEUTRAL", badgeClass: "bg-outline-variant/15 text-on-surface-variant" };
+function getDignity(planetName, signName) {
+  if (EXALTED_SIGNS[planetName] === signName)
+    return { text: 'Exalted', dot: '#7c5800', bg: 'rgba(124,88,0,0.08)', border: 'rgba(124,88,0,0.25)', color: '#7c5800' };
+  if (DEBILITATED_SIGNS[planetName] === signName)
+    return { text: 'Debil.',  dot: '#ba1a1a', bg: 'rgba(186,26,26,0.08)', border: 'rgba(186,26,26,0.25)', color: '#ba1a1a' };
+  if (OWN_SIGNS[planetName]?.includes(signName))
+    return { text: 'Own',     dot: '#166534', bg: 'rgba(22,101,52,0.08)',  border: 'rgba(22,101,52,0.25)',  color: '#166534' };
+  return   { text: 'Neutral', dot: '#817563', bg: 'rgba(129,117,99,0.08)', border: 'rgba(211,196,176,0.4)', color: '#817563' };
 }
 
 export default function PlanetTable({ planets }) {
-  if (!Array.isArray(planets)) return null;
+  if (!Array.isArray(planets) || planets.length === 0) return null;
 
   return (
-    <div className="w-full flex flex-col">
-      {/* Table Header Bar */}
-      <div className="bg-surface-container-low px-5 py-3 border-b border-outline-variant/20 flex items-center justify-between">
-        <span className="font-label-sm text-[11px] font-semibold text-on-surface-variant uppercase tracking-widest">
-          Planetary Positions & Strengths
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+
+      {/* Header bar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '10px 14px', borderBottom: '1px solid rgba(211,196,176,0.25)',
+        background: 'rgba(238,238,235,0.6)',
+      }}>
+        <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#4f4536' }}>
+          Planetary Positions
         </span>
-        <span className="text-[10px] font-bold text-primary tracking-widest uppercase">
+        <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7c5800' }}>
           Grahas
         </span>
       </div>
 
-      {/* Responsive Table Wrapper */}
-      <div className="w-full overflow-x-auto">
-        <table className="w-full text-left border-collapse font-body-md text-sm">
+      {/* Table — uses explicit layout so columns never overflow */}
+      <div style={{ width: '100%', overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '30%' }} />  {/* Planet */}
+            <col style={{ width: '28%' }} />  {/* Sign/House */}
+            <col style={{ width: '26%' }} />  {/* Dignity */}
+            <col style={{ width: '16%' }} />  {/* Motion */}
+          </colgroup>
           <thead>
-            <tr className="bg-surface-container-lowest border-b border-outline-variant/20">
-              <th className="px-5 py-3 font-label-sm text-[11px] font-bold text-primary uppercase tracking-wider">
-                Planet
-              </th>
-              <th className="px-5 py-3 font-label-sm text-[11px] font-bold text-primary uppercase tracking-wider">
-                Sign / House
-              </th>
-              <th className="px-5 py-3 font-label-sm text-[11px] font-bold text-primary uppercase tracking-wider">
-                Dignity
-              </th>
-              <th className="px-5 py-3 font-label-sm text-[11px] font-bold text-primary uppercase tracking-wider">
-                Status
-              </th>
+            <tr style={{ borderBottom: '1px solid rgba(211,196,176,0.25)', background: '#ffffff' }}>
+              {['Planet', 'Sign / H.', 'Dignity', 'Dir.'].map((h) => (
+                <th key={h} style={{
+                  padding: '8px 10px', textAlign: 'left',
+                  fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em',
+                  textTransform: 'uppercase', color: '#7c5800',
+                }}>
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {planets.map((p, index) => {
-              const isRetro = p.isRetrograde === true || p.isRetrograde === "true" || p.isRetrograde === "YES";
-              const dignity = getDignityDetails(p.name, p.sign);
-              const displayName = SANSKRIT_NAMES[p.name] 
-                ? `${p.name} (${SANSKRIT_NAMES[p.name]})` 
-                : p.name;
-              
-              const rowClass = index % 2 === 0 
-                ? 'bg-surface hover:bg-surface-container-low transition-colors duration-150' 
-                : 'bg-surface-container-lowest hover:bg-surface-container-low transition-colors duration-150';
+              const isRetro  = p.isRetrograde === true || p.isRetrograde === 'true' || p.isRetrograde === 'YES';
+              const dignity  = getDignity(p.name, p.sign);
+              const sanskrit = SANSKRIT_NAMES[p.name];
+              const rowBg    = index % 2 === 0 ? '#ffffff' : 'rgba(244,244,241,0.6)';
 
               return (
-                <tr key={p.name} className={`${rowClass} border-b border-outline-variant/10`}>
-                  {/* Planet Name */}
-                  <td className="px-5 py-3.5 font-accent-italic italic text-primary text-[15px] font-medium">
-                    {displayName}
+                <tr key={p.name} style={{
+                  background: rowBg,
+                  borderBottom: '1px solid rgba(211,196,176,0.12)',
+                  transition: 'background 0.15s',
+                }}>
+                  {/* Planet */}
+                  <td style={{ padding: '9px 10px', verticalAlign: 'top' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#1a1c1b', lineHeight: 1.2 }}>
+                      {p.name}
+                    </div>
+                    {sanskrit && sanskrit !== p.name && (
+                      <div style={{ fontSize: '10px', fontStyle: 'italic', color: '#817563', lineHeight: 1.2, marginTop: '1px' }}>
+                        {sanskrit}
+                      </div>
+                    )}
                   </td>
-                  {/* Sign & House */}
-                  <td className="px-5 py-3.5 font-medium text-on-surface">
-                    {p.sign} <span className="text-outline/70 font-normal">in H{p.house}</span>
+
+                  {/* Sign / House */}
+                  <td style={{ padding: '9px 10px', verticalAlign: 'middle' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 500, color: '#1a1c1b' }}>{p.sign}</span>
+                    <span style={{ fontSize: '10px', color: '#817563', marginLeft: '3px' }}>H{p.house}</span>
                   </td>
-                  {/* Dignity */}
-                  <td className="px-5 py-3.5">
-                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold tracking-wider ${dignity.badgeClass}`}>
+
+                  {/* Dignity badge */}
+                  <td style={{ padding: '9px 8px', verticalAlign: 'middle' }}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '3px',
+                      padding: '2px 7px', borderRadius: '9999px',
+                      fontSize: '9px', fontWeight: 700, whiteSpace: 'nowrap',
+                      background: dignity.bg, border: `1px solid ${dignity.border}`, color: dignity.color,
+                    }}>
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: dignity.dot, flexShrink: 0 }} />
                       {dignity.text}
                     </span>
                   </td>
-                  {/* Status */}
-                  <td className="px-5 py-3.5 text-xs">
+
+                  {/* Motion */}
+                  <td style={{ padding: '9px 8px', verticalAlign: 'middle', textAlign: 'center' }}>
                     {isRetro ? (
-                      <span className="text-[#5d5c73] font-bold bg-[#e2e0fb]/30 px-2 py-0.5 rounded border border-[#e2e0fb]/50 text-[10px]">
-                        RETROGRADE (R)
+                      <span style={{
+                        display: 'inline-block', fontSize: '10px', fontWeight: 700,
+                        color: '#5d5c73', lineHeight: 1,
+                      }} title="Retrograde">
+                        ℞
                       </span>
                     ) : (
-                      <span className="text-outline/65 font-medium text-[10px]">DIRECT</span>
+                      <span style={{ fontSize: '9px', fontWeight: 600, color: 'rgba(129,117,99,0.5)', letterSpacing: '0.05em' }}>
+                        D
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -139,6 +140,25 @@ export default function PlanetTable({ planets }) {
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Legend footer */}
+      <div style={{
+        padding: '7px 12px', borderTop: '1px solid rgba(211,196,176,0.2)',
+        display: 'flex', gap: '10px', flexWrap: 'wrap', background: 'rgba(238,238,235,0.4)',
+        fontSize: '9px', fontWeight: 600,
+      }}>
+        {[
+          { color: '#7c5800', label: 'Exalt' },
+          { color: '#166534', label: 'Own'   },
+          { color: '#ba1a1a', label: 'Debil' },
+          { color: '#5d5c73', label: '℞ Retro' },
+        ].map(({ color, label }) => (
+          <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '4px', color }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+            {label}
+          </span>
+        ))}
       </div>
     </div>
   );

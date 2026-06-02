@@ -3,29 +3,36 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getChart, getInterpretation } from '../services/api';
 
 // Child Components
-import ChartSidebar from '../components/ChartSidebar';
-import PlanetTable from '../components/PlanetTable';
+import ChartSidebar, { TAB_CHART_CONFIG } from '../components/ChartSidebar';
+import PlanetTable   from '../components/PlanetTable';
 import TransitBanner from '../components/TransitBanner';
 import CosmicSummary from '../components/CosmicSummary';
 import TabNavigation from '../components/TabNavigation';
-import RemedyCards from '../components/RemedyCards';
+import RemedyCards   from '../components/RemedyCards';
 
 export default function DashboardPage() {
   const { chartId } = useParams();
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
 
-  const [chartData, setChartData] = useState(null);
+  const [chartData,    setChartData]    = useState(null);
   const [loadingChart, setLoadingChart] = useState(true);
-  const [chartError, setChartError] = useState('');
+  const [chartError,   setChartError]   = useState('');
 
-  // Tab Interpretation States (Tabs 1 to 8)
-  const [activeTab, setActiveTab] = useState(1);
-  const [interpretations, setInterpretations] = useState({});
-  const [tabLoading, setTabLoading] = useState({});
-  const [tabError, setTabError] = useState({});
+  // Tab state
+  const [activeTab,        setActiveTab]        = useState(1);
+  const [interpretations,  setInterpretations]  = useState({});
+  const [tabLoading,       setTabLoading]       = useState({});
+  const [tabError,         setTabError]         = useState({});
 
-  // ── 1. Fetch Chart Data on Load ──────────────────────────────────────────
+  // Chart toggle within a tab
+  const [activeChartIdx, setActiveChartIdx] = useState(0);
+
+  // Reset chart toggle when tab changes
+  useEffect(() => { setActiveChartIdx(0); }, [activeTab]);
+
+  // ── 1. Fetch chart ──────────────────────────────────────────────────────
   useEffect(() => {
+    if (!chartId) return;
     const fetchChart = async () => {
       try {
         setLoadingChart(true);
@@ -39,34 +46,31 @@ export default function DashboardPage() {
         setLoadingChart(false);
       }
     };
-
-    if (chartId) {
-      fetchChart();
-    }
+    fetchChart();
   }, [chartId]);
 
-  // ── 2. Lazy Stream Interpretations on Active Tab Changes ─────────────────
+  // ── 2. Stream interpretation for active tab ─────────────────────────────
   useEffect(() => {
     if (!chartId || loadingChart || chartError) return;
-    if (interpretations[activeTab]) return;
+    if (interpretations[activeTab]) return; // already loaded
 
     const streamTab = async () => {
-      setTabLoading((prev) => ({ ...prev, [activeTab]: true }));
-      setTabError((prev) => ({ ...prev, [activeTab]: '' }));
+      setTabLoading((prev)  => ({ ...prev, [activeTab]: true  }));
+      setTabError((prev)    => ({ ...prev, [activeTab]: ''    }));
       setInterpretations((prev) => ({ ...prev, [activeTab]: '' }));
 
       try {
         await getInterpretation(chartId, activeTab, (chunk) => {
           setInterpretations((prev) => ({
             ...prev,
-            [activeTab]: (prev[activeTab] || '') + chunk
+            [activeTab]: (prev[activeTab] || '') + chunk,
           }));
         });
       } catch (err) {
         console.error(err);
         setTabError((prev) => ({
           ...prev,
-          [activeTab]: 'Planetary alignment stream interrupted. Click below to retry.'
+          [activeTab]: 'Planetary alignment stream interrupted. Click Retry below.',
         }));
       } finally {
         setTabLoading((prev) => ({ ...prev, [activeTab]: false }));
@@ -76,37 +80,44 @@ export default function DashboardPage() {
     streamTab();
   }, [chartId, activeTab, loadingChart, chartError]);
 
-  // ── Loading State ────────────────────────────────────────────────────────
+  // ── Loading state ────────────────────────────────────────────────────────
   if (loadingChart) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
-        <div className="relative w-16 h-16 flex items-center justify-center text-primary-container">
-          <span className="material-symbols-outlined text-[48px] animate-spin">
+      <div className="flex flex-col items-center justify-center min-h-screen text-center p-6 gap-6">
+        <div className="relative w-14 h-14 flex items-center justify-center">
+          <span className="material-symbols-outlined text-primary-container text-[44px] animate-spin">
             progress_activity
           </span>
-          <div className="absolute inset-0 border border-primary/20 rounded-full animate-ping"></div>
+          <span className="absolute inset-0 rounded-full border border-primary/20 animate-ping opacity-50" />
         </div>
-        <p className="mt-6 font-headline-md text-primary text-xl uppercase tracking-widest animate-pulse">
-          Channeling Celestial Blueprints...
+        <p className="font-headline-md text-primary text-lg uppercase tracking-widest animate-pulse">
+          Channeling Celestial Blueprints…
         </p>
       </div>
     );
   }
 
-  // ── Error State ──────────────────────────────────────────────────────────
+  // ── Error state ──────────────────────────────────────────────────────────
   if (chartError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
-        <div className="glass-card max-w-[450px] p-10 rounded-xl border border-error/30 shadow-2xl space-y-6">
-          <span className="material-symbols-outlined text-error text-[48px]">warning</span>
+      <div className="flex flex-col items-center justify-center min-h-screen text-center p-6">
+        <div className="glass-card max-w-[440px] w-full p-10 rounded-2xl border border-error/25 shadow-xl flex flex-col items-center gap-5">
+          <span
+            className="material-symbols-outlined text-error text-[48px]"
+            style={{ fontVariationSettings: "'FILL' 1" }}
+          >
+            warning
+          </span>
           <h2 className="font-headline-md text-error text-xl uppercase tracking-wider">
             ✦ System Warning ✦
           </h2>
           <p className="text-on-surface-variant text-sm leading-relaxed">{chartError}</p>
           <button
+            id="returnHomeBtn"
             onClick={() => navigate('/')}
-            className="shimmer-button bg-primary-container text-on-primary px-6 py-3 rounded-lg font-bold text-sm tracking-wide shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+            className="blueprint-button shimmer-button max-w-xs w-full"
           >
+            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
             Return to Birth Chamber
           </button>
         </div>
@@ -114,80 +125,115 @@ export default function DashboardPage() {
     );
   }
 
-  // Parse Dasha Info
+  // ── Dasha display ────────────────────────────────────────────────────────
   const dasha = chartData?.dasha || {};
   const currentDashaText =
     dasha.mahadasha && dasha.antardasha
-      ? `${dasha.mahadasha} MD • ${dasha.antardasha} AD`
+      ? `${dasha.mahadasha} MD · ${dasha.antardasha} AD`
       : 'Calculations Active';
 
-  return (
-    <div className="w-full min-h-screen bg-background text-on-background font-body-md yantra-bg flex flex-col items-center selection:bg-primary-container selection:text-on-primary-container">
-      
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className="w-full bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 sticky top-0 z-50 flex justify-center">
-        <div className="flex justify-between items-center px-5 md:px-10 py-4 w-full max-w-[1280px]">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-            <span className="font-wordmark text-[20px] md:text-[22px] tracking-[0.15em] text-primary">
-              TRIKAL DARSHI
-            </span>
-          </div>
+  // ── Planet table data: follows active chart idx ──────────────────────────
+  const tabConfig    = TAB_CHART_CONFIG[activeTab] || TAB_CHART_CONFIG[1];
+  const currentKey   = tabConfig?.keys?.[activeChartIdx];
+  const tablePlanets = currentKey && chartData?.[currentKey]?.planets
+    ? chartData[currentKey].planets
+    : chartData?.planets;
 
-          <div className="flex items-center gap-5">
-            <div className="flex flex-col items-end">
-              <span className="font-label-sm text-xs font-semibold text-on-surface uppercase tracking-widest">
+  return (
+    <div className="w-full min-h-screen bg-background text-on-background font-body-md yantra-bg flex flex-col selection:bg-primary-container/30">
+
+      {/* ── Sticky Header ────────────────────────────────────────────────── */}
+      <header className="w-full bg-white/85 backdrop-blur-xl border-b border-outline-variant/25 sticky top-0 z-50">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-8 md:px-10 py-3.5 flex items-center justify-between gap-4">
+
+          {/* Logo */}
+          <button
+            id="logoHomeBtn"
+            onClick={() => navigate('/')}
+            className="font-wordmark text-[18px] sm:text-[20px] tracking-[0.15em] text-primary hover:opacity-80 transition-opacity cursor-pointer bg-transparent border-none p-0"
+            aria-label="Go to home page"
+          >
+            TRIKAL DARSHI
+          </button>
+
+          {/* Right side */}
+          <div className="flex items-center gap-4">
+            {/* Name + Dasha */}
+            <div className="hidden sm:flex flex-col items-end">
+              <span className="font-label-sm text-[11px] font-bold text-on-surface uppercase tracking-widest leading-tight">
                 {chartData?.full_name || 'Seeker'}
               </span>
-              <div className="flex items-center gap-1 bg-primary-container/15 px-2.5 py-0.5 rounded-full border border-primary/20 mt-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                <span className="font-label-sm text-[10px] text-primary font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 bg-primary/8 px-2.5 py-0.5 rounded-full border border-primary/15 mt-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                <span className="font-label-sm text-[9px] text-primary font-bold uppercase tracking-wider">
                   {currentDashaText}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">
-                notifications
-              </span>
-              <span
-                className="material-symbols-outlined text-primary cursor-pointer text-[28px]"
-                style={{ fontVariationSettings: "'FILL' 1" }}
+            {/* Action icons */}
+            <div className="flex items-center gap-2">
+              <button
+                id="notifBtn"
+                aria-label="Notifications"
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors cursor-pointer bg-transparent border-none"
               >
-                account_circle
-              </span>
+                <span className="material-symbols-outlined text-on-surface-variant text-[20px]">
+                  notifications
+                </span>
+              </button>
+              <button
+                id="accountBtn"
+                aria-label="Account"
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors cursor-pointer bg-transparent border-none"
+              >
+                <span
+                  className="material-symbols-outlined text-primary text-[28px]"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  account_circle
+                </span>
+              </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* ── Main Content ────────────────────────────────────────────────── */}
-      <main className="w-full max-w-[1280px] mx-auto px-5 md:px-10 py-6 flex-1 flex flex-col">
-        {/* Jupiter Transit Alert */}
+      {/* ── Main Content ──────────────────────────────────────────────────── */}
+      <main className="flex-1 w-full max-w-[1280px] mx-auto px-4 sm:px-8 md:px-10 py-5 flex flex-col">
+
+        {/* Jupiter Transit Banner */}
         <TransitBanner />
 
-        {/* Main Grid: Sidebar + Content */}
+        {/* Two-column grid */}
         <div className="dashboard-grid">
-          {/* Left Column: Astro-Technical Data */}
-          <aside className="dashboard-sidebar flex flex-col gap-5">
-            {/* Tab-aware Chart Sidebar — switches chart based on active tab */}
-            <ChartSidebar activeTab={activeTab} chartData={chartData} />
 
-            {/* Planet Positions Table Card — shown on all tabs */}
+          {/* ── Left sidebar ────────────────────────────────────────────── */}
+          <aside className="dashboard-sidebar flex flex-col gap-4">
+            {/* Chart viewer */}
+            <ChartSidebar
+              activeTab={activeTab}
+              chartData={chartData}
+              activeChartIdx={activeChartIdx}
+              setActiveChartIdx={setActiveChartIdx}
+            />
+
+            {/* Planet positions table */}
             <div className="dashboard-card overflow-hidden animate-up delay-2" style={{ padding: 0 }}>
-              <PlanetTable planets={chartData?.planets} />
+              <PlanetTable planets={tablePlanets} />
             </div>
           </aside>
 
-          {/* Right Column: Insights, Tabs & Remedies */}
-          <div className="dashboard-content flex flex-col gap-5">
+          {/* ── Right content ────────────────────────────────────────────── */}
+          <div className="dashboard-content flex flex-col gap-4">
+
             {/* Cosmic Blueprint Summary */}
             <div className="animate-up delay-3">
               <CosmicSummary chartData={chartData} />
             </div>
 
-            {/* 8-Tab interpretation deck */}
-            <div className="animate-up delay-4 flex flex-col gap-5">
+            {/* Tab navigation + interpretation */}
+            <div className="animate-up delay-4 flex flex-col gap-4">
               <TabNavigation
                 chartId={chartId}
                 activeTab={activeTab}
@@ -196,10 +242,18 @@ export default function DashboardPage() {
                 tabLoadingState={tabLoading}
               />
 
+              {/* Tab error banner */}
               {tabError[activeTab] && (
-                <div className="flex flex-col items-center gap-3 text-error bg-error/5 p-5 rounded-xl border border-error/20 text-center">
-                  <p className="text-sm font-medium">{tabError[activeTab]}</p>
+                <div className="flex flex-col items-center gap-3 bg-error/5 border border-error/20 rounded-2xl p-5 text-center">
+                  <span
+                    className="material-symbols-outlined text-error text-[28px]"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    error
+                  </span>
+                  <p className="text-error text-sm font-medium">{tabError[activeTab]}</p>
                   <button
+                    id={`retryTabBtn-${activeTab}`}
                     onClick={() => {
                       setInterpretations((prev) => {
                         const copy = { ...prev };
@@ -207,7 +261,7 @@ export default function DashboardPage() {
                         return copy;
                       });
                     }}
-                    className="bg-error/15 border border-error/35 rounded-lg text-error hover:bg-error/25 px-4 py-2 text-xs font-bold transition-all cursor-pointer"
+                    className="bg-error/10 border border-error/30 rounded-xl text-error hover:bg-error/20 px-5 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
                   >
                     Retry Stream
                   </button>
@@ -215,7 +269,7 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Remedy prescriptions (only on Tab 8) */}
+            {/* Remedy cards — shown only on Tab 8 */}
             {activeTab === 8 && !tabLoading[8] && interpretations[8] && (
               <div className="animate-up">
                 <RemedyCards remedyText={interpretations[8]} />
@@ -225,30 +279,27 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <footer className="w-full border-t border-outline-variant/20 bg-surface-container-lowest flex justify-center mt-12">
-        <div className="w-full max-w-[1280px] mx-auto px-5 md:px-10 py-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex flex-col items-center md:items-start gap-2">
-            <span className="font-wordmark text-primary text-[16px] tracking-wider font-semibold">
+      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      <footer className="w-full border-t border-outline-variant/20 bg-white/70 mt-12">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-8 md:px-10 py-7 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex flex-col items-center sm:items-start gap-1">
+            <span className="font-wordmark text-primary text-[15px] tracking-wider">
               TRIKAL DARSHI
             </span>
-            <p className="font-body-md text-xs text-on-surface-variant font-medium">
-              © 2024 Ancient Wisdom, Modern Precision
+            <p className="text-xs text-on-surface-variant">
+              © 2024 · Ancient Wisdom, Modern Precision
             </p>
           </div>
-          <div className="flex gap-6 mt-4 md:mt-0 text-xs font-medium text-on-surface-variant">
-            <a href="#" className="hover:text-primary transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#" className="hover:text-primary transition-colors">
-              Terms of Service
-            </a>
-            <a href="#" className="hover:text-primary transition-colors">
-              Consultation Support
-            </a>
-          </div>
+          <nav className="flex gap-5 text-xs font-medium text-on-surface-variant">
+            {['Privacy Policy', 'Terms of Service', 'Consultation Support'].map((item) => (
+              <a key={item} href="#" className="hover:text-primary transition-colors">
+                {item}
+              </a>
+            ))}
+          </nav>
         </div>
       </footer>
+
     </div>
   );
 }

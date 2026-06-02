@@ -106,7 +106,23 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
             # Compute divisional charts locally from natal planet longitudes
             # (AstrologyAPI D9/D10 endpoints return image URLs, not planet data)
             natal_planets = planets if isinstance(planets, list) else planets.get("planets", [])
-            natal_asc     = ascendant if isinstance(ascendant, dict) else {}
+            
+            # Reconstruct natal_asc from natal_planets if it contains 'Ascendant' (AstrologyAPI style)
+            asc_planet = next((p for p in natal_planets if p["name"] == "Ascendant"), None)
+            if asc_planet:
+                natal_asc = {
+                    "sign": asc_planet.get("sign"),
+                    "degree": asc_planet.get("normDegree"),
+                    "full_degree": asc_planet.get("fullDegree"),
+                    "fullDegree": asc_planet.get("fullDegree"),
+                    "nakshatra": asc_planet.get("nakshatra"),
+                    "nakshatra_lord": asc_planet.get("nakshatraLord"),
+                    "nakshatra_pada": asc_planet.get("nakshatra_pad"),
+                }
+                # Remove Ascendant from natal_planets array so it acts as 9 classical planets
+                natal_planets = [p for p in natal_planets if p["name"] != "Ascendant"]
+            else:
+                natal_asc = ascendant if isinstance(ascendant, dict) else {}
 
             d9_chart   = compute_divisional_chart(natal_planets, natal_asc, "D9")
             d10_chart  = compute_divisional_chart(natal_planets, natal_asc, "D10")

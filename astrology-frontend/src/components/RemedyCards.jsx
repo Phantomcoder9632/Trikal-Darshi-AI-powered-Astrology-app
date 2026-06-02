@@ -147,7 +147,7 @@ export default function RemedyCards({ remedyText }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
         {TRACKS.map((track) => {
           if (!track.content) return null;
           return (

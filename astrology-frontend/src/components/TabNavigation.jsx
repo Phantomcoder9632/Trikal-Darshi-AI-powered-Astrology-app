@@ -1,15 +1,18 @@
 import React from 'react';
 
 const TABS = [
-  { id: 1, label: 'Lagna & Soul', icon: 'wb_sunny' },
-  { id: 2, label: 'Lal Kitab', icon: 'diamond' },
-  { id: 3, label: 'Numerology', icon: 'all_inclusive' },
-  { id: 4, label: 'Career & D10', icon: 'work' },
-  { id: 5, label: 'Wealth', icon: 'payments' },
-  { id: 6, label: 'Love & D9', icon: 'favorite' },
-  { id: 7, label: 'Health', icon: 'healing' },
-  { id: 8, label: 'Remedies', icon: 'auto_awesome' }
+  { id: 1,  label: 'Lagna & Soul',  icon: 'wb_sunny'       },
+  { id: 2,  label: 'Lal Kitab',     icon: 'diamond'        },
+  { id: 3,  label: 'Numerology',    icon: 'all_inclusive'  },
+  { id: 4,  label: 'Career & D10',  icon: 'work'           },
+  { id: 5,  label: 'Wealth & D4',   icon: 'payments'       },
+  { id: 6,  label: 'Love & D9',     icon: 'favorite'       },
+  { id: 7,  label: 'Health & D30',  icon: 'healing'        },
+  { id: 8,  label: 'Remedies',      icon: 'auto_awesome'   },
+  { id: 9,  label: 'Progeny & D7',  icon: 'child_care'     },
+  { id: 10, label: 'Gochar',        icon: 'track_changes'  },
 ];
+
 
 /**
  * Parse **bold** markdown to JSX <strong> tags.
@@ -169,7 +172,7 @@ export default function TabNavigation({ chartId, activeTab, onTabChange, interpr
   return (
     <div className="w-full flex flex-col gap-4">
       {/* 1. Pill Navigation Tabs */}
-      <nav className="flex overflow-x-auto no-scrollbar gap-2 py-3 w-full border-b border-outline-variant/20">
+      <nav className="flex overflow-x-auto no-scrollbar gap-2 pb-2 pt-1 w-full border-b border-outline-variant/20">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const isLoaded = !!interpretations[tab.id];
@@ -217,7 +220,7 @@ export default function TabNavigation({ chartId, activeTab, onTabChange, interpr
               {currentTab.label} Deep-Dive
               <span className="w-6 h-[1px] bg-primary/30"></span>
             </h4>
-            <div className="w-16 h-0.5 bg-primary-container mt-2"></div>
+            <div className="w-24 h-0.5 bg-primary-container mt-2"></div>
           </div>
 
           {/* Interpretation content */}

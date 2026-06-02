@@ -23,7 +23,9 @@ TAB_MAP = {
     5: "Wealth & Abundance",
     6: "Love Marriage & Navamsha D9",
     7: "Health & Vitality",
-    8: "Remedies Tripath System"
+    8: "Remedies Tripath System",
+    9: "Progeny Lineage & Saptamsha D7",
+    10: "Gochar Current Transits",
 }
 
 @router.post("/interpret/{chart_id}/{tab_number}")
@@ -41,7 +43,7 @@ async def generate_interpretation_stream(
     if tab_number not in TAB_MAP:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid tab number {tab_number}. Must be between 1 and 8."
+            detail=f"Invalid tab number {tab_number}. Must be between 1 and 10."
         )
 
     tab_name = TAB_MAP[tab_number]

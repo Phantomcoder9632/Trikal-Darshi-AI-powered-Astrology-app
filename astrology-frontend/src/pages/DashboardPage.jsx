@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getChart, getInterpretation } from '../services/api';
 
 // Child Components
-import KundaliChart from '../components/KundaliChart';
+import ChartSidebar from '../components/ChartSidebar';
 import PlanetTable from '../components/PlanetTable';
 import TransitBanner from '../components/TransitBanner';
 import CosmicSummary from '../components/CosmicSummary';
@@ -162,7 +162,7 @@ export default function DashboardPage() {
       </header>
 
       {/* ── Main Content ────────────────────────────────────────────────── */}
-      <main className="w-full max-w-[1280px] px-5 md:px-10 py-6 flex-1 flex flex-col">
+      <main className="w-full max-w-[1280px] mx-auto px-5 md:px-10 py-6 flex-1 flex flex-col">
         {/* Jupiter Transit Alert */}
         <TransitBanner />
 
@@ -170,17 +170,10 @@ export default function DashboardPage() {
         <div className="dashboard-grid">
           {/* Left Column: Astro-Technical Data */}
           <aside className="dashboard-sidebar flex flex-col gap-5">
-            {/* Kundali Chart Card */}
-            <div className="dashboard-card animate-up delay-1">
-              <h2 className="font-headline-md text-sm md:text-[15px] text-primary mb-4 text-center font-bold tracking-wider uppercase">
-                ✦ Rashi Chakra ✦
-              </h2>
-              <div className="kundali-svg-container">
-                <KundaliChart chartData={chartData} />
-              </div>
-            </div>
+            {/* Tab-aware Chart Sidebar — switches chart based on active tab */}
+            <ChartSidebar activeTab={activeTab} chartData={chartData} />
 
-            {/* Planet Positions Table Card */}
+            {/* Planet Positions Table Card — shown on all tabs */}
             <div className="dashboard-card overflow-hidden animate-up delay-2" style={{ padding: 0 }}>
               <PlanetTable planets={chartData?.planets} />
             </div>
@@ -234,7 +227,7 @@ export default function DashboardPage() {
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
       <footer className="w-full border-t border-outline-variant/20 bg-surface-container-lowest flex justify-center mt-12">
-        <div className="w-full max-w-[1280px] px-5 md:px-10 py-8 flex flex-col md:flex-row justify-between items-center">
+        <div className="w-full max-w-[1280px] mx-auto px-5 md:px-10 py-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex flex-col items-center md:items-start gap-2">
             <span className="font-wordmark text-primary text-[16px] tracking-wider font-semibold">
               TRIKAL DARSHI

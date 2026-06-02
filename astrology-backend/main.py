@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 # Load all environment variables
-load_dotenv()
+load_dotenv(override=True)
 
 # Setup logging
 logging.basicConfig(

@@ -75,8 +75,8 @@ export default function CosmicSummary({ summaryText, chartData }) {
           }
 
           return (
-            <li key={idx} className="relative pl-5 leading-relaxed">
-              <span className="absolute left-0 top-[3px] text-primary-container text-[10px]">✦</span>
+            <li key={idx} className="flex items-start gap-2 leading-relaxed">
+              <span className="text-primary-container text-[10px] mt-[5px] shrink-0 select-none">✦</span>
               <span className="font-body-lg text-sm text-on-surface">
                 {label && (
                   <strong className="font-bold text-primary not-italic tracking-wide uppercase text-[11px] mr-1">

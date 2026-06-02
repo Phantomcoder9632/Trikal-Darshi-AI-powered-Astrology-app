@@ -13,10 +13,28 @@ from db.database import get_db
 from services.hybrid import get_complete_chart
 from services.numerology import get_numerology
 from services.cache import cache_chart, get_cached_chart, generate_chart_cache_key
+from services.ephemeris import compute_divisional_chart, compute_gochar_chart
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Charts"])
+
+@router.get("/gochar", response_model=Dict[str, Any])
+async def get_gochar_chart(lat: float = 28.6139, lng: float = 77.2090):
+    """
+    GET /chart/gochar?lat=...&lng=...
+    Returns live real-time transit (Gochar) chart computed via Swiss Ephemeris.
+    """
+    try:
+        gochar = compute_gochar_chart(lat=lat, lng=lng)
+        return gochar
+    except Exception as e:
+        logger.error(f"Gochar endpoint failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to compute Gochar chart: {str(e)}"
+        )
+
 
 class ChartGenerateRequest(BaseModel):
     full_name: str

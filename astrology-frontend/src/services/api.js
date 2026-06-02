@@ -102,3 +102,18 @@ export async function getInterpretation(chartId, tabNumber, onChunk) {
     throw error;
   }
 }
+
+/**
+ * Fetch live Gochar (transit) chart — real-time planetary positions.
+ * GET /chart/gochar
+ */
+export async function getGochar(lat = 28.6139, lng = 77.2090) {
+  try {
+    const response = await apiClient.get('/chart/gochar', { params: { lat, lng } });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching Gochar chart:', error.response?.data || error.message);
+    throw error;
+  }
+}
+

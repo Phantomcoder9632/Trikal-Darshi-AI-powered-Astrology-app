@@ -46,7 +46,22 @@ def build_tab_prompt(
     """
     Build the full tab-specific user prompt (without RAG context).
     RAG context is prepended separately by rag/pipeline.py.
+    Each tab receives its relevant divisional chart(s) extracted from chart_data.
     """
+
+    # ── Helper: extract divisional chart JSON snippet for prompt injection ──
+    def _div_json(key: str, label: str) -> str:
+        data = chart_data.get(key)
+        if not data or not data.get("planets"):
+            return f"\n{label}: (Not available — chart data missing)\n"
+        planets_str = json.dumps(data.get("planets", []), indent=2)
+        asc = data.get("ascendant", {})
+        return (
+            f"\n{label}:\n"
+            f"  Ascendant: {asc.get('sign', 'Unknown')} (sign {asc.get('sign_num', '?')})\n"
+            f"  Planets:\n{planets_str}\n"
+        )
+
     base_context = f"""
 CHART DATA FOR {full_name}:
 {json.dumps(chart_data, indent=2)}
@@ -59,32 +74,41 @@ Important Current Transits:
 - Mars in Aries (own sign)
 """
 
+    # ── Divisional chart snippets for each tab ──────────────────────────────
+    d1_asc  = chart_data.get("ascendant", {})
+    d1_sign = d1_asc.get("sign", "Unknown")
+
     prompts = {
         1: f"""
 {base_context}
 
+CHANDRA KUNDALI (Moon Chart) DATA:
+{_div_json("chandra_kundali", "Chandra Kundali")}
+
 TASK: Generate Tab 1 — Lagna & Soul Blueprint
 
-Analyze and provide:
+Analyze BOTH the Lagna (D1) chart AND the Chandra (Moon) chart simultaneously.
+Cross-verify all findings between D1 and Chandra Kundali.
 
-A) FOUNDATION ANALYSIS
-- Lagna (ascendant) — sign, degree, lord, strength
-- Lagna lord placement — house, sign, conjunctions
+A) FOUNDATION ANALYSIS (D1 + Chandra Kundali)
+- Lagna (ascendant) — sign, degree, lord, strength in D1
+- Lagna lord placement — house, sign, conjunctions in D1
 - Moon sign and nakshatra with all 4 pada meanings
 - Nakshatra devata, shakti, and esoteric soul purpose
+- In Chandra Kundali: Which house does the Lagna fall in? Does this confirm D1 findings?
 - Atmakaraka planet identification (Jaimini system)
 - Arudha lagna — how the world perceives this person
 
-B) PLANETARY DIGNITY REPORT
+B) PLANETARY DIGNITY REPORT (D1 Cross-checked with Chandra Kundali)
 For all 9 grahas provide:
-- Sign + house position
-- Dignity: Exalted/Own/Moolatrikona/Friendly/
-  Neutral/Enemy/Debilitated
+- Sign + house position in D1
+- House position in Chandra Kundali
+- Dignity: Exalted/Own/Moolatrikona/Friendly/Neutral/Enemy/Debilitated
 - Retrograde or Combust status
 - Shadbala: Strong/Medium/Weak
 - Which houses each planet aspects
 
-C) YOGA SCAN
+C) YOGA SCAN (D1 primary, Chandra Kundali confirmation)
 List ALL active yogas found:
 - Raj yogas, Dhana yogas
 - Pancha Mahapurusha yogas if any
@@ -93,6 +117,7 @@ List ALL active yogas found:
 - Mangal Dosha — yes/no, cancellation check
 - Pitru Dosha — yes/no
 - Gand Mool Nakshatra — yes/no
+- Cross-check: Do these yogas also manifest in Chandra Kundali?
 
 D) CURRENT TIME STREAM
 - Current Mahadasha — what era of life is this?
@@ -103,7 +128,8 @@ D) CURRENT TIME STREAM
 - Key events likely in each window
 
 E) JUPITER EXALTATION PERSONAL ANALYSIS
-- Which house does Cancer fall in this chart?
+- Which house does Cancer fall in D1 chart?
+- Which house does Cancer fall in Chandra Kundali?
 - What does exalted Jupiter promise for next 13 months?
 - What must this person DO to capture this energy?
 - What would cause them to WASTE this opportunity?
@@ -201,36 +227,45 @@ D) LUCKY PARAMETERS
         4: f"""
 {base_context}
 
+D10 DASHAMSHA CHART DATA (Career Divisional Chart):
+{_div_json("dashamsha", "D10 Dashamsha")}
+
 TASK: Generate Tab 4 — Career & Dashamsha (D10)
 
-A) CAREER FOUNDATION
-- 10th house lord, sign, strength
-- All planets in or aspecting 10th house
-- D10 (Dashamsha) lagna and key career planet
-- Saturn as Karma Karaka — discipline vs exhaustion
-- Natural career direction from chart
+Analyze BOTH the D1 natal chart AND the D10 Dashamsha simultaneously.
+The D10 chart is the PRIMARY tool for career analysis.
+
+A) CAREER FOUNDATION (D1 + D10 Cross-Analysis)
+- 10th house lord, sign, strength in D1
+- All planets in or aspecting 10th house in D1
+- D10 Dashamsha lagna — what career personality does it reveal?
+- D10 10th house — the true calling from the divisional lens
+- Strongest planet in D10 — this defines professional destiny
+- Saturn as Karma Karaka — discipline vs exhaustion (D1 + D10)
+- Natural career direction from D1 + D10 combined
 
 B) JUPITER EXALTATION CAREER WINDOW
 - Which career sectors are opening RIGHT NOW
-  due to Jupiter entering Cancer exaltation?
+  due to Jupiter entering Cancer exaltation in D1?
+- What does Jupiter's position mean in the D10 chart?
 - Specific industries favored for this chart
 - This is a once-in-12-years opportunity — 
   what exact steps should be taken before 
   Jupiter leaves Cancer?
 
-C) THE GREAT SWITCH TIMING
+C) THE GREAT SWITCH TIMING (D1 Dasha + D10 analysis)
 - Best window for job change in next 24 months
 - Best window for business launch if applicable
 - Best window for promotion push
 - When to avoid major career moves
 
 D) LEADERSHIP & AMBITION ASSESSMENT
-- Leadership potential from chart indicators
+- Leadership potential from D1 and D10 indicators
 - Hidden career strengths this person doesn't use
-- Biggest career obstacle in the chart
+- Biggest career obstacle shown in D10
 - How current Dasha supports or blocks career
 
-E) 24-MONTH CAREER PREDICTION
+E) 24-MONTH CAREER PREDICTION (D1 + D10 lens)
 For each 6-month window give specific prediction:
 Jun–Nov 2026 / Dec 2026–May 2027 /
 Jun–Nov 2027 / Dec 2027–May 2028
@@ -241,27 +276,35 @@ State hard truths. Be specific. No generic content.
         5: f"""
 {base_context}
 
+D4 CHATURTHAMSA CHART DATA (Property & Assets Divisional Chart):
+{_div_json("chaturthamsa", "D4 Chaturthamsa")}
+
 TASK: Generate Tab 5 — Wealth & Abundance
 
-A) WEALTH FOUNDATION
+Analyze BOTH the D1 natal chart AND the D4 Chaturthamsa.
+D4 is the PRIMARY tool for property and fixed asset analysis.
+
+A) WEALTH FOUNDATION (D1 Primary)
 - 2nd house (accumulated wealth) full analysis:
-  lord, sign, planets, strength
+  lord, sign, planets, strength in D1
 - 11th house (income and gains) full analysis:
-  lord, sign, planets, aspects
+  lord, sign, planets, aspects in D1
 - Ashtakavarga bindhu scores for 2nd and 11th houses
   (28+ = highly favorable, below 25 = challenging)
 
-B) DHANA YOGA ANALYSIS
+B) D4 CHATURTHAMSA ANALYSIS (Property & Fixed Assets)
+- D4 Lagna — what type of property/assets are destined?
+- D4 4th house — will the native own property? Strength?
+- D4 key planets — what do they say about inheritance, land, vehicles?
+- Is 2026–2027 favorable for property acquisition per D4?
+- Compare D1 4th house with D4 4th house — do they agree?
+
+C) DHANA YOGA ANALYSIS (D1)
 - Count and name all active Dhana yogas
 - Strength of each yoga — strong/medium/weak
 - Which Dhana yoga is most powerful in this chart?
 - Is there a Daridra yoga (poverty combination)?
   If yes, how severe and what neutralizes it?
-
-C) PROPERTY & REAL ESTATE (4th house)
-- 4th house analysis for property potential
-- Jupiter exaltation impact on property matters
-- Is 2026-2027 favorable for property purchase?
 
 D) WEALTH BUILDING WINDOWS 2026-2028
 - Specific best months to invest
@@ -280,67 +323,87 @@ E) HARD TRUTHS ABOUT MONEY
         6: f"""
 {base_context}
 
+D9 NAVAMSHA CHART DATA (Marriage & Soul Dharma):
+{_div_json("navamsha", "D9 Navamsha")}
+
+D7 SAPTAMSHA CHART DATA (Progeny & Relationships):
+{_div_json("saptamsha", "D7 Saptamsha")}
+
 TASK: Generate Tab 6 — Love, Marriage & Navamsha (D9)
 
-A) RELATIONSHIP FOUNDATION
-- 7th house lord, sign, strength
-- All planets in or aspecting 7th house
+Analyze D1 + D9 Navamsha + D7 Saptamsha simultaneously.
+
+A) RELATIONSHIP FOUNDATION (D1)
+- 7th house lord, sign, strength in D1
+- All planets in or aspecting 7th house in D1
 - Venus placement, dignity, strength
   (Venus is the natural karaka for love)
 - Current Dasha — does it support or block 
   marriage/relationship?
 
-B) NAVAMSHA (D9) ANALYSIS
-- D9 7th house — quality of marriage
-- D9 lagna — soul dharma in relationships
-- Are benefics or malefics strong in D9?
-- Vargottama planets (same sign in D1 and D9)
-  — these are extra powerful
+B) NAVAMSHA (D9) DEEP ANALYSIS
+- D9 Lagna — the soul's dharma in relationships
+- D9 7th house lord and sign — quality of marriage destiny
+- Are benefics or malefics dominant in D9?
+- Vargottama planets (same sign in D1 and D9) — extra powerful
+- Venus in D9 — marital happiness indicator
+- Moon in D9 — emotional fulfillment in marriage
 
-C) SPOUSE CHARACTERISTICS
-- Upapada lagna analysis — spouse personality
+C) SPOUSE CHARACTERISTICS (D1 + D9)
+- Upapada lagna analysis (D1) — spouse personality
+- D9 7th house — what does the soul-level spouse look like?
 - Direction spouse may come from
 - Profession likely for spouse
-- Physical characteristics from 7th house sign
+- Physical characteristics from 7th house sign in D9
 
-D) MARRIAGE TIMING
+D) MARRIAGE TIMING (D1 Dasha + D9 confirmation)
 - Is current Dasha/Antardasha period supporting 
   marriage? Yes/no and why
 - Best marriage timing window in 2026-2028
 - Any delays indicated? What causes them?
 - Mangal Dosha impact on marriage if present
+- Does D9 confirm or contradict D1 marriage timing?
 
 E) LOVE & COMPATIBILITY ADVICE
 - What Rashi and Nakshatra is most compatible?
-- What type of partner suits this chart best?
+- What type of partner suits D1 + D9 best?
 - Biggest relationship pattern to overcome
 - What Jupiter exaltation means for love life now
+- Brief D7 Saptamsha note: children prospects in this chart
 """,
 
         7: f"""
 {base_context}
 
+D30 TRIMSAMSA CHART DATA (Health, Afflictions & Misfortunes):
+{_div_json("trimsamsa", "D30 Trimsamsa")}
+
+SURYA KUNDALI (Sun Chart) DATA:
+{_div_json("surya_kundali", "Surya Kundali")}
+
 TASK: Generate Tab 7 — Health & Vitality
 
-A) HEALTH FOUNDATION
-- Lagna lord strength (primary health indicator)
-- Lagna sign — which body parts ruled, 
-  what to be careful about
-- 6th house (disease) full analysis
-- 8th house (chronic/hidden issues) analysis
-- Overall vitality assessment
+Analyze D1 natal chart + D30 Trimsamsa + Surya Kundali.
+D30 is the PRIMARY tool for disease prediction.
 
-B) MENTAL HEALTH ASSESSMENT
-- Moon condition — strong or afflicted?
-- Mercury placement — anxiety tendencies?
-- Moon + Mercury combination analysis
-- Saturn influence on mental patterns
-- Any indicators of stress, overthinking, 
-  or emotional overwhelm?
+A) HEALTH FOUNDATION (D1 + D30 Cross-Analysis)
+- Lagna lord strength (primary health indicator in D1)
+- Lagna sign — which body parts ruled, what to be careful about
+- 6th house (disease) full analysis in D1
+- 8th house (chronic/hidden issues) analysis in D1
+- D30 Trimsamsa lagna — this reveals predisposition to diseases
+- Afflicted planets in D30 — these are chronic/serious health warnings
+- Surya Kundali 6th and 8th house — confirms/reveals health patterns
 
-C) PLANETARY HEALTH WARNINGS
-For any afflicted planet — what health area 
-does it affect?
+B) MENTAL HEALTH ASSESSMENT (D1 + D30)
+- Moon condition in D1 — strong or afflicted?
+- Moon in D30 — emotional/psychological afflictions?
+- Mercury placement — anxiety tendencies in D1 and D30?
+- Saturn influence on mental patterns (D1 + Surya Kundali)
+- Any indicators of stress, overthinking, or emotional overwhelm?
+
+C) PLANETARY HEALTH WARNINGS (D30 Primary + D1 confirmation)
+For any afflicted planet in D30 — what health area does it affect?
 - Sun afflicted: heart, spine, eyes
 - Moon afflicted: mind, fluids, hormones
 - Mars afflicted: blood, accidents, inflammation
@@ -350,17 +413,19 @@ does it affect?
 - Saturn afflicted: bones, joints, chronic issues
 - Rahu afflicted: mysterious/unusual illnesses
 - Ketu afflicted: surgeries, past life illness
+Compare D30 afflictions with D1 to gauge severity.
 
 D) CURRENT PERIOD HEALTH WATCH
 - Any health warnings in current Dasha period?
 - Saturn in Pisces — feet, lymph, immune system
-- What months in 2026-2027 need extra health care?
+- What months in 2026–2027 need extra health care?
+- Based on D30 afflictions — what is the top urgent health concern?
 
 E) VITALITY BOOSTING ADVICE
 - Best exercise type for this Lagna sign
-- Dietary advice based on planetary rulers
+- Dietary advice based on planetary rulers (Surya Kundali for Sun-ruled vitality)
 - One specific health habit to start immediately
-- One specific health risk to actively prevent
+- One specific health risk to actively prevent (from D30 warning)
 """,
 
         8: f"""
@@ -417,6 +482,116 @@ TRACK 3 — NUMEROLOGY CORRECTIONS
 - Lucky number grid suggestion for wallet or home
 - Best days this month to start new things
   based on personal numbers
+""",
+
+        9: f"""
+{base_context}
+
+D7 SAPTAMSHA CHART DATA (Progeny, Children & Creative Legacy):
+{_div_json("saptamsha", "D7 Saptamsha")}
+
+D9 NAVAMSHA DATA (for relationship cross-reference):
+{_div_json("navamsha", "D9 Navamsha")}
+
+TASK: Generate Tab 9 — Progeny, Lineage & Saptamsha (D7)
+
+Analyze D7 Saptamsha as the PRIMARY chart alongside D1.
+D7 governs children, progeny, creative output, and legacy.
+
+A) D7 SAPTAMSHA FOUNDATION
+- D7 Lagna — the progeny personality and type of offspring destined
+- D7 5th house — this is the PRIMARY house of children in D7
+- D7 5th house lord and its placement — children fortune?
+- Jupiter's position in D7 (Jupiter = natural karaka for children)
+- Any malefic planets afflicting D7 5th house?
+
+B) CHILDREN PROSPECTS (D1 + D7 Cross-Analysis)
+- D1 5th house: lord, sign, planets — natal children promise
+- D1 Jupiter: dignity, placement — how strong is the karaka?
+- D7 5th house confirms D1 — do they agree or contradict?
+- Putrakaraka (Jaimini) — the atmakaraka for progeny
+- Are there any obstructions to children?
+  (Ketu in D7 5th, Saturn aspects, afflictions)
+- What specific remedies can activate children promise?
+
+C) TIMING OF CHILDREN
+- Current Dasha period — does it support progeny?
+- Best Dasha/Antardasha windows for conception 2026–2028
+- Does Jupiter's transit into Cancer (exaltation) 2026 
+  trigger the 5th house in D1 or D7?
+- Are 2026–2027 favorable years for starting a family?
+
+D) CREATIVE LEGACY & LINEAGE
+- 5th house also rules creativity and intelligence
+- What creative abilities does this chart carry?
+- D7 legacy indicators — will the native leave a strong lineage?
+- Artistic or intellectual talents from 5th house planets
+
+E) REMEDIES FOR PROGENY (if obstacles exist)
+- Specific Vedic upayas for Jupiter (children karaka)
+- Lal Kitab farmaan for the afflicting planet
+- Putra Gopala mantra — how many, when, duration
+- What dietary or behavioral changes support progeny karma?
+
+Be specific. Anchor all findings to D7 and D1 chart data.
+""",
+
+        10: f"""
+{base_context}
+
+REAL-TIME GOCHAR CHART DATA (Current Transit Positions):
+{_div_json("gochar", "Gochar (Current Transits)")}
+
+TASK: Generate Tab 10 — Gochar (Current Planetary Transits)
+
+Use the REAL-TIME GOCHAR (transit) chart + natal D1 chart.
+Compare current planetary positions against the natal chart.
+Transit analysis is the KEY tool for timing predictions.
+
+A) CURRENT TRANSIT OVERVIEW
+- List every transiting planet:
+  Current sign in transit → Over which natal house does it transit?
+- For each planet: Is this transit favorable, challenging, or neutral?
+- Most powerful transit of the moment — identify it and explain why
+
+B) JUPITER TRANSIT ANALYSIS (Most Important)
+- Jupiter is entering Cancer (exaltation) — which natal house?
+- What specific life area does this exalted Jupiter activate?
+- Duration of this transit (Jupiter stays ~13 months in a sign)
+- Which natal planets does transiting Jupiter aspect?
+  (Jupiter aspects 5th, 7th, 9th from its position)
+- Predictions: What events will this Jupiter transit trigger?
+- Timeline: Month-by-month forecast for Jupiter's journey through this house
+
+C) SATURN TRANSIT ANALYSIS (Sade Sati / Ashtama Check)
+- Saturn is in Pisces — over which natal house?
+- Is this Sade Sati (Saturn transiting 12th/1st/2nd from Moon)?
+- Is this Ashtama Shani (Saturn over natal 8th from Moon)?
+- Saturn aspects 3rd, 7th, 10th from its transit position — what do these hit?
+- Duration and intensity: How long and how serious?
+
+D) RAHU-KETU TRANSIT ANALYSIS
+- Rahu in Aquarius — which natal house? What does this activate?
+- Ketu in Leo — which natal house? Past karma/detachment from where?
+- Rahu-Ketu axis: What is the karmic lesson axis for the next 18 months?
+- Any natal planets conjunct transiting Rahu or Ketu? Significant!
+
+E) MONTHLY TRANSIT FORECAST (Next 6 Months)
+Provide a month-by-month forecast:
+- June 2026: Key events based on transits
+- July 2026: Key events
+- August 2026: Key events
+- September 2026: Key events
+- October 2026: Key events
+- November 2026: Key events
+
+F) GOCHARA VEDHA CHECK
+- Identify any Vedha (cancellation of transit effects) in this chart
+- Are any favorable transits blocked by Vedha planets?
+- Final transit strength summary: Overall 2026 forecast rating
+
+Be highly specific. Every prediction must name the transiting planet,
+the natal house being activated, and the expected life event.
 """,
     }
 

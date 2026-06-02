@@ -82,9 +82,19 @@ body {
     align-items: flex-start;
   }
   .dashboard-sidebar {
-    width: 420px;
-    min-width: 420px;
+    width: 380px;
+    min-width: 340px;
+    max-width: 420px;
     flex-shrink: 0;
+    position: sticky;
+    top: 72px; /* below fixed header */
+    max-height: calc(100vh - 88px);
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .dashboard-sidebar::-webkit-scrollbar {
+    display: none;
   }
   .dashboard-content {
     flex: 1;
@@ -126,9 +136,12 @@ body {
 .kundali-svg-container {
   padding-top: 8px;
   width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
   display: flex;
   justify-content: center;
   align-items: center;
+  aspect-ratio: 1 / 1;
 }
 
 
@@ -352,7 +365,7 @@ body {
 
 @media (min-width: 768px) {
   .blueprint-card {
-    padding: 40px;
+    padding: 44px;
   }
 }
 
@@ -418,6 +431,7 @@ body {
   border-bottom: 1px solid rgba(211, 196, 176, 0.6);
   transition: border-bottom-color 0.3s ease;
   width: 100%;
+  padding: 2px 0;
 }
 
 .blueprint-input-row:focus-within {
@@ -426,7 +440,9 @@ body {
 
 .blueprint-input-row .blueprint-input {
   border-bottom: none;
-  padding: 10px 0;
+  padding: 8px 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .blueprint-pill-container {

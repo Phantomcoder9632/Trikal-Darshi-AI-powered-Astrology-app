@@ -7,6 +7,7 @@ from db.database import get_db_pool
 from services import astrologyapi as external
 from services import ephemeris as local_eph
 from services import numerology as local_num
+from services.ephemeris import compute_divisional_chart, compute_gochar_chart
 
 logger = logging.getLogger(__name__)
 
@@ -101,13 +102,27 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
             )
 
             logger.info("Successfully calculated chart using external AstrologyAPI.")
-            
+
+            # Compute divisional charts locally from natal planet longitudes
+            # (AstrologyAPI D9/D10 endpoints return image URLs, not planet data)
+            natal_planets = planets if isinstance(planets, list) else planets.get("planets", [])
+            natal_asc     = ascendant if isinstance(ascendant, dict) else {}
+
+            d9_chart   = compute_divisional_chart(natal_planets, natal_asc, "D9")
+            d10_chart  = compute_divisional_chart(natal_planets, natal_asc, "D10")
+            d4_chart   = compute_divisional_chart(natal_planets, natal_asc, "D4")
+            d7_chart   = compute_divisional_chart(natal_planets, natal_asc, "D7")
+            d30_chart  = compute_divisional_chart(natal_planets, natal_asc, "D30")
+            chandra_chart = compute_divisional_chart(natal_planets, natal_asc, "chandra")
+            surya_chart   = compute_divisional_chart(natal_planets, natal_asc, "surya")
+            gochar_chart  = compute_gochar_chart(lat, lng)
+
             # Combine into a single comprehensive dictionary response
             return {
                 "source": "astrologyapi",
-                "planets": planets,
-                "ascendant": ascendant,
-                "houses": ascendant.get("houses") or {},
+                "planets": natal_planets,
+                "ascendant": natal_asc,
+                "houses": natal_asc.get("houses") or {},
                 "nakshatra": nakshatra,
                 "dasha": dasha,
                 "dasha_periods": dasha_periods,
@@ -117,8 +132,14 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
                 "lalkitab_remedies": remedies,
                 "kalsarp": kalsarp,
                 "mangal_dosha": mangal,
-                "navamsha": navamsha,
-                "dashamsha": dashamsha,
+                "navamsha": d9_chart,
+                "dashamsha": d10_chart,
+                "chaturthamsa": d4_chart,
+                "saptamsha": d7_chart,
+                "trimsamsa": d30_chart,
+                "chandra_kundali": chandra_chart,
+                "surya_kundali": surya_chart,
+                "gochar": gochar_chart,
                 "numerology": numerology
             }
 
@@ -165,10 +186,23 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
 
         logger.info("Successfully calculated chart & doshas using local Swiss Ephemeris fallback engine.")
 
+        # Compute all divisional charts from local natal data
+        natal_planets = local_chart["planets"]
+        natal_asc     = local_chart["ascendant"]
+
+        d9_chart   = compute_divisional_chart(natal_planets, natal_asc, "D9")
+        d10_chart  = compute_divisional_chart(natal_planets, natal_asc, "D10")
+        d4_chart   = compute_divisional_chart(natal_planets, natal_asc, "D4")
+        d7_chart   = compute_divisional_chart(natal_planets, natal_asc, "D7")
+        d30_chart  = compute_divisional_chart(natal_planets, natal_asc, "D30")
+        chandra_chart = compute_divisional_chart(natal_planets, natal_asc, "chandra")
+        surya_chart   = compute_divisional_chart(natal_planets, natal_asc, "surya")
+        gochar_chart  = compute_gochar_chart(lat, lng)
+
         return {
             "source": "ephemeris",
-            "planets": local_chart["planets"],
-            "ascendant": local_chart["ascendant"],
+            "planets": natal_planets,
+            "ascendant": natal_asc,
             "houses": local_chart["houses"],
             "nakshatra": moon_nakshatra,
             "dasha": local_chart["dasha"],
@@ -180,8 +214,14 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
             "kalsarp": kalsarp_res,
             "mangal_dosha": mangal_res,
             "pitru_dosha": pitru_res,
-            "navamsha": {},
-            "dashamsha": {},
+            "navamsha": d9_chart,
+            "dashamsha": d10_chart,
+            "chaturthamsa": d4_chart,
+            "saptamsha": d7_chart,
+            "trimsamsa": d30_chart,
+            "chandra_kundali": chandra_chart,
+            "surya_kundali": surya_chart,
+            "gochar": gochar_chart,
             "numerology": local_numerology
         }
 

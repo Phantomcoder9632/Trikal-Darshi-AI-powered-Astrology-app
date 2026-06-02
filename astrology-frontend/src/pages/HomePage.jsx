@@ -125,20 +125,18 @@ export default function HomePage() {
               </div>
 
               {/* Time of Birth & Confidence */}
-              <div className="blueprint-form-group" style={{ gap: '10px' }}>
-                <div className="blueprint-form-group" style={{ gap: '6px' }}>
-                  <label className="blueprint-label">
-                    Time of Birth *
-                  </label>
-                  <input
-                    type="time"
-                    name="time_of_birth"
-                    value={formData.time_of_birth}
-                    onChange={handleChange}
-                    required
-                    className="blueprint-input"
-                  />
-                </div>
+              <div className="blueprint-form-group">
+                <label className="blueprint-label">
+                  Time of Birth *
+                </label>
+                <input
+                  type="time"
+                  name="time_of_birth"
+                  value={formData.time_of_birth}
+                  onChange={handleChange}
+                  required
+                  className="blueprint-input"
+                />
                 <div className="blueprint-pill-container">
                   {['exact', 'approximate', 'unknown'].map((val) => {
                     const isActive = formData.birth_time_confidence === val;

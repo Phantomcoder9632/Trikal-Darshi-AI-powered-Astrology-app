@@ -536,3 +536,302 @@ def calculate_gand_mool(planets: List[Dict[str, Any]]) -> Dict[str, Any]:
             "present": False,
             "message": f"Your birth Nakshatra ({nak}) is not a Gand Mool Nakshatra."
         }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DIVISIONAL CHART COMPUTATION (Shodashvarga)
+# All formulas follow classical Parashari Vedic Astrology rules.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _get_divisional_sign(full_degree: float, divisor: int, chart_type: str) -> int:
+    """
+    Compute the sign number (1–12) for a planet in a divisional chart.
+    Uses Parashari Varga formulas.
+    
+    Args:
+        full_degree: Sidereal longitude (0–360°)
+        divisor: Number of divisions (4, 7, 9, 10, 30, etc.)
+        chart_type: e.g. "D4", "D7", "D9", "D10", "D30"
+    
+    Returns:
+        Sign number 1–12 in the divisional chart.
+    """
+    sign_idx = int(full_degree // 30)   # 0–11 (which natal sign, 0=Aries)
+    deg_in_sign = full_degree % 30       # 0–30° within the sign
+
+    if chart_type == "D9":
+        # Each sign divided into 9 parts of 3°20' each
+        # Navamsha: mapping by triplicity — Fire/Earth/Air/Water sign groups
+        pada = int(deg_in_sign // (30.0 / 9))  # 0–8
+        fire_signs   = [0, 4, 8]   # Aries, Leo, Sagittarius
+        earth_signs  = [1, 5, 9]   # Taurus, Virgo, Capricorn
+        air_signs    = [2, 6, 10]  # Gemini, Libra, Aquarius
+        water_signs  = [3, 7, 11]  # Cancer, Scorpio, Pisces
+        if sign_idx in fire_signs:
+            start_sign = 0  # Aries
+        elif sign_idx in earth_signs:
+            start_sign = 9  # Capricorn
+        elif sign_idx in air_signs:
+            start_sign = 6  # Libra
+        else:
+            start_sign = 3  # Cancer
+        return ((start_sign + pada) % 12) + 1
+
+    elif chart_type == "D10":
+        # Each sign divided into 10 parts of 3° each
+        part = int(deg_in_sign // 3)  # 0–9
+        # Odd signs start from own sign, even signs start from 9th sign from it
+        if sign_idx % 2 == 0:  # Odd signs (1,3,5,7,9,11 → index 0,2,4,6,8,10)
+            start_sign = sign_idx
+        else:                   # Even signs (2,4,6,8,10,12 → index 1,3,5,7,9,11)
+            start_sign = (sign_idx + 8) % 12  # 9th sign from it
+        return ((start_sign + part) % 12) + 1
+
+    elif chart_type == "D4":
+        # Each sign divided into 4 parts of 7°30' each
+        part = int(deg_in_sign // 7.5)  # 0–3
+        # Fixed (Sthira) signs: start from own sign
+        # Movable (Chara) signs: start from own sign
+        # Common (Dwisvabhava) signs: start from 9th from own sign
+        movable  = [0, 3, 6, 9]    # Aries, Cancer, Libra, Capricorn
+        fixed    = [1, 4, 7, 10]   # Taurus, Leo, Scorpio, Aquarius
+        # For D4: Movable → Aries cycle, Fixed → Cancer cycle, Common → Libra cycle
+        if sign_idx in movable:
+            start_sign = 0   # Aries
+        elif sign_idx in fixed:
+            start_sign = 3   # Cancer
+        else:
+            start_sign = 6   # Libra
+        return ((start_sign + part) % 12) + 1
+
+    elif chart_type == "D7":
+        # Each sign divided into 7 parts of 4°17'8.6" each (~4.2857°)
+        part = int(deg_in_sign // (30.0 / 7))  # 0–6
+        # Odd signs: start from own sign; Even signs: start from 7th sign
+        if sign_idx % 2 == 0:  # Odd signs (index 0,2,4,6,8,10)
+            start_sign = sign_idx
+        else:                   # Even signs (index 1,3,5,7,9,11)
+            start_sign = (sign_idx + 6) % 12  # 7th sign from it
+        return ((start_sign + part) % 12) + 1
+
+    elif chart_type == "D30":
+        # Each sign divided into 5 unequal parts (Trimsamsa)
+        # Odd signs: 5°,5°,8°,7°,5° → rulers: Mars,Saturn,Jupiter,Mercury,Venus
+        # Even signs: 5°,7°,8°,5°,5° → rulers: Venus,Mercury,Jupiter,Saturn,Mars
+        # The D30 sign is determined by the ruling planet's sign(s)
+        ODD_BOUNDARIES  = [5, 10, 18, 25, 30]   # Mars, Saturn, Jupiter, Mercury, Venus
+        EVEN_BOUNDARIES = [5, 12, 20, 25, 30]   # Venus, Mercury, Jupiter, Saturn, Mars
+        ODD_PLANET_SIGNS  = [1, 10, 9, 3, 2]    # Mars=Aries/Scorpio→1, Saturn=Capricorn→10...
+        EVEN_PLANET_SIGNS = [2, 6, 12, 11, 8]   # Venus=Taurus→2, Mercury=Virgo→6...
+        
+        if sign_idx % 2 == 0:  # Odd signs
+            bounds   = ODD_BOUNDARIES
+            p_signs  = ODD_PLANET_SIGNS
+        else:                   # Even signs
+            bounds   = EVEN_BOUNDARIES
+            p_signs  = EVEN_PLANET_SIGNS
+        
+        for i, boundary in enumerate(bounds):
+            if deg_in_sign < boundary:
+                return p_signs[i]
+        return p_signs[-1]
+
+    else:
+        # Generic formula: divide sign into N equal parts, count from own sign
+        part = int(deg_in_sign // (30.0 / divisor))
+        return ((sign_idx * divisor + part) % 12) + 1
+
+
+def compute_divisional_chart(
+    planets: List[Dict[str, Any]],
+    ascendant: Dict[str, Any],
+    chart_type: str,
+) -> Dict[str, Any]:
+    """
+    Compute a complete Varga (divisional) chart from natal planet longitudes.
+    
+    Supported chart_types: "D4", "D7", "D9", "D10", "D30"
+    Also supports:
+        "chandra" — Moon as Ascendant (Moon chart)
+        "surya"   — Sun as Ascendant (Sun chart)
+    
+    Returns a dict with:
+        - "ascendant": {"sign": str, "sign_num": int}
+        - "planets": list of {"name", "sign", "sign_num", "house", "fullDegree", "isRetrograde"}
+        - "chart_type": the input chart_type
+    """
+    divisor_map = {"D4": 4, "D7": 7, "D9": 9, "D10": 10, "D30": 30}
+
+    # ── Special cases: Chandra / Surya Kundali ───────────────────────────────
+    if chart_type in ("chandra", "surya"):
+        # Find the reference planet (Moon or Sun)
+        ref_name = "Moon" if chart_type == "chandra" else "Sun"
+        ref_planet = next((p for p in planets if p["name"] == ref_name), None)
+        if not ref_planet:
+            return {"chart_type": chart_type, "ascendant": {}, "planets": []}
+
+        ref_sign_idx = ZODIAC_SIGNS.index(ref_planet["sign"])  # 0–11
+        ref_sign_num = ref_sign_idx + 1                          # 1–12
+
+        chart_planets = []
+        for p in planets:
+            p_sign_idx = ZODIAC_SIGNS.index(p["sign"])
+            p_sign_num = p_sign_idx + 1
+            # House = how many signs forward from reference sign
+            house_num = ((p_sign_num - ref_sign_num + 12) % 12) + 1
+            chart_planets.append({
+                "name": p["name"],
+                "sign": p["sign"],
+                "sign_num": p_sign_num,
+                "house": house_num,
+                "fullDegree": p.get("fullDegree", 0.0),
+                "normDegree": p.get("normDegree", 0.0),
+                "isRetrograde": p.get("isRetrograde", "false"),
+            })
+
+        return {
+            "chart_type": chart_type,
+            "ascendant": {
+                "sign": ref_planet["sign"],
+                "sign_num": ref_sign_num,
+            },
+            "planets": chart_planets,
+        }
+
+    # ── Standard divisional chart ────────────────────────────────────────────
+    divisor = divisor_map.get(chart_type, 9)
+
+    # Compute Ascendant in divisional chart
+    asc_full_degree = ascendant.get("full_degree") or ascendant.get("fullDegree", 0.0)
+    # Reconstruct full degree from sign + normDegree if full_degree missing
+    if not asc_full_degree and ascendant.get("sign"):
+        sign_idx = ZODIAC_SIGNS.index(ascendant["sign"])
+        asc_full_degree = sign_idx * 30 + ascendant.get("degree", ascendant.get("normDegree", 0))
+    
+    asc_sign_num = _get_divisional_sign(float(asc_full_degree), divisor, chart_type)
+    asc_sign     = ZODIAC_SIGNS[asc_sign_num - 1]
+
+    # Compute each planet's divisional sign and house
+    chart_planets = []
+    for p in planets:
+        full_deg = p.get("fullDegree", 0.0)
+        div_sign_num = _get_divisional_sign(float(full_deg), divisor, chart_type)
+        div_sign     = ZODIAC_SIGNS[div_sign_num - 1]
+        # House in divisional chart (whole-sign from divisional ascendant)
+        house_num = ((div_sign_num - asc_sign_num + 12) % 12) + 1
+
+        chart_planets.append({
+            "name": p["name"],
+            "sign": div_sign,
+            "sign_num": div_sign_num,
+            "house": house_num,
+            "fullDegree": full_deg,
+            "normDegree": p.get("normDegree", 0.0),
+            "isRetrograde": p.get("isRetrograde", "false"),
+        })
+
+    return {
+        "chart_type": chart_type,
+        "ascendant": {
+            "sign": asc_sign,
+            "sign_num": asc_sign_num,
+        },
+        "planets": chart_planets,
+    }
+
+
+def compute_gochar_chart(lat: float = 28.6139, lng: float = 77.2090) -> Dict[str, Any]:
+    """
+    Compute the current Gochar (Transit) chart — real-time planetary positions
+    for the current date/time using Swiss Ephemeris.
+    
+    Returns same format as natal chart (ascendant + planets) but for today's sky.
+    """
+    try:
+        from datetime import timezone as tz
+        now_utc = datetime.now(tz.utc)
+
+        jd_now = swe.julday(
+            now_utc.year, now_utc.month, now_utc.day,
+            now_utc.hour + now_utc.minute / 60.0
+        )
+
+        swe.set_sid_mode(swe.SIDM_LAHIRI)
+        ayan_val = swe.get_ayanamsa_ut(jd_now)
+
+        # Current ascendant based on a default reference location (Delhi)
+        # since we don't have the user's current location here
+        try:
+            cusps, ascmc = swe.houses(jd_now, lat, lng, b'P')
+        except Exception:
+            cusps, ascmc = swe.houses(jd_now, lat, lng, b'E')
+        
+        sidereal_cusps = [0.0] + [(c - ayan_val) % 360.0 for c in cusps]
+        sid_asc        = (ascmc[0] - ayan_val) % 360.0
+        asc_details    = get_zodiac_details(sid_asc)
+
+        calc_flags = swe.FLG_SWIEPH | swe.FLG_SPEED
+        planets    = []
+
+        for name, p_id in PLANET_IDS.items():
+            calc_result  = swe.calc_ut(jd_now, p_id, calc_flags)
+            position     = calc_result[0]
+            tropical_lon = position[0]
+            speed        = position[3]
+            sidereal_lon = (tropical_lon - ayan_val) % 360.0
+            details      = get_zodiac_details(sidereal_lon)
+            is_retro     = "true" if speed < 0 else "false"
+            house_num    = find_placidus_house(sidereal_lon, sidereal_cusps)
+
+            planets.append({
+                "name":         name,
+                "fullDegree":   round(sidereal_lon, 4),
+                "normDegree":   details["normDegree"],
+                "speed":        round(speed, 4),
+                "isRetrograde": is_retro,
+                "sign":         details["sign"],
+                "sign_lord":    details["sign_lord"],
+                "house":        house_num,
+                "nakshatra":    details["nakshatra"],
+                "nakshatra_lord": details["nakshatra_lord"],
+                "nakshatra_pada": details["nakshatra_pada"],
+            })
+
+        # Ketu = opposite Rahu
+        rahu = next(p for p in planets if p["name"] == "Rahu")
+        ketu_lon     = (rahu["fullDegree"] + 180.0) % 360.0
+        ketu_details = get_zodiac_details(ketu_lon)
+        ketu_house   = find_placidus_house(ketu_lon, sidereal_cusps)
+        planets.append({
+            "name":         "Ketu",
+            "fullDegree":   round(ketu_lon, 4),
+            "normDegree":   ketu_details["normDegree"],
+            "speed":        rahu["speed"],
+            "isRetrograde": "true",
+            "sign":         ketu_details["sign"],
+            "sign_lord":    ketu_details["sign_lord"],
+            "house":        ketu_house,
+            "nakshatra":    ketu_details["nakshatra"],
+            "nakshatra_lord": ketu_details["nakshatra_lord"],
+            "nakshatra_pada": ketu_details["nakshatra_pada"],
+        })
+
+        logger.info(f"Gochar chart computed: {now_utc.strftime('%Y-%m-%d %H:%M UTC')}")
+
+        return {
+            "chart_type": "gochar",
+            "computed_at": now_utc.isoformat(),
+            "ascendant": {
+                "sign":     asc_details["sign"],
+                "sign_num": int(sid_asc // 30) + 1,
+                "degree":   asc_details["normDegree"],
+                "full_degree": round(sid_asc, 4),
+            },
+            "planets": planets,
+        }
+
+    except Exception as e:
+        logger.error(f"compute_gochar_chart failed: {e}", exc_info=True)
+        return {"chart_type": "gochar", "error": str(e), "ascendant": {}, "planets": []}
+    finally:
+        swe.close()

@@ -68,7 +68,7 @@ class InterpretationRequest(BaseModel):
     chart_id: UUID
     tab_number: int = Field(..., ge=1, le=8, description="Vedic interpretation tab index from 1 to 8")
     tab_name: str = Field(..., min_length=1, max_length=100, examples=["Personality & Life Path"])
-    regenerate: bool = Field(False, description="Set to true to force regenerate with DeepSeek even if cached in DB")
+    regenerate: bool = Field(False, description="Set to true to force regenerate even if cached in DB")
 
 class InterpretationResponse(BaseModel):
     """

@@ -55,14 +55,14 @@ Enter your exact birth details. Watch as the cosmos reveals itself — from your
 <div align="center">
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│   🕉️  VEDIC JYOTISH  +  📖 LAL KITAB  +  🔢 NUMEROLOGY    │
+┌────────────────────────────────────────────────────────────┐
+│                                                            │
+│   🕉️  VEDIC JYOTISH  +  📖 LAL KITAB  +  🔢 NUMEROLOGY   │
 │                            │                               │
 │                            ▼                               │
 │           ┌──────────────────────────────┐                 │
 │           │    Swiss Ephemeris Engine    │                 │
-│           │  (Precision to arc-seconds) │                 │
+│           │  (Precision to arc-seconds)  │                  │
 │           └──────────────┬───────────────┘                 │
 │                          │                                 │
 │              ┌───────────▼──────────┐                      │
@@ -74,11 +74,22 @@ Enter your exact birth details. Watch as the cosmos reveals itself — from your
 │         ┌────────────────▼───────────────┐                 │
 │         │   10-Tab Personalized Reading  │                 │
 │         └────────────────────────────────┘                 │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+│                                                            │
+└────────────────────────────────────────────────────────────┘
 ```
 
 </div>
+
+---
+
+## 🚀 Recent Key Enhancements
+
+Here are the latest architectural and visual updates implemented for maximum reliability and Vedic consistency:
+
+* **Robust Multi-Stage Fallback Cascade**: Upgraded the fallback RAG pipeline to try multiple OpenRouter free models sequentially (`meta-llama/llama-3.3-70b-instruct:free`, `google/gemma-3-27b-it:free`, `meta-llama/llama-3-8b-instruct:free`, and `openrouter/free`) in case of upstream rate-limiting or service unavailability.
+* **Unified Vedic Whole-Sign House System**: Replaced the Western Placidus house placement calculations for planets in both local Swiss Ephemeris (`ephemeris.py`) and API reconciliation engine (`hybrid.py`) with the standard Vedic Whole-Sign house mapping relative to the Lagna, eliminating data contradictions (such as Rahu in Aries H12 instead of H1).
+* **Corrected North Indian SVG Layouts**: Fixed a clockwise visual rendering bug in both [`DivisionalChart.jsx`](file:///d:/AstrologyApp/astrology-frontend/src/components/DivisionalChart.jsx) and [`KundaliChart.jsx`](file:///d:/AstrologyApp/astrology-frontend/src/components/KundaliChart.jsx) by swapping the SVG coordinates of houses 2–12 back to the traditional counter-clockwise North Indian sequence.
+* **Bilingual Planet Naming in AI Reports**: Updated `SYSTEM_PROMPT` rules to enforce bilingual planetary references in generated AI interpretations (e.g. `Budh/Bu (Mercury)`, `Guru/Gu (Jupiter)`) to match the visual Sanskrit abbreviations shown in the SVG chart nodes.
 
 ---
 

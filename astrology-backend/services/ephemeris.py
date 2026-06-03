@@ -295,7 +295,12 @@ def calculate_chart_fallback(
             if name == "Moon":
                 moon_sid_lon = sidereal_lon
 
-            house_placement = find_placidus_house(sidereal_lon, sidereal_cusps)
+            # Whole-Sign house placement
+            p_sign_idx = ZODIAC_SIGNS.index(details["sign"])
+            p_sign_num = p_sign_idx + 1
+            asc_sign_idx = ZODIAC_SIGNS.index(asc_details["sign"])
+            asc_sign_num = asc_sign_idx + 1
+            house_placement = ((p_sign_num - asc_sign_num + 12) % 12) + 1
 
             planets.append({
                 "name":            name,
@@ -315,7 +320,13 @@ def calculate_chart_fallback(
         rahu         = next(p for p in planets if p["name"] == "Rahu")
         ketu_sid     = (rahu["fullDegree"] + 180.0) % 360.0
         ketu_details = get_zodiac_details(ketu_sid)
-        ketu_house   = find_placidus_house(ketu_sid, sidereal_cusps)
+        
+        # Whole-Sign house placement for Ketu
+        ketu_sign_idx = ZODIAC_SIGNS.index(ketu_details["sign"])
+        ketu_sign_num = ketu_sign_idx + 1
+        asc_sign_idx = ZODIAC_SIGNS.index(asc_details["sign"])
+        asc_sign_num = asc_sign_idx + 1
+        ketu_house = ((ketu_sign_num - asc_sign_num + 12) % 12) + 1
 
         planets.append({
             "name":            "Ketu",

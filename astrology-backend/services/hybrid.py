@@ -133,6 +133,20 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
             surya_chart   = compute_divisional_chart(natal_planets, natal_asc, "surya")
             gochar_chart  = compute_gochar_chart(lat, lng)
 
+            # Force Whole-Sign house calculation for all natal planets
+            # to prevent Placidus/Vedic contradictions (e.g. Rahu in Aries H12 for Aries Lagna)
+            asc_sign = natal_asc.get("sign")
+            if asc_sign in local_eph.ZODIAC_SIGNS:
+                asc_sign_idx = local_eph.ZODIAC_SIGNS.index(asc_sign)
+                asc_sign_num = asc_sign_idx + 1
+                for p in natal_planets:
+                    p_sign = p.get("sign")
+                    if p_sign in local_eph.ZODIAC_SIGNS:
+                        p_sign_idx = local_eph.ZODIAC_SIGNS.index(p_sign)
+                        p_sign_num = p_sign_idx + 1
+                        whole_sign_house = ((p_sign_num - asc_sign_num + 12) % 12) + 1
+                        p["house"] = whole_sign_house
+
             # Combine into a single comprehensive dictionary response
             return {
                 "source": "astrologyapi",

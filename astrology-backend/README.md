@@ -1,14 +1,14 @@
 # 🌌 Vedic Astrology Backend API
 
-A high-performance personal Vedic astrology and numerology calculation engine built using **FastAPI**, **PostgreSQL**, and **Redis**. It features a hybrid orchestration model that coordinates between the **AstrologyAPI.com** service and a local **pysweph (Swiss Ephemeris)** fallback calculator, paired with real-time **DeepSeek R1** AI-powered interpretations.
+A high-performance personal Vedic astrology and numerology calculation engine built using **FastAPI**, **PostgreSQL**, and **Redis**. It features a hybrid orchestration model that coordinates between the **AstrologyAPI.com** service and a local **pysweph (Swiss Ephemeris)** fallback calculator, paired with real-time AI-powered interpretations via **Groq** and a multi-stage **OpenRouter fallback cascade** with automatic fallback.
 
 ---
 
 ## 🛠️ Tech Stack
 *   **Core Framework**: Python 3.11+ & FastAPI
-*   **Calculations**: `pysweph` (Local Swiss Ephemeris) & `AstrologyAPI` (External Primary)
+*   **Calculations**: `pysweph` (Local Swiss Ephemeris) & `AstrologyAPI` (External Primary) using Vedic Whole-Sign house mapping
 *   **Databases**: PostgreSQL (via `asyncpg` async pool) & Redis (via `redis-py` async client)
-*   **AI Interpretation**: DeepSeek R1 (OpenAI SDK client)
+*   **AI Interpretation**: Groq (primary) + OpenRouter Cascade (meta-llama/llama-3.3-70b-instruct:free, google/gemma-3-27b-it:free, meta-llama/llama-3-8b-instruct:free, openrouter/free) via OpenAI SDK
 *   **Geocoding**: OpenStreetMap Nominatim API
 
 ---
@@ -34,7 +34,8 @@ Open `.env` and fill in the required keys, credentials, and endpoints:
     > If your password contains special characters (like `@`), they **must** be URL-encoded (e.g., replace `@` with `%40`).
 *   `REDIS_URL`: Your local Redis DSN.
 *   `ASTROLOGYAPI_USER_ID` & `ASTROLOGYAPI_API_KEY`: Credentials for AstrologyAPI.com.
-*   `DEEPSEEK_API_KEY`: API token for DeepSeek R1 models.
+*   `GROQ_API_KEY`: API token for Groq.
+*   `OPENROUTER_API_KEY`: API token for OpenRouter (for fallback LLM cascade).
 
 ### 3. Initialize PostgreSQL Database
 Make sure PostgreSQL is running locally. Create your target database (e.g., `astrology_db`) and execute the SQL schema script once to initialize all required tables (`charts`, `interpretations`, `api_usage`):

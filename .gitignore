@@ -36,3 +36,9 @@ Thumbs.db
 chroma_db/
 logs/
 *.sqlite3
+
+# Temporary testing and utility scripts in astrology-backend
+astrology-backend/check_*.py
+astrology-backend/clear_*.py
+astrology-backend/debug_*.py
+astrology-backend/test_*.py

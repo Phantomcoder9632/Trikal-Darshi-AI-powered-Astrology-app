@@ -75,8 +75,24 @@ async def ensure_chart_complete(
         }
         chart_data["ascendant"] = natal_asc
 
-    # Filter out Ascendant from planets to behave consistently
-    clean_planets = [p for p in natal_planets if p.get("name") != "Ascendant"]
+    # Filter out Ascendant from planets and compute Whole-Sign houses
+    clean_planets = []
+    asc_sign = natal_asc.get("sign")
+    if asc_sign in ZODIAC_SIGNS:
+        asc_sign_idx = ZODIAC_SIGNS.index(asc_sign)
+        asc_sign_num = asc_sign_idx + 1
+        for p in natal_planets:
+            if p.get("name") == "Ascendant":
+                continue
+            p_sign = p.get("sign")
+            if p_sign in ZODIAC_SIGNS:
+                p_sign_idx = ZODIAC_SIGNS.index(p_sign)
+                p_sign_num = p_sign_idx + 1
+                whole_sign_house = ((p_sign_num - asc_sign_num + 12) % 12) + 1
+                p["house"] = whole_sign_house
+            clean_planets.append(p)
+    else:
+        clean_planets = [p for p in natal_planets if p.get("name") != "Ascendant"]
     
     # Extract coordinates
     lat = chart_data.get("lat") or chart_data.get("latitude") or 28.6139

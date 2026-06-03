@@ -7,6 +7,10 @@ Uses sentence-transformers/all-MiniLM-L6-v2 (~80 MB, downloads on first use).
 
 from __future__ import annotations
 
+import os
+os.environ["USE_TORCH"] = "1"
+os.environ["USE_TF"] = "0"
+
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # Model used for all embedding operations

@@ -37,7 +37,8 @@ async def generate_interpretation_stream(
     """
     POST /interpret/{chart_id}/{tab_number}
     Real-time streaming interpretation for Vedic astrology tabs (1-8).
-    Checks DB and cache first (yielding immediately), falls back to streaming DeepSeek R1,
+    Checks DB and cache first (yielding immediately), falls back to streaming
+    Groq/Qwen3-32b (primary) or OpenRouter/Gemma-4-31b (fallback),
     and automatically saves + caches the result on stream completion.
     """
     if tab_number not in TAB_MAP:
@@ -107,9 +108,9 @@ async def generate_interpretation_stream(
     chart_data["city_of_birth"] = chart_data.get("city_of_birth") or chart_row["city_of_birth"]
     chart_data["current_city"] = chart_data.get("current_city") or chart_row["current_city"]
 
-    # ── d & e. Call DeepSeek R1 stream & yield chunks ────────────────────────
+    # ── d & e. Call LLM stream & yield chunks ─────────────────────────────────
     async def ai_stream_generator() -> AsyncGenerator[str, None]:
-        logger.info(f"Starting DeepSeek R1 interpretation stream: chart={chart_id_str} Tab={tab_number}")
+        logger.info(f"Starting AI interpretation stream: chart={chart_id_str} Tab={tab_number}")
         accumulated_text = ""
         
         try:
@@ -125,7 +126,27 @@ async def generate_interpretation_stream(
             yield f"\n[AI Streaming Error: {str(e)}]"
             return
 
-        # ── f & g. Save and cache on completion ─────────────────────────────
+        # ── f & g. Save and cache on completion (ONLY if not an error message) ──
+        # Check if the generated content looks like an error/fallback warning
+        # Also reject suspiciously short content — a proper tab analysis is 2000+ chars.
+        # If the model hit a token limit or the stream broke, we must NOT cache the
+        # truncated output, otherwise it will be served forever on subsequent requests.
+        MIN_CONTENT_LENGTH = 1000  # chars — anything under this is clearly truncated
+
+        is_error = (
+            "⚠️" in accumulated_text 
+            or "[System Error:" in accumulated_text 
+            or "[AI Streaming Error" in accumulated_text
+            or not accumulated_text.strip()
+            or len(accumulated_text.strip()) < MIN_CONTENT_LENGTH
+        )
+        
+        if is_error:
+            logger.warning(
+                f"Stream finished with error/empty content. NOT saving to DB/cache: chart={chart_id_str} Tab={tab_number}"
+            )
+            return
+
         logger.info(f"Stream complete. Saving to PostgreSQL and Redis: chart={chart_id_str} Tab={tab_number}")
         
         try:
@@ -149,7 +170,7 @@ async def generate_interpretation_stream(
                     tab_number,
                     tab_name,
                     accumulated_text,
-                    "deepseek-reasoner"
+                    "google/gemma-4-31b-it:free"
                 )
             
             # Cache in Redis

@@ -17,58 +17,16 @@ from typing import List, Dict, Any, Optional
 # ---------------------------------------------------------------------------
 
 TAB_QUERIES: Dict[int, List[str]] = {
-    1: [  # Lagna & Soul Blueprint
-        "lagna ascendant analysis first house lord",
-        "moon nakshatra pada soul purpose",
-        "atmakaraka jaimini system",
-        "planetary dignity exalted debilitated own sign",
-        "raj yoga dhana yoga identification",
-        "kaal sarp dosha mangal dosha",
-        "mahadasha antardasha vimshottari prediction",
-    ],
-    2: [  # Lal Kitab
-        "pakka ghar permanent house planet",
-        "rin karmic debt surya chandra mangal",
-        "sleeping planet sote hue graha",
-        "lal kitab farmaan remedy prescription",
-        "lal kitab saturn pisces rahu aquarius",
-    ],
-    3: [  # Numerology
-        "moolank bhagyank namank ruling planet",
-        "chaldean numerology name number",
-        "personal year number forecast",
-        "lucky number color day planet",
-    ],
-    4: [  # Career
-        "tenth house lord career profession dashamsha",
-        "saturn karma karaka profession",
-        "jupiter exalted cancer career opportunity",
-        "d10 dashamsha lagna career planet",
-    ],
-    5: [  # Wealth
-        "second house wealth accumulated money",
-        "eleventh house income gains profit",
-        "dhana yoga wealth combination",
-        "ashtakavarga bindhu score second eleventh",
-    ],
-    6: [  # Love & Marriage
-        "seventh house marriage spouse partner",
-        "venus placement dignity love relationship",
-        "navamsha d9 marriage quality dharma",
-        "upapada lagna spouse characteristics",
-    ],
-    7: [  # Health
-        "sixth house disease illness health",
-        "lagna lord health vitality body",
-        "eighth house chronic hidden illness",
-        "moon mercury mental health anxiety",
-    ],
-    8: [  # Remedies
-        "mantra gemstone remedy planet",
-        "dana charity donation remedy",
-        "lal kitab farmaan practical remedy",
-        "yantra gemstone metal finger wearing",
-    ],
+    1: ["lagna ascendant moon nakshatra atmakaraka", "raj yoga dhana yoga kaal sarp dosha", "mahadasha antardasha vimshottari"],
+    2: ["pakka ghar permanent house lal kitab", "rin karmic debt farmaan remedy", "sleeping planet sote hue graha"],
+    3: ["moolank bhagyank namank chaldean numerology", "personal year number forecast lucky"],
+    4: ["tenth house career dashamsha d10 profession", "saturn karma karaka jupiter exalted career"],
+    5: ["second house wealth dhana yoga eleventh income", "ashtakavarga bindhu property assets"],
+    6: ["seventh house marriage navamsha d9 venus", "upapada lagna spouse compatibility"],
+    7: ["sixth house health disease lagna lord vitality", "moon mercury mental health eighth house"],
+    8: ["mantra gemstone remedy dana charity", "lal kitab farmaan numerology correction"],
+    9: ["fifth house children saptamsha d7 progeny", "jupiter karaka children creative legacy"],
+    10: ["gochar transit jupiter saturn rahu ketu", "sade sati ashtama shani vedha"],
 }
 
 # Tab 2 (Lal Kitab) should prefer chunks from the lalkitab system
@@ -120,7 +78,7 @@ def _boost_lalkitab(docs: List[Any]) -> List[Any]:
 def search_for_tab(
     tab_number: int,
     chart_context: str = "",
-    k: int = 8,
+    k: int = 3,
 ) -> List[Any]:
     """
     Search ChromaDB for the most relevant passages for a given tab.
@@ -275,11 +233,21 @@ def _build_chart_context(
         terms.append(f"{maha} mahadasha")
 
     # Key planetary positions relevant to this tab
-    planets: Dict[str, Any] = chart_data.get("planets", {})
+    planets = chart_data.get("planets", [])
     relevant = _TAB_KEY_PLANETS.get(tab_number, [])
 
+    planets_dict = {}
+    if isinstance(planets, list):
+        for p in planets:
+            if isinstance(p, dict):
+                p_name = p.get("name", p.get("planet", ""))
+                if p_name:
+                    planets_dict[p_name] = p
+    elif isinstance(planets, dict):
+        planets_dict = planets
+
     for planet_name in relevant:
-        info = planets.get(planet_name, {})
+        info = planets_dict.get(planet_name, {})
         if isinstance(info, dict):
             sign  = info.get("sign", "")
             house = info.get("house", "")

@@ -6,7 +6,7 @@ Consumed by rag/pipeline.py and services/ai.py.
 """
 
 import json
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 # ---------------------------------------------------------------------------
 # Master system prompt
@@ -24,6 +24,17 @@ who has simultaneously mastered three ancient systems:
 Rules:
 - NEVER hallucinate planetary positions. 
   Use ONLY the chart data provided to you.
+- For all planetary references in your text, always write the planet's name using its Sanskrit abbreviation/name followed by the English name in parentheses to match the visual chart:
+  * Sun -> Surya/Su (Sun)
+  * Moon -> Chandra/Ch (Moon)
+  * Mars -> Mangal/Ma (Mars)
+  * Mercury -> Budh/Bu (Mercury)
+  * Jupiter -> Guru/Gu (Jupiter)
+  * Venus -> Shukra/Sk (Venus)
+  * Saturn -> Shani/Sa (Saturn)
+  * Rahu -> Rahu/Ra (Rahu)
+  * Ketu -> Ketu/Ke (Ketu)
+  Example format: "Budh/Bu (Mercury)", "Guru/Gu (Jupiter)".
 - Be specific and anchor everything to the chart data.
 - Be honest. State hard truths with compassion.
 - Do not give generic horoscope content.
@@ -49,29 +60,103 @@ def build_tab_prompt(
     Each tab receives its relevant divisional chart(s) extracted from chart_data.
     """
 
-    # ── Helper: extract divisional chart JSON snippet for prompt injection ──
+    # ── Helper: extract divisional chart as compact text ──────────────────
     def _div_json(key: str, label: str) -> str:
         data = chart_data.get(key)
-        if not data or not data.get("planets"):
-            return f"\n{label}: (Not available — chart data missing)\n"
-        planets_str = json.dumps(data.get("planets", []), indent=2)
+        if not data:
+            return f"{label}: N/A"
+        planets = data.get("planets", [])
         asc = data.get("ascendant", {})
-        return (
-            f"\n{label}:\n"
-            f"  Ascendant: {asc.get('sign', 'Unknown')} (sign {asc.get('sign_num', '?')})\n"
-            f"  Planets:\n{planets_str}\n"
-        )
+        asc_sign = asc.get("sign", "?")
+        planet_lines: List[str] = []
+        for p in (planets if isinstance(planets, list) else []):
+            if isinstance(p, dict):
+                name  = p.get("name", p.get("planet", ""))
+                sign  = p.get("sign", "")
+                house = p.get("house", "")
+                retro = "(R)" if p.get("retrograde") else ""
+                planet_lines.append(f"{name}:{sign} H{house} {retro}".strip())
+        planets_txt = ", ".join(planet_lines) if planet_lines else "N/A"
+        return f"{label} | Asc:{asc_sign} | {planets_txt}"
 
-    base_context = f"""
-CHART DATA FOR {full_name}:
-{json.dumps(chart_data, indent=2)}
+    # ── Compact plain-text chart summary (saves ~1000+ tokens vs JSON) ──────
+    def _chart_summary() -> str:
+        lines: List[str] = []
 
-Current Date: June 2026
-Important Current Transits:
-- Jupiter entering Cancer (exaltation) — biggest transit of 2026
-- Saturn in Pisces — karmic restructuring
-- Rahu in Aquarius / Ketu in Leo axis
-- Mars in Aries (own sign)
+        # Ascendant
+        asc = chart_data.get("ascendant", {})
+        lagna_sign = asc.get("sign", "?")
+        lagna_deg  = asc.get("degree", "")
+        lines.append(f"Lagna: {lagna_sign} {lagna_deg}°".strip())
+
+        # Planets
+        planets = chart_data.get("planets", [])
+        if isinstance(planets, list) and planets:
+            p_parts: List[str] = []
+            for p in planets:
+                if not isinstance(p, dict):
+                    continue
+                name  = p.get("name", p.get("planet", ""))
+                sign  = p.get("sign", "")
+                house = p.get("house", "")
+                deg   = p.get("degree", "")
+                retro = "(R)" if p.get("retrograde") else ""
+                combust = "(C)" if p.get("combust") else ""
+                naksh = p.get("nakshatra", "")
+                pada  = p.get("pada", "")
+                extra = f" nak:{naksh}/{pada}" if naksh else ""
+                p_parts.append(f"{name}:{sign} H{house} {deg}° {retro}{combust}{extra}".strip())
+            lines.append("Planets: " + " | ".join(p_parts))
+
+        # Dasha
+        maha  = chart_data.get("current_dasha",      chart_data.get("mahadasha", ""))
+        antar = chart_data.get("current_antardasha",  chart_data.get("antardasha", ""))
+        pratyantar = chart_data.get("current_pratyantar", "")
+        if maha:
+            dasha_str = f"Dasha: {maha} > {antar}"
+            if pratyantar:
+                dasha_str += f" > {pratyantar}"
+            lines.append(dasha_str)
+
+        # Yogas (compact list)
+        yogas = chart_data.get("yogas", [])
+        if isinstance(yogas, list) and yogas:
+            yoga_names = [y.get("name", str(y)) if isinstance(y, dict) else str(y) for y in yogas[:10]]
+            lines.append("Yogas: " + ", ".join(yoga_names))
+
+        # DOB / birth info
+        for field in ("date_of_birth", "birth_date", "dob"):
+            val = chart_data.get(field, "")
+            if val:
+                lines.append(f"DOB: {val}")
+                break
+        for field in ("birth_time", "time_of_birth"):
+            val = chart_data.get(field, "")
+            if val:
+                lines.append(f"TOB: {val}")
+                break
+        for field in ("birth_place", "place_of_birth"):
+            val = chart_data.get(field, "")
+            if val:
+                lines.append(f"POB: {val}")
+                break
+
+        # Ashtakavarga totals (key houses only)
+        ashtak = chart_data.get("ashtakavarga", {})
+        if isinstance(ashtak, dict):
+            sarv = ashtak.get("sarvashtakavarga", {})
+            if isinstance(sarv, dict):
+                key_houses = {"2": "2H", "7": "7H", "10": "10H", "11": "11H"}
+                av_parts = [f"{lbl}:{sarv[k]}" for k, lbl in key_houses.items() if k in sarv]
+                if av_parts:
+                    lines.append("SAV: " + " ".join(av_parts))
+
+        return "\n".join(lines)
+
+    base_context = f"""CHART — {full_name}:
+{_chart_summary()}
+
+Now (June 2026): Jupiter→Cancer(exalt), Saturn→Pisces, Rahu→Aquarius/Ketu→Leo, Mars→Aries
 """
 
     # ── Divisional chart snippets for each tab ──────────────────────────────

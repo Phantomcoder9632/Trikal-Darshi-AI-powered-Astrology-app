@@ -37,17 +37,17 @@ const CHART_PURPOSES = {
 // North Indian house layout centers (400×400 SVG)
 const HOUSE_COORDS = {
   1:  { cx: 200, cy: 105, labelY: 140 },
-  2:  { cx: 300, cy: 52,  labelY: 38  },
-  3:  { cx: 348, cy: 110, labelY: 78  },
-  4:  { cx: 288, cy: 200, labelY: 178 },
-  5:  { cx: 348, cy: 288, labelY: 258 },
-  6:  { cx: 300, cy: 348, labelY: 368 },
+  2:  { cx: 100, cy: 52,  labelY: 38  },
+  3:  { cx: 52,  cy: 110, labelY: 78  },
+  4:  { cx: 112, cy: 200, labelY: 178 },
+  5:  { cx: 52,  cy: 288, labelY: 258 },
+  6:  { cx: 100, cy: 348, labelY: 368 },
   7:  { cx: 200, cy: 292, labelY: 262 },
-  8:  { cx: 100, cy: 348, labelY: 368 },
-  9:  { cx: 52,  cy: 288, labelY: 258 },
-  10: { cx: 112, cy: 200, labelY: 178 },
-  11: { cx: 52,  cy: 110, labelY: 78  },
-  12: { cx: 100, cy: 52,  labelY: 38  },
+  8:  { cx: 300, cy: 348, labelY: 368 },
+  9:  { cx: 348, cy: 288, labelY: 258 },
+  10: { cx: 288, cy: 200, labelY: 178 },
+  11: { cx: 348, cy: 110, labelY: 78  },
+  12: { cx: 300, cy: 52,  labelY: 38  },
 };
 
 function getPlanetStyle(planetName, signNum, isRetrograde) {

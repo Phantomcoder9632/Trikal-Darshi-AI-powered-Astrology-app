@@ -1,0 +1,359 @@
+================================================================================
+TRIKAL DARSHI - AI-POWERED VEDIC ASTROLOGY SYSTEM DOCUMENTATION
+================================================================================
+
+This document provides a comprehensive breakdown of the Trikal Darshi architecture, 
+data workflows, database schemas, API structures, and functional descriptions of
+each code module for both backend and frontend.
+
+--------------------------------------------------------------------------------
+1. ARCHITECTURAL OVERVIEW
+--------------------------------------------------------------------------------
+
+Trikal Darshi is a hybrid Vedic Astrology application that calculates high-precision 
+astrological birth charts, computes planetary positions (Shodashvarga / divisional 
+charts) locally or via an external API, performs numerology, applies a Retrieval-
+Augmented Generation (RAG) pipeline over classical Jyotish scriptures, and uses
+an LLM (Gemini with OpenRouter fallbacks) to pre-generate or stream detailed,
+multi-tab interpretations in a non-blocking background architecture.
+
+High-Level Architecture Flow:
+[User Input] -> [FastAPI Backend] -> [Geocoding via OpenStreetMap]
+                                  -> [astrologyapi.com / Swiss Ephemeris Fallback]
+                                  -> [PostgreSQL & Redis Cache]
+                                  -> [RAG (ChromaDB + classical texts)]
+                                  -> [LLM Generation (Gemini / OpenRouter)]
+                                  -> [React Dashboard (Vite)]
+
+--------------------------------------------------------------------------------
+2. END-TO-END WORKFLOW
+--------------------------------------------------------------------------------
+
+Step 1: User Registration/Input
+  - The user inputs their Name, Date of Birth (DOB), Time of Birth (TOB), City of 
+    Birth, Current City, and Birth Time Confidence.
+  - The frontend sends a geocoding request to `GET /geocode?city=...`.
+
+Step 2: Geocoding
+  - The backend queries the OpenStreetMap Nominatim API to resolve the city name 
+    into Latitude, Longitude, and Timezone offsets.
+
+Step 3: Chart Generation Request (`POST /chart/generate` or `GET /chart/{id}`)
+  - The backend first checks if the birth parameters match a cached chart in 
+    Redis, or an existing entry in the PostgreSQL `charts` table.
+  - If a cache/DB hit occurs, the chart data is retrieved immediately.
+  - If it is a new chart, the Decision Engine (`services/hybrid.py`) checks the 
+    monthly usage of astrologyapi.com in the `api_usage` table:
+      - Quota Under Limit (< 200 calls): Invokes 14 AstrologyAPI endpoints in 
+        parallel (ascendant, planets, divisional charts, dasha, yogas, etc.) and
+        augments it with local divisional calculations.
+      - Quota Exceeded (>= 200 calls) or API Error: Falls back to the local high-
+        precision Swiss Ephemeris (`services/ephemeris.py`) calculation engine.
+  - Basic Chaldean Numerology is computed locally (`services/numerology.py`) 
+    and appended.
+  - The completed chart data is saved to PostgreSQL and cached in Redis.
+  - A FastAPI `BackgroundTask` is fired to start background pre-generation of 
+    all 10 tab interpretations.
+
+Step 4: Non-Blocking Background Pre-Generation (`services/background_generator.py`)
+  - Runs in the background using `asyncio.to_thread` to prevent blocking the 
+    main ASGI event loop.
+  - Iterates through the 10 report tabs using `asyncio.Semaphore(2)` (processing 
+    at most 2 tabs concurrently to avoid API rate limits).
+  - Skips any tab that already has a completed interpretation (>= 1000 chars) in the DB.
+  - For each pending tab:
+      1. Generates an optimized search query using tab properties.
+      2. Performs a similarity search on the ChromaDB vector database (`chroma_db/`) 
+         containing classical scriptures to extract the top 5 relevant passages 
+         (up to 4000 characters).
+      3. Constructs an enriched prompt merging the scripture passages with the 
+         user's chart calculations and custom tab prompts.
+      4. Requests the LLM (Gemini 2.5 Flash as primary; falls back to OpenRouter 
+         Llama-3.3-70b-instruct / Qwen-2.5-72b-instruct on failure or rate-limiting).
+      5. Consumes the stream, strips reasoning blocks (`<think>...</think>`), and 
+         validates that the response is complete (>= 1000 chars and no system error text).
+      6. Persists the completed interpretation text in the PostgreSQL `interpretations` 
+         table and caches it in Redis.
+
+Step 5: Frontend Polling and State Rendering
+  - Once the dashboard loads, the frontend polls `GET /progress/{chart_id}` 
+    every 4 seconds.
+  - Displays a real-time animated badge: "✦ Preparing cosmic blueprint — X of 10 sections ready" 
+    with a progress bar.
+  - If the user clicks a tab that is already pre-generated, the frontend fetches 
+    it instantly from the cached database responses.
+  - If they click a tab that is still pending, the backend streams the live 
+    generation on-demand and caches it upon completion.
+
+--------------------------------------------------------------------------------
+3. BACKEND DIRECTORY STRUCTURE AND MODULE BREAKDOWN
+--------------------------------------------------------------------------------
+
+=========================================
+Directory: astrology-backend/db/
+=========================================
+
+* database.py
+  - Purpose: Connects to and manages the PostgreSQL connection pool.
+  - Functions:
+    - `get_db_pool() -> asyncpg.Pool`: Returns the active global database connection 
+      pool (configured via `DATABASE_URL` environment variable). Initializes pool 
+      with a min size of 5 and max size of 20 connections on first call.
+    - `close_db_pool()`: Closes the active global database connection pool.
+    - `startup_db_event()` / `shutdown_db_event()`: FastAPI event hooks to open/close 
+      the pool on application start and shutdown.
+    - `get_db() -> AsyncGenerator[asyncpg.Connection, None]`: FastAPI dependency injection 
+      helper that yields a single database connection from the global pool.
+
+=========================================
+Directory: astrology-backend/routes/
+=========================================
+
+* chart.py
+  - Purpose: API endpoints for chart calculations and retrieval.
+  - Functions:
+    - `ensure_chart_complete(chart_data, conn, chart_uuid)`: Examines a chart payload 
+      to ensure all divisional Kundalis (D9, D10, D4, etc.) are computed and saved.
+    - `generate_chart(payload, background_tasks, conn)`: `POST /chart/generate` endpoint.
+      Performs geocoding, checks Redis cache, queries postgres, routes to external or 
+      local calculation engine, caches findings, fires background pre-generation task, 
+      and returns raw chart coordinates and planetary placements.
+    - `get_chart(chart_id, background_tasks, conn)`: `GET /chart/{chart_id}` endpoint.
+      Fetches a chart by its UUID from PostgreSQL, updates/heals it if legacy details 
+      are missing, triggers the background task `pregenerate_all_tabs` for any 
+      uncalculated tabs, and returns the chart data.
+
+* geocode.py
+  - Purpose: Resolves human-readable address queries to geo-coordinates.
+  - Functions:
+    - `geocode_city(city)`: `GET /geocode` endpoint. Queries OpenStreetMap's Nominatim 
+      API to return latitude, longitude, and timezone calculations for the birth location.
+
+* interpret.py
+  - Purpose: Streaming route for on-demand tab interpretations.
+  - Functions:
+    - `generate_interpretation_stream(chart_id, tab_number, conn)`: `POST /interpret/{chart_id}/{tab_number}`.
+      If the interpretation is already stored in PostgreSQL or cached in Redis, it 
+      returns it instantly. Otherwise, it calls `stream_interpretation()` from `services/ai.py` 
+      to stream the LLM generation to the client in real-time, saving and caching it 
+      to PostgreSQL and Redis once completed.
+
+* progress.py
+  - Purpose: Tracks the status of background task pre-generations.
+  - Functions:
+    - `get_generation_progress(chart_id, conn)`: `GET /progress/{chart_id}` endpoint.
+      Queries the database to count completed tab interpretations for a given chart UUID.
+      Returns total_tabs (10), completed_tabs list, pending_tabs list, percent (0-100), 
+      and a boolean is_complete.
+
+=========================================
+Directory: astrology-backend/services/
+=========================================
+
+* ai.py
+  - Purpose: Wrapper for generating streaming interpretations.
+  - Functions:
+    - `stream_interpretation(chart_data, tab_number, full_name) -> AsyncGenerator[str, None]`:
+      Calls `stream_with_rag()` to return the token-by-token text generator for the UI.
+
+* ai_prompts.py
+  - Purpose: Houses the prompts for the Vedic report generation.
+  - Functions:
+    - `build_tab_prompt(chart_data, tab_number, full_name) -> str`: Merges birth chart 
+      details and planetary positions with specific system instructions tailored for the 
+      requested tab (e.g. Tab 1 = Lagna analysis, Tab 4 = Career D10 analysis, etc.).
+      Provides structured templates for JSON or structured text outputs.
+
+* astrologyapi.py
+  - Purpose: Interface with the external AstrologyAPI.com HTTP REST service.
+  - Functions:
+    - `call_api(endpoint, data)`: Low-level async POST handler with authorization headers.
+    - `track_api_call(service, endpoint, success)`: Writes a record into the PostgreSQL 
+      `api_usage` table to log usage and manage monthly limits.
+    - Specialized calls: `get_planets()`, `get_ascendant()`, `get_navamsha()`, `get_dashamsha()`, 
+      `get_dasha()`, `get_dasha_periods()`, `get_ashtakavarga()`, `get_yogas()`, 
+      `get_lalkitab_planets()`, `get_lalkitab_remedies()`, `get_nakshatra()`, `get_kalsarp()`, 
+      `get_mangal_dosha()`, `get_numerology()`.
+
+* background_generator.py
+  - Purpose: Pre-generation scheduler for report interpretations.
+  - Functions:
+    - `_generate_single_tab(semaphore, chart_id, chart_data, full_name, tab_number) -> bool`:
+      Runs inside a semaphore to execute RAG extraction and LLM compilation for a single 
+      tab. Saves complete interpretations to PostgreSQL and caches to Redis.
+    - `_sync_collect_tab_text(tab_number, tab_prompt) -> str`: Sync execution helper 
+      run inside `asyncio.to_thread()`. Retrieves k=5 chunks of RAG texts, builds the 
+      prompts, streams Gemini/OpenRouter, cleans up thinking tags, and returns the compiled text.
+    - `pregenerate_all_tabs(chart_id, chart_data, full_name) -> None`: Initiates concurrent 
+      `_generate_single_tab` tasks for all 10 tabs using `asyncio.gather()`.
+
+* cache.py
+  - Purpose: Redis cache interface.
+  - Functions:
+    - `init_redis()` / `close_redis()`: Opens and shuts down the aioredis client connection pool.
+    - `cache_chart(key, data)` / `get_cached_chart(key)`: Caches/retrieves complete chart payloads.
+    - `cache_interpretation(chart_id, tab_num, text)` / `get_cached_interpretation(chart_id, tab_num)`:
+      Caches/retrieves generated tab text.
+
+* ephemeris.py
+  - Purpose: High-precision astronomical calculations via the Swiss Ephemeris (`pyswisseph`).
+  - Functions:
+    - `get_julian_day_ist(dob, tob) -> float`: Calculates Julian Day from IST datetime.
+    - `get_zodiac_details(sidereal_longitude) -> dict`: Maps a longitude to Vedic sign, degree, nakshatra, and pada.
+    - `get_current_dasha_period(moon_sid_lon, birth_dt) -> dict`: Computes Vimshottari Mahadasha/Antardasha dates.
+    - `calculate_chart_fallback(dob, tob, lat, lng) -> dict`: Coordinates local calculations of planetary degrees 
+      and Whole-Sign house placements.
+    - `calculate_kalsarp()`, `calculate_mangal_dosha()`, `calculate_pitru_dosha()`, `calculate_gand_mool()`:
+      Vedic Dosha calculation rules.
+    - `_get_divisional_sign(full_degree, divisor, chart_type) -> int`: Maps longitude to divisional sign coordinates 
+      according to Parashari Varga rules.
+    - `compute_divisional_chart(planets, ascendant, chart_type) -> dict`: Computes complete divisional charts 
+      (Navamsha D9, Dashamsha D10, Chaturthamsa D4, Saptamsha D7, Trimsamsa D30, Chandra Kundali, Surya Kundali).
+
+* numerology.py
+  - Purpose: Chaldean numerology calculator.
+  - Functions:
+    - `reduce_to_single_digit(n) -> int`: Sums digits recursively until <= 9.
+    - `calculate_moolank(dob) -> int`: psychic driver number (day of birth).
+    - `calculate_bhagyank(dob) -> int`: destiny number (sum of full DOB).
+    - `calculate_namank(full_name) -> int`: Chaldean value sum of name characters.
+    - `get_numerology(dob, full_name) -> dict`: Returns complete numerology profiles.
+
+=========================================
+Directory: astrology-backend/rag/
+=========================================
+
+* embeddings.py
+  - Purpose: Configures HuggingFace sentence-transformers/all-MiniLM-L6-v2 embeddings.
+  - Functions:
+    - `get_embeddings() -> HuggingFaceEmbeddings`: Returns the shared embeddings singleton instance.
+
+* vectorstore.py
+  - Purpose: Connects to ChromaDB database.
+  - Functions:
+    - `get_vectorstore() -> Chroma`: Returns the singleton ChromaDB instance.
+    - `build_vectorstore(force_rebuild) -> Chroma`: Ensures vector database index is initialized on startup.
+
+* loader.py
+  - Purpose: Parses books and documents. Splits them into overlapping text chunks with source metadata.
+  - Functions:
+    - `load_astrology_books() -> List[Document]`: Scans `books/` directory, parses PDFs/txt files, 
+      splits them into chunks of 1000 characters (overlap 150), and returns the document list.
+
+* build_index.py
+  - Purpose: Compiles the RAG index from books.
+  - Functions:
+    - `build_index()`: Clears the existing index, parses documents using `loader.py`, computes embeddings, 
+      and saves them to ChromaDB.
+
+* retriever.py
+  - Purpose: Pulls relevant book passages for LLM context prompts.
+  - Functions:
+    - `search_for_tab(tab_number, chart_context, k) -> List[Document]`: Queries ChromaDB using queries in `TAB_QUERIES` 
+      and return the top k relevant text chunks.
+    - `format_rag_context(chunks) -> str`: Formats Document chunks into readable text blocks.
+
+* pipeline.py
+  - Purpose: Core LLM retrieval and fallback generator.
+  - Functions:
+    - `stream_with_rag(chart_data, tab_number, full_name, tab_prompt)`: Streams the interpretation in real time.
+    - `_stream_primary(messages)`: Calls Gemini via compatibility base URL.
+    - `_stream_fallback(messages, model)`: Calls OpenRouter with fallback models if Gemini fails.
+    - `_yield_tokens(stream)`: Strips `<think>...</think>` tags from output stream.
+
+--------------------------------------------------------------------------------
+4. DATABASE SCHEMA (POSTGRESQL)
+--------------------------------------------------------------------------------
+
+Table 1: `charts`
+  - Columns:
+    - `id` (UUID, Primary Key)
+    - `full_name` (VARCHAR)
+    - `date_of_birth` (DATE)
+    - `time_of_birth` (TIME)
+    - `city_of_birth` (VARCHAR)
+    - `current_city` (VARCHAR)
+    - `latitude` (NUMERIC)
+    - `longitude` (NUMERIC)
+    - `timezone` (VARCHAR)
+    - `birth_time_confidence` (VARCHAR)
+    - `ayanamsha` (VARCHAR)
+    - `calculation_source` (VARCHAR)
+    - `raw_chart_data` (JSONB)
+    - `created_at` (TIMESTAMP)
+
+Table 2: `interpretations`
+  - Columns:
+    - `id` (UUID, Primary Key)
+    - `chart_id` (UUID, Foreign Key referencing charts.id, CASCADE)
+    - `tab_number` (INTEGER)
+    - `tab_name` (VARCHAR)
+    - `content` (TEXT)
+    - `model_used` (VARCHAR)
+    - `generated_at` (TIMESTAMP)
+  - Constraints:
+    - `UNIQUE(chart_id, tab_number)`: Guarantees one interpretation per tab per chart.
+
+Table 3: `api_usage`
+  - Columns:
+    - `id` (SERIAL, Primary Key)
+    - `service` (VARCHAR)  -- 'astrologyapi' or 'ephemeris'
+    - `endpoint` (VARCHAR)
+    - `success` (BOOLEAN)
+    - `called_at` (TIMESTAMP)
+
+--------------------------------------------------------------------------------
+5. FRONTEND DIRECTORY STRUCTURE AND COMPONENT BREAKDOWN
+--------------------------------------------------------------------------------
+
+* src/services/api.js
+  - Purpose: Axios API client and route requests.
+  - Functions:
+    - `generateChart(payload)`: `POST /chart/generate`
+    - `getChart(chartId)`: `GET /chart/{chartId}`
+    - `getInterpretation(chartId, tabNumber)`: `POST /interpret/{chartId}/{tabNumber}` (handles streaming response)
+    - `getGenerationProgress(chartId)`: `GET /progress/{chartId}`
+
+* src/pages/HomePage.jsx
+  - Purpose: Landing page and birth profile submission form.
+  - State:
+    - `formData`: stores name, DOB, TOB, cities, confidence levels.
+    - `loading`, `error`: controls form submission indicators.
+  - Actions: Submits birth profile data to `generateChart` and redirects to `/dashboard/:chartId` on success.
+
+* src/pages/DashboardPage.jsx
+  - Purpose: Unified user dashboard presenting chart calculations, Kundalis, tables, and interpretation tabs.
+  - State:
+    - `chart`: stores birth chart data.
+    - `bgProgress`: stores background pre-generation state.
+    - `tabContent`: stores interpretation texts for each active tab.
+    - `tabLoading`, `tabError`: handles UI loaders per tab.
+    - `activeTab`: tracks currently selected tab.
+  - Lifecycle:
+    - Fetches the birth chart on mount (`getChart`).
+    - Sets up a 4-second interval timer polling `/progress/{chartId}` until `is_complete` is true, 
+      displaying progress statistics.
+    - Triggers tab content retrieval (`getInterpretation`) whenever `activeTab` changes.
+
+* src/components/TabNavigation.jsx
+  - Purpose: Render dashboard report navigation buttons (Lagna, Lal Kitab, Numerology, Career, etc.).
+  - Displays progress icons/checkboxes next to tab names to denote completed background calculations.
+
+* src/components/KundaliChart.jsx
+  - Purpose: Renders standard North Indian diamond-style Kundali charts dynamically.
+  - Computes placement coordinates for Ascendant and planets based on house number offsets.
+
+* src/components/DivisionalChart.jsx
+  - Purpose: Renders different divisional charts (Navamsha, Dashamsha, Chandra Kundali, etc.).
+
+* src/components/PlanetTable.jsx
+  - Purpose: Displays planetary degrees, retrogrades, nakshatras, padas, nakshatra lords, and house placements in a clean table.
+
+* src/components/RemedyCards.jsx
+  - Purpose: Formats Lal Kitab or general Vedic remedies into structured cards.
+
+* src/components/TransitBanner.jsx
+  - Purpose: Renders active planetary transits.
+
+* src/components/CosmicSummary.jsx
+  - Purpose: Renders quick summary info (Lagna sign, Moon nakshatra, current Dasha).

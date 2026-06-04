@@ -24,8 +24,9 @@ CREATE TABLE IF NOT EXISTS interpretations (
   tab_name TEXT NOT NULL,
   content TEXT NOT NULL,
   model_used TEXT NOT NULL,
+  language TEXT NOT NULL DEFAULT 'english',
   generated_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(chart_id, tab_number)
+  UNIQUE(chart_id, tab_number, language)
 );
 
 CREATE TABLE IF NOT EXISTS api_usage (

@@ -39,3 +39,15 @@ FRONTEND CHANGES (astrology-frontend/)
    - Added polling mechanism using `useEffect` and `setInterval` to call `getGenerationProgress(chartId)` every 4 seconds.
    - Polls dynamically until `data.is_complete` is true, then clears the interval.
    - Added local state `bgProgress` to store progress details and integrated a real-time progress banner/badge in the dashboard UI showing completion percentage and tab counts.
+
+================================================================================
+RATE LIMIT & TRANSLATION FALLBACK FIXES (June 4, 2026)
+================================================================================
+
+1. Modified: astrology-backend/services/translator.py
+   - Fixed translation fallback failure (HTTP 404) caused by the deprecation of `google/gemma-2-9b-it:free` on OpenRouter.
+   - Refactored OpenRouter provider configuration to dynamically cascade through active free models (`meta-llama/llama-3.3-70b-instruct:free`, `google/gemma-3-27b-it:free`, `meta-llama/llama-3-8b-instruct:free`, and `openrouter/free`) for robust fallback behavior when Gemini API keys hit rate limits/TPM limits.
+
+2. Database and Cache Cleanup:
+   - Deleted all previous Hindi predictions from both PostgreSQL `interpretations` table and Redis cache keys.
+   - Successfully verified automatic, resilient regeneration of Hindi/Bengali translations utilizing the new fallback cascade mechanism.

@@ -2,8 +2,8 @@ import uuid
 import logging
 import json
 from typing import AsyncGenerator
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, status, Body, BackgroundTasks
+from fastapi.responses import StreamingResponse, JSONResponse
 import asyncpg
 
 from db.database import get_db
@@ -32,6 +32,8 @@ TAB_MAP = {
 async def generate_interpretation_stream(
     chart_id: uuid.UUID,
     tab_number: int,
+    background_tasks: BackgroundTasks,
+    language: str = Body("english", embed=True),
     conn: asyncpg.Connection = Depends(get_db)
 ):
     """
@@ -52,12 +54,13 @@ async def generate_interpretation_stream(
 
     # ── a. Check interpretations table (Already generated?) ────────────────
     row = await conn.fetchrow(
-        "SELECT content FROM interpretations WHERE chart_id = $1 AND tab_number = $2",
+        "SELECT content FROM interpretations WHERE chart_id = $1 AND tab_number = $2 AND language = $3",
         chart_id,
-        tab_number
+        tab_number,
+        language
     )
     if row:
-        logger.info(f"Interpretation found in PostgreSQL: chart={chart_id_str} Tab={tab_number}")
+        logger.info(f"Interpretation found in PostgreSQL: chart={chart_id_str} Tab={tab_number} Language={language}")
         content = row["content"]
         
         async def yield_stored():
@@ -66,14 +69,38 @@ async def generate_interpretation_stream(
         return StreamingResponse(yield_stored(), media_type="text/plain")
 
     # ── b. Check Redis cache ────────────────────────────────────────────────
-    cached_text = await get_cached_interpretation(chart_id_str, tab_number)
+    cached_text = await get_cached_interpretation(chart_id_str, tab_number, language)
     if cached_text:
-        logger.info(f"Interpretation cache hit: chart={chart_id_str} Tab={tab_number}")
+        logger.info(f"Interpretation cache hit: chart={chart_id_str} Tab={tab_number} Language={language}")
         
         async def yield_cached():
             yield cached_text
             
         return StreamingResponse(yield_cached(), media_type="text/plain")
+
+    # ── Check if translation is pending ─────────────────────────────────────
+    if language in ["hindi", "bengali"]:
+        # If we reach here, it means cache miss and DB miss for translation.
+        # Check if we have the English interpretation to translate from.
+        english_row = await conn.fetchrow(
+            "SELECT content FROM interpretations WHERE chart_id = $1 AND tab_number = $2 AND language = 'english'",
+            chart_id,
+            tab_number
+        )
+        if english_row and english_row["content"]:
+            # Trigger background translation
+            from services.background_generator import translate_and_save
+            background_tasks.add_task(
+                translate_and_save,
+                chart_id=chart_id,
+                tab_number=tab_number,
+                english_text=english_row["content"]
+            )
+            logger.info(f"Triggered background translation to {language} for chart={chart_id_str} Tab={tab_number}")
+        else:
+            logger.info(f"Translation pending but English not found yet for chart={chart_id_str} Tab={tab_number} Language={language}")
+        
+        return JSONResponse(content={"status": "pending"})
 
     # ── c. Fetch complete chart from PostgreSQL ─────────────────────────────
     chart_row = await conn.fetchrow(
@@ -158,9 +185,9 @@ async def generate_interpretation_stream(
             async with pool.acquire() as save_conn:
                 await save_conn.execute(
                     """
-                    INSERT INTO interpretations (id, chart_id, tab_number, tab_name, content, model_used)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    ON CONFLICT (chart_id, tab_number)
+                    INSERT INTO interpretations (id, chart_id, tab_number, tab_name, content, model_used, language)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    ON CONFLICT (chart_id, tab_number, language)
                     DO UPDATE SET
                         content = EXCLUDED.content,
                         generated_at = NOW()
@@ -170,11 +197,12 @@ async def generate_interpretation_stream(
                     tab_number,
                     tab_name,
                     accumulated_text,
-                    "google/gemma-4-31b-it:free"
+                    "google/gemma-4-31b-it:free",
+                    language
                 )
             
             # Cache in Redis
-            await cache_interpretation(chart_id_str, tab_number, accumulated_text)
+            await cache_interpretation(chart_id_str, tab_number, accumulated_text, language=language)
             
         except Exception as save_err:
             logger.error(f"Failed to save final stream output: {save_err}")

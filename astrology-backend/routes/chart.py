@@ -146,8 +146,9 @@ async def ensure_chart_complete(
             redis_client = await get_redis()
             chart_id_str = str(chart_uuid)
             for tab_num in range(1, 11):
-                await redis_client.delete(f"interpretation:{chart_id_str}:{tab_num}")
-            logger.info(f"Cleared Redis interpretation cache for chart {chart_uuid}")
+                for lang in ("english", "hindi", "bengali"):
+                    await redis_client.delete(f"interpretation:{chart_id_str}:{tab_num}:{lang}")
+            logger.info(f"Cleared Redis interpretation cache for chart {chart_uuid} (all languages)")
         except Exception as redis_err:
             logger.error(f"Failed to clear Redis interpretation cache: {redis_err}")
     except Exception as interp_err:

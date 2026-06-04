@@ -34,6 +34,7 @@ from rag.retriever import get_context_for_tab
 from rag.pipeline import stream_with_rag
 from db.database import get_db_pool
 from services.cache import cache_interpretation
+from services.translator import translate_content
 
 logger = logging.getLogger(__name__)
 
@@ -84,25 +85,70 @@ async def _generate_single_tab(
             f"[bg_gen] Starting Tab {tab_number} ({tab_name}) for chart {chart_id_str}"
         )
 
-        # ── a. Skip if already in DB ─────────────────────────────────────────
+        # ── a. Skip if already in DB (or Translate if English exists but translations are missing) ──
         try:
             pool = await get_db_pool()
             async with pool.acquire() as check_conn:
-                existing = await check_conn.fetchrow(
-                    "SELECT content FROM interpretations "
+                existing_records = await check_conn.fetch(
+                    "SELECT language, content FROM interpretations "
                     "WHERE chart_id = $1 AND tab_number = $2",
                     chart_id,
                     tab_number,
                 )
-                if existing and len((existing["content"] or "").strip()) >= _MIN_CONTENT_LENGTH:
+                
+                existing_langs = {r["language"]: r["content"] for r in existing_records}
+                english_text = existing_langs.get("english")
+                
+                has_english = english_text and len(english_text.strip()) >= _MIN_CONTENT_LENGTH
+                has_hindi = "hindi" in existing_langs and len((existing_langs["hindi"] or "").strip()) >= _MIN_CONTENT_LENGTH
+                has_bengali = "bengali" in existing_langs and len((existing_langs["bengali"] or "").strip()) >= _MIN_CONTENT_LENGTH
+                
+                if has_english and has_hindi and has_bengali:
                     logger.info(
-                        f"[bg_gen] Tab {tab_number} already in DB for chart "
+                        f"[bg_gen] Tab {tab_number} (all languages) already in DB for chart "
                         f"{chart_id_str} — skipping."
                     )
                     return True
+                
+                if has_english:
+                    logger.info(
+                        f"[bg_gen] English exists for Tab {tab_number} but missing translations. Translating..."
+                    )
+                    # Translate missing ones
+                    for lang in ["hindi", "bengali"]:
+                        is_missing = lang not in existing_langs or len((existing_langs[lang] or "").strip()) < _MIN_CONTENT_LENGTH
+                        if is_missing:
+                            try:
+                                logger.info(f"[bg_gen] Translating Tab {tab_number} to {lang} from existing English...")
+                                translated_text = await translate_content(english_text, lang)
+                                
+                                new_id = uuid.uuid4()
+                                await check_conn.execute(
+                                    """
+                                    INSERT INTO interpretations
+                                        (id, chart_id, tab_number, tab_name, content, model_used, language)
+                                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                                    ON CONFLICT (chart_id, tab_number, language)
+                                    DO UPDATE SET
+                                        content      = EXCLUDED.content,
+                                        generated_at = NOW()
+                                    """,
+                                    new_id,
+                                    chart_id,
+                                    tab_number,
+                                    tab_name,
+                                    translated_text,
+                                    "translation/gemini-2.5-flash",
+                                    lang
+                                )
+                                await cache_interpretation(chart_id_str, tab_number, translated_text, language=lang)
+                                logger.info(f"[bg_gen] ✓ {lang.capitalize()} translation saved for chart {chart_id_str} Tab {tab_number}")
+                            except Exception as trans_err:
+                                logger.error(f"[bg_gen] Failed to translate/save {lang} for Tab {tab_number}: {trans_err}")
+                    return True
         except Exception as check_err:
             logger.warning(
-                f"[bg_gen] DB check failed for Tab {tab_number}: {check_err}. Proceeding."
+                f"[bg_gen] DB check/translation failed for Tab {tab_number}: {check_err}. Proceeding with fresh generation."
             )
 
         # ── b. Build tab prompt ──────────────────────────────────────────────
@@ -190,6 +236,9 @@ async def _generate_single_tab(
             logger.warning(
                 f"[bg_gen] Redis cache failed for Tab {tab_number}: {cache_err}"
             )
+
+        # ── g. Translate and Save (Hindi & Bengali) ──────────────────────────
+        await translate_and_save(chart_id, tab_number, accumulated_text)
 
         logger.info(
             f"[bg_gen] ✓ Tab {tab_number} ({tab_name}) complete for chart {chart_id_str}"
@@ -281,6 +330,48 @@ def _sync_collect_tab_text(tab_number: int, tab_prompt: str) -> str:
     return ""
 
 
+async def translate_and_save(chart_id: uuid.UUID, tab_number: int, english_text: str) -> None:
+    """
+    Translates the generated english text into hindi and bengali,
+    then saves to PostgreSQL and caches to Redis.
+    """
+    chart_id_str = str(chart_id)
+    tab_name = TAB_MAP.get(tab_number, f"Tab {tab_number}")
+    
+    for lang in ["hindi", "bengali"]:
+        try:
+            logger.info(f"[bg_gen] Starting {lang} translation for chart {chart_id_str} Tab {tab_number}")
+            translated_text = await translate_content(english_text, lang)
+            
+            # Save to PostgreSQL
+            pool = await get_db_pool()
+            async with pool.acquire() as save_conn:
+                new_id = uuid.uuid4()
+                await save_conn.execute(
+                    """
+                    INSERT INTO interpretations
+                        (id, chart_id, tab_number, tab_name, content, model_used, language)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    ON CONFLICT (chart_id, tab_number, language)
+                    DO UPDATE SET
+                        content      = EXCLUDED.content,
+                        generated_at = NOW()
+                    """,
+                    new_id,
+                    chart_id,
+                    tab_number,
+                    tab_name,
+                    translated_text,
+                    "translation/gemini-2.5-flash",
+                    lang
+                )
+            
+            # Cache to Redis
+            await cache_interpretation(chart_id_str, tab_number, translated_text, language=lang)
+            logger.info(f"[bg_gen] ✓ {lang.capitalize()} translation saved for chart {chart_id_str} Tab {tab_number}")
+            
+        except Exception as e:
+            logger.error(f"[bg_gen] Failed to translate/save {lang} for Tab {tab_number}: {e}")
 
 
 async def pregenerate_all_tabs(

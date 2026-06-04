@@ -67,9 +67,10 @@ export async function getChart(chartId) {
  * Supports standard browser streaming.
  * @param {string} chartId 
  * @param {number} tabNumber 
+ * @param {string} language - Target language (english, hindi, bengali)
  * @param {Function} onChunk - Callback function called with each received text chunk
  */
-export async function getInterpretation(chartId, tabNumber, onChunk) {
+export async function getInterpretation(chartId, tabNumber, language = 'english', onChunk) {
   try {
     // Standard fetch is more reliable for real-time text chunk streaming in browsers
     const response = await fetch(`${BASE_URL}/interpret/${chartId}/${tabNumber}`, {
@@ -77,10 +78,20 @@ export async function getInterpretation(chartId, tabNumber, onChunk) {
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ language }),
     });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      if (data.status === 'pending') {
+        if (onChunk) onChunk('{"status": "pending"}');
+        return;
+      }
     }
 
     const reader = response.body.getReader();

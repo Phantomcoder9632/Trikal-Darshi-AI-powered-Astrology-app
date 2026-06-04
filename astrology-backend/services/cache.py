@@ -72,31 +72,31 @@ async def get_cached_chart(key: str) -> Optional[Any]:
         logger.error(f"Failed to read chart from Redis cache: {e}")
     return None
 
-async def cache_interpretation(chart_id: str, tab_number: int, text: str) -> None:
+async def cache_interpretation(chart_id: str, tab_number: int, text: str, language: str = "english") -> None:
     """
     Cache an AI generated interpretation tab for 30 days.
     """
     client = await get_redis()
-    key = f"interpretation:{chart_id}:{tab_number}"
+    key = f"interpretation:{chart_id}:{tab_number}:{language}"
     try:
         await client.setex(key, 2592000, text)
-        logger.info(f"Cached interpretation successfully for {chart_id} Tab {tab_number}")
+        logger.info(f"Cached interpretation successfully for {chart_id} Tab {tab_number} ({language})")
     except Exception as e:
-        logger.error(f"Failed to write interpretation to Redis cache: {e}")
+        logger.error(f"Failed to write interpretation to Redis cache ({language}): {e}")
 
-async def get_cached_interpretation(chart_id: str, tab_number: int) -> Optional[str]:
+async def get_cached_interpretation(chart_id: str, tab_number: int, language: str = "english") -> Optional[str]:
     """
     Retrieve a cached AI generated interpretation.
     """
     client = await get_redis()
-    key = f"interpretation:{chart_id}:{tab_number}"
+    key = f"interpretation:{chart_id}:{tab_number}:{language}"
     try:
         val = await client.get(key)
         if val:
             logger.info(f"Cache hit for interpretation: {key}")
             return val
     except Exception as e:
-        logger.error(f"Failed to read interpretation from Redis cache: {e}")
+        logger.error(f"Failed to read interpretation from Redis cache ({language}): {e}")
     return None
 
 # Helper to generate the exact required key format: "chart:{dob}:{tob}:{lat}:{lng}"

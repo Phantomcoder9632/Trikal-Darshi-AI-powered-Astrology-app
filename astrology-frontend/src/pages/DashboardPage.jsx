@@ -23,6 +23,9 @@ export default function DashboardPage() {
   const [interpretations,  setInterpretations]  = useState({});
   const [tabLoading,       setTabLoading]       = useState({});
   const [tabError,         setTabError]         = useState({});
+  const [language,         setLanguage]         = useState('english');
+  const [pendingTranslation, setPendingTranslation] = useState({});
+  const [retryTrigger,     setRetryTrigger]     = useState(0);
 
   // Background pre-generation progress
   const [bgProgress,       setBgProgress]       = useState(null);
@@ -33,6 +36,14 @@ export default function DashboardPage() {
 
   // Reset chart toggle when tab changes
   useEffect(() => { setActiveChartIdx(0); }, [activeTab]);
+
+  const handleLanguageChange = (lang) => {
+    if (lang === language) return;
+    setLanguage(lang);
+    setInterpretations({});
+    setPendingTranslation({});
+    setTabError({});
+  };
 
   // ── 1. Fetch chart ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -56,19 +67,29 @@ export default function DashboardPage() {
   // ── 2. Stream interpretation for active tab ─────────────────────────────
   useEffect(() => {
     if (!chartId || loadingChart || chartError) return;
-    if (interpretations[activeTab]) return; // already loaded
+    if (interpretations[activeTab] || pendingTranslation[activeTab]) return; // already loaded or pending
 
     const streamTab = async () => {
       setTabLoading((prev)  => ({ ...prev, [activeTab]: true  }));
       setTabError((prev)    => ({ ...prev, [activeTab]: ''    }));
       setInterpretations((prev) => ({ ...prev, [activeTab]: '' }));
+      setPendingTranslation((prev) => ({ ...prev, [activeTab]: false }));
 
       try {
-        await getInterpretation(chartId, activeTab, (chunk) => {
-          setInterpretations((prev) => ({
-            ...prev,
-            [activeTab]: (prev[activeTab] || '') + chunk,
-          }));
+        await getInterpretation(chartId, activeTab, language, (chunk) => {
+          if (chunk === '{"status": "pending"}') {
+            setPendingTranslation((prev) => ({ ...prev, [activeTab]: true }));
+            setInterpretations((prev) => {
+              const copy = { ...prev };
+              delete copy[activeTab];
+              return copy;
+            });
+          } else {
+            setInterpretations((prev) => ({
+              ...prev,
+              [activeTab]: (prev[activeTab] || '') + chunk,
+            }));
+          }
         });
       } catch (err) {
         console.error(err);
@@ -82,7 +103,18 @@ export default function DashboardPage() {
     };
 
     streamTab();
-  }, [chartId, activeTab, loadingChart, chartError]);
+  }, [chartId, activeTab, language, loadingChart, chartError, retryTrigger]);
+
+  // ── 2b. Poll for pending translations ──────────────────────────────────
+  useEffect(() => {
+    if (pendingTranslation[activeTab]) {
+      const timer = setTimeout(() => {
+        setPendingTranslation((prev) => ({ ...prev, [activeTab]: false }));
+        setRetryTrigger((r) => r + 1);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [pendingTranslation, activeTab]);
 
   // ── 3. Poll background pre-generation progress ──────────────────────────
   useEffect(() => {
@@ -213,7 +245,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* ── All done badge (briefly shown) ── */}
+            {/* All done badge (briefly shown) */}
             {bgProgress && bgProgress.is_complete && (
               <div
                 id="bgCompletePill"
@@ -225,6 +257,27 @@ export default function DashboardPage() {
                 </span>
               </div>
             )}
+
+            {/* Language Toggle */}
+            <div className="flex bg-surface-container/50 border border-outline-variant/30 rounded-full p-0.5">
+              {[
+                { id: 'english', label: 'EN' },
+                { id: 'hindi', label: 'हि' },
+                { id: 'bengali', label: 'বাং' }
+              ].map((lang) => (
+                <button
+                  key={lang.id}
+                  onClick={() => handleLanguageChange(lang.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${
+                    language === lang.id
+                      ? 'bg-primary text-on-primary shadow-sm'
+                      : 'text-on-surface-variant hover:text-primary hover:bg-primary/5'
+                  }`}
+                >
+                  {lang.label}
+                </button>
+              ))}
+            </div>
 
             {/* Name + Dasha */}
             <div className="hidden sm:flex flex-col items-end">
@@ -309,6 +362,18 @@ export default function DashboardPage() {
                 interpretations={interpretations}
                 tabLoadingState={tabLoading}
               />
+
+              {/* Pending Translation Message */}
+              {pendingTranslation[activeTab] && (
+                 <div className="flex flex-col items-center gap-3 bg-primary/10 border border-primary/20 rounded-2xl p-5 text-center mt-2 animate-fade-in">
+                   <div className="relative w-8 h-8 flex items-center justify-center">
+                     <span className="material-symbols-outlined text-primary text-[28px] animate-spin">
+                       sync
+                     </span>
+                   </div>
+                   <p className="text-primary text-sm font-medium">Translation is being prepared, please try again in a moment...</p>
+                 </div>
+              )}
 
               {/* Tab error banner */}
               {tabError[activeTab] && (

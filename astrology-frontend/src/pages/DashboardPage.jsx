@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getChart, getInterpretation } from '../services/api';
+import { getChart, getInterpretation, getGenerationProgress } from '../services/api';
 
 // Child Components
 import ChartSidebar, { TAB_CHART_CONFIG } from '../components/ChartSidebar';
@@ -23,6 +23,10 @@ export default function DashboardPage() {
   const [interpretations,  setInterpretations]  = useState({});
   const [tabLoading,       setTabLoading]       = useState({});
   const [tabError,         setTabError]         = useState({});
+
+  // Background pre-generation progress
+  const [bgProgress,       setBgProgress]       = useState(null);
+  const pollIntervalRef                         = useRef(null);
 
   // Chart toggle within a tab
   const [activeChartIdx, setActiveChartIdx] = useState(0);
@@ -79,6 +83,35 @@ export default function DashboardPage() {
 
     streamTab();
   }, [chartId, activeTab, loadingChart, chartError]);
+
+  // ── 3. Poll background pre-generation progress ──────────────────────────
+  useEffect(() => {
+    if (!chartId || loadingChart || chartError) return;
+
+    const poll = async () => {
+      const data = await getGenerationProgress(chartId);
+      if (!data) return;
+      setBgProgress(data);
+      // Stop polling once all tabs are generated
+      if (data.is_complete) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+        // Auto-hide the badge after 4 seconds
+        setTimeout(() => setBgProgress(null), 4000);
+      }
+    };
+
+    // Initial poll immediately, then every 4 seconds
+    poll();
+    pollIntervalRef.current = setInterval(poll, 4000);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [chartId, loadingChart, chartError]);
 
   // ── Loading state ────────────────────────────────────────────────────────
   if (loadingChart) {
@@ -158,6 +191,41 @@ export default function DashboardPage() {
 
           {/* Right side */}
           <div className="flex items-center gap-4">
+
+            {/* ── Background pre-gen progress pill ── */}
+            {bgProgress && !bgProgress.is_complete && (
+              <div
+                id="bgProgressPill"
+                className="hidden sm:flex items-center gap-2 bg-primary/8 border border-primary/20 px-3 py-1.5 rounded-full animate-pulse"
+                title={`${bgProgress.completed_tabs.length} of ${bgProgress.total_tabs} sections pre-generated`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                <span className="font-label-sm text-[9px] text-primary font-bold uppercase tracking-wider whitespace-nowrap">
+                  ✦ Preparing Blueprint — {bgProgress.completed_tabs.length}/{bgProgress.total_tabs} Sections Ready
+                </span>
+                {/* Mini progress bar */}
+                <div className="w-16 h-1 rounded-full bg-primary/15 overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all duration-700"
+                    style={{ width: `${bgProgress.percent}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ── All done badge (briefly shown) ── */}
+            {bgProgress && bgProgress.is_complete && (
+              <div
+                id="bgCompletePill"
+                className="hidden sm:flex items-center gap-1.5 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                <span className="font-label-sm text-[9px] text-green-700 font-bold uppercase tracking-wider whitespace-nowrap">
+                  ✦ All Sections Ready
+                </span>
+              </div>
+            )}
+
             {/* Name + Dasha */}
             <div className="hidden sm:flex flex-col items-end">
               <span className="font-label-sm text-[11px] font-bold text-on-surface uppercase tracking-widest leading-tight">

@@ -5,7 +5,7 @@ import json
 from datetime import date, time, datetime
 from typing import Dict, Any
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
 import asyncpg
 
@@ -14,6 +14,7 @@ from services.hybrid import get_complete_chart
 from services.numerology import get_numerology
 from services.cache import cache_chart, get_cached_chart, generate_chart_cache_key, get_redis
 from services.ephemeris import compute_divisional_chart, compute_gochar_chart, ZODIAC_SIGNS
+from services.background_generator import pregenerate_all_tabs
 
 logger = logging.getLogger(__name__)
 
@@ -166,6 +167,7 @@ class ChartGenerateRequest(BaseModel):
 @router.post("/generate", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
 async def generate_chart(
     payload: ChartGenerateRequest,
+    background_tasks: BackgroundTasks,
     conn: asyncpg.Connection = Depends(get_db)
 ):
     """
@@ -219,6 +221,21 @@ async def generate_chart(
         is_complete = all(k in cached_chart for k in required_keys)
         if is_complete:
             logger.info(f"Redis cache hit under coordinate key: {cache_key}")
+            # Fire background pre-generation for any missing tabs.
+            # The generator skips tabs already in DB, so this is always safe.
+            cached_chart_id = cached_chart.get("chart_id")
+            if cached_chart_id:
+                try:
+                    chart_uuid = uuid.UUID(cached_chart_id)
+                    background_tasks.add_task(
+                        pregenerate_all_tabs,
+                        chart_id=chart_uuid,
+                        chart_data=cached_chart,
+                        full_name=cached_chart.get("full_name", payload.full_name),
+                    )
+                    logger.info(f"[chart] Background pre-generation triggered for Redis-cached chart {cached_chart_id}")
+                except Exception as bg_err:
+                    logger.warning(f"[chart] Could not trigger background gen for Redis-cached chart: {bg_err}")
             return cached_chart
         else:
             logger.info(f"Redis cache hit but chart incomplete (missing divisional charts), falling through to PostgreSQL: {cache_key}")
@@ -261,6 +278,17 @@ async def generate_chart(
 
             # Cache in Redis so subsequent requests hit Redis instantly
             await cache_chart(cache_key, chart_data)
+
+            # Fire background pre-generation for any missing tabs
+            # Use FastAPI BackgroundTasks (not asyncio.create_task) to prevent
+            # silent GC-cancellation of the background coroutine.
+            background_tasks.add_task(
+                pregenerate_all_tabs,
+                chart_id=row["id"],
+                chart_data=chart_data,
+                full_name=chart_data.get("full_name", payload.full_name),
+            )
+            logger.info(f"[chart] Background pre-generation triggered for existing chart {row['id']}")
             
             return chart_data
     except Exception as e:
@@ -342,12 +370,24 @@ async def generate_chart(
     # ── h. Cache in Redis for 30 days (2592000s) ─────────────────────────────
     await cache_chart(cache_key, chart_data)
 
-    # ── i. Return complete chart JSON with chart_id ──────────────────────────
+    # ── i. Fire background pre-generation for all 10 tabs ────────────────────
+    # Use FastAPI BackgroundTasks (not asyncio.create_task) to prevent
+    # silent GC-cancellation of the background coroutine.
+    background_tasks.add_task(
+        pregenerate_all_tabs,
+        chart_id=new_id,
+        chart_data=chart_data,
+        full_name=payload.full_name,
+    )
+    logger.info(f"[chart] Background pre-generation triggered for new chart {new_id}")
+
+    # ── j. Return complete chart JSON with chart_id ──────────────────────────
     return chart_data
 
 @router.get("/{chart_id}", response_model=Dict[str, Any])
 async def get_chart(
     chart_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     conn: asyncpg.Connection = Depends(get_db)
 ):
     """
@@ -386,5 +426,14 @@ async def get_chart(
 
     # Heal legacy chart if incomplete
     chart_data = await ensure_chart_complete(chart_data, conn, chart_id)
+
+    # Fire background pre-generation for any missing tabs
+    background_tasks.add_task(
+        pregenerate_all_tabs,
+        chart_id=chart_id,
+        chart_data=chart_data,
+        full_name=chart_data.get("full_name"),
+    )
+    logger.info(f"[chart] Background pre-generation triggered for GET chart {chart_id}")
 
     return chart_data

@@ -341,8 +341,9 @@ async def stream_with_rag(
     try:
         rag_context = get_context_for_tab(tab_number, chart_data)
         # Hard cap on RAG context to prevent token overflow
-        if len(rag_context) > 1500:
-            rag_context = rag_context[:1500] + "\n[...truncated for token limit]"
+        # 4000 chars gives the LLM 3-5 full book passages without overwhelming context
+        if len(rag_context) > 4000:
+            rag_context = rag_context[:4000] + "\n[...truncated for token limit]"
         logger.info(f"[pipeline] RAG context length: {len(rag_context)} chars")
     except Exception as rag_err:
         logger.warning(f"[pipeline] RAG retrieval failed: {rag_err}. Continuing without context.")

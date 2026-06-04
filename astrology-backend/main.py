@@ -36,12 +36,14 @@ from services.cache import init_redis, close_redis
 from routes.chart import router as chart_router
 from routes.interpret import router as interpret_router
 from routes.geocode import router as geocode_router
+from routes.progress import router as progress_router
 
 # ── API Router Registration ────────────────────────────────────────────────
 # Register geocode, chart, and interpret routers directly as requested
 app.include_router(geocode_router)
 app.include_router(chart_router, prefix="/chart")
 app.include_router(interpret_router)
+app.include_router(progress_router)
 
 # ── Lifecycle Event Handlers ───────────────────────────────────────────────
 @app.on_event("startup")

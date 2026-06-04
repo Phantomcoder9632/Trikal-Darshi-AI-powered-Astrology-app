@@ -1,0 +1,41 @@
+Vedic Astrology App - Summary of Changes Made Today (June 4, 2026)
+
+This document lists the architectural, backend, and frontend modifications implemented today to introduce non-blocking background pre-generation of all 10 tab interpretations.
+
+================================================================================
+BACKEND CHANGES (astrology-backend/)
+================================================================================
+
+1. Created: services/background_generator.py
+   - Implemented `pregenerate_all_tabs(chart_id, chart_data, full_name)` to pre-generate all 10 tab interpretations concurrently.
+   - Used `asyncio.Semaphore(2)` to limit concurrency to 2 concurrent API requests at a time to prevent API rate limiting.
+   - Refactored LLM processing to run inside `asyncio.to_thread()` using `_sync_collect_tab_text`. Offloading the synchronous, blocking OpenAI-compatible API call to a thread pool keeps FastAPI's main event loop fully free and non-blocking.
+   - Added automated chunk retrieval from the vector store (RAG) using an enhanced cap (k=5 chunks, up to 4000 characters) for richer context in background generation compared to the live streaming path.
+   - Saves results to PostgreSQL `interpretations` and caches them to Redis, while skipping tabs that are already populated.
+
+2. Created: routes/progress.py
+   - Added the `GET /progress/{chart_id}` endpoint.
+   - Queries the PostgreSQL database to count how many valid (>= 1000 characters) tab interpretations have been successfully completed.
+   - Returns details: total_tabs (10), completed_tabs, pending_tabs, percent (completion percentage), and is_complete.
+
+3. Modified: routes/chart.py
+   - Imported `pregenerate_all_tabs`.
+   - Registered `BackgroundTasks` in `generate_chart()` (POST /generate) and added the pre-generation task so background calculation triggers immediately on chart creation.
+   - Integrated task triggers upon Cache Hits (both Redis and PostgreSQL) to heal/fill any missing tabs on existing charts.
+   - Modified `get_chart()` (GET /{chart_id}) to accept `BackgroundTasks` and fire `pregenerate_all_tabs` if a chart is loaded directly (e.g., page refresh or direct URL loading).
+
+4. Modified: main.py
+   - Registered and included the new `progress_router` routes (`/progress/{chart_id}`).
+
+================================================================================
+FRONTEND CHANGES (astrology-frontend/)
+================================================================================
+
+1. Modified: src/services/api.js
+   - Implemented `getGenerationProgress(chartId)` API call pointing to the `/progress/{chartId}` backend endpoint to poll pre-generation progress in real time.
+
+2. Modified: src/pages/DashboardPage.jsx
+   - Imported `getGenerationProgress`.
+   - Added polling mechanism using `useEffect` and `setInterval` to call `getGenerationProgress(chartId)` every 4 seconds.
+   - Polls dynamically until `data.is_complete` is true, then clears the interval.
+   - Added local state `bgProgress` to store progress details and integrated a real-time progress banner/badge in the dashboard UI showing completion percentage and tab counts.

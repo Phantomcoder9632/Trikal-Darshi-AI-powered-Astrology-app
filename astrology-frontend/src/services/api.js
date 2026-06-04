@@ -117,3 +117,19 @@ export async function getGochar(lat = 28.6139, lng = 77.2090) {
   }
 }
 
+/**
+ * Poll background pre-generation progress for a chart.
+ * GET /progress/{chartId}
+ * Returns: { total_tabs, completed_tabs, pending_tabs, percent, is_complete }
+ * @param {string} chartId 
+ */
+export async function getGenerationProgress(chartId) {
+  try {
+    const response = await apiClient.get(`/progress/${chartId}`);
+    return response.data;
+  } catch (error) {
+    // Non-fatal — polling errors should not break the UI
+    console.warn('Progress poll failed:', error.response?.data || error.message);
+    return null;
+  }
+}

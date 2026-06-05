@@ -260,24 +260,11 @@ export default function DivisionalChart({ chartData, chartType = "D1", natalData
       </div>
 
       {/* Best Used For */}
-      <div className="w-full px-1" style={{ marginTop: '2px' }}>
-        <div
-          className="w-full text-center rounded-xl border border-primary/15"
-          style={{ background: 'rgba(124,88,0,0.04)', padding: '8px 12px' }}
-        >
-          <span
-            className="block font-bold uppercase tracking-widest text-primary"
-            style={{ fontSize: '9px', marginBottom: '3px' }}
-          >
-            Best Used For
-          </span>
-          <span
-            className="font-accent-italic italic text-on-surface-variant"
-            style={{ fontSize: '10px', lineHeight: '1.5', display: 'block', wordBreak: 'break-word' }}
-          >
-            {CHART_PURPOSES[chartType] || 'Analyzes astrological dimensions for this life area.'}
-          </span>
-        </div>
+      <div className="chart-purpose-badge">
+        <span className="purpose-label">Best Used For</span>
+        <span className="purpose-text">
+          {CHART_PURPOSES[chartType] || 'Analyzes astrological dimensions for this life area.'}
+        </span>
       </div>
 
     </div>

@@ -98,25 +98,14 @@ export default function ChartSidebar({ activeTab, chartData, activeChartIdx, set
   const resolvedChartData = currentKey ? chartData?.[currentKey] : null;
 
   return (
-    <div
-      className="animate-up delay-1"
-      style={{
-        background: '#ffffff',
-        border: '1px solid rgba(211,196,176,0.45)',
-        borderRadius: '14px',
-        padding: '16px',
-        boxShadow: '0 1px 8px rgba(124,88,0,0.05)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-      }}
-    >
+    <div className="sidebar-card animate-up delay-1">
+
       {/* Chart toggle buttons */}
       {hasToggle && (
         <div
           role="group"
           aria-label="Chart selector"
-          style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}
+          className="chart-toggle-group"
         >
           {labels.map((label, idx) => {
             const isSelected = activeChartIdx === idx;
@@ -127,26 +116,7 @@ export default function ChartSidebar({ activeTab, chartData, activeChartIdx, set
                 type="button"
                 onClick={() => setActiveChartIdx(idx)}
                 aria-pressed={isSelected}
-                style={{
-                  flex: '1 1 0',
-                  minWidth: 0,
-                  padding: '7px 10px',
-                  borderRadius: '8px',
-                  border: isSelected
-                    ? '1.5px solid #7c5800'
-                    : '1.5px solid rgba(211,196,176,0.5)',
-                  background: isSelected ? '#7c5800' : 'rgba(238,238,235,0.6)',
-                  color: isSelected ? '#ffffff' : '#4f4536',
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  letterSpacing: '0.07em',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  lineHeight: 1.3,
-                  transition: 'all 0.2s ease',
-                  boxShadow: isSelected ? '0 2px 8px rgba(124,88,0,0.25)' : 'none',
-                }}
+                className={`chart-toggle-btn${isSelected ? ' chart-toggle-btn-active' : ''}`}
               >
                 {label}
               </button>
@@ -164,3 +134,4 @@ export default function ChartSidebar({ activeTab, chartData, activeChartIdx, set
     </div>
   );
 }
+

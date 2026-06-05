@@ -9,6 +9,13 @@ import TransitBanner from '../components/TransitBanner';
 import CosmicSummary from '../components/CosmicSummary';
 import TabNavigation from '../components/TabNavigation';
 import RemedyCards   from '../components/RemedyCards';
+import ProfileCard   from '../components/ProfileCard';
+
+// Helper: get 1-2 capital initials from a full name
+function getInitials(name) {
+  if (!name) return '?';
+  return name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+}
 
 export default function DashboardPage() {
   const { chartId } = useParams();
@@ -148,7 +155,7 @@ export default function DashboardPage() {
   // ── Loading state ────────────────────────────────────────────────────────
   if (loadingChart) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-center p-6 gap-6">
+      <div className="page-loading">
         <div className="relative w-14 h-14 flex items-center justify-center">
           <span className="material-symbols-outlined text-primary-container text-[44px] animate-spin">
             progress_activity
@@ -165,7 +172,7 @@ export default function DashboardPage() {
   // ── Error state ──────────────────────────────────────────────────────────
   if (chartError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-center p-6">
+      <div className="page-error">
         <div className="glass-card max-w-[440px] w-full p-10 rounded-2xl border border-error/25 shadow-xl flex flex-col items-center gap-5">
           <span
             className="material-symbols-outlined text-error text-[48px]"
@@ -208,8 +215,8 @@ export default function DashboardPage() {
     <div className="w-full min-h-screen bg-background text-on-background font-body-md yantra-bg flex flex-col selection:bg-primary-container/30">
 
       {/* ── Sticky Header ────────────────────────────────────────────────── */}
-      <header className="w-full bg-white/85 backdrop-blur-xl border-b border-outline-variant/25 sticky top-0 z-50">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-8 md:px-10 py-3.5 flex items-center justify-between gap-4">
+      <header className="dashboard-header">
+        <div className="dashboard-header-inner">
 
           {/* Logo */}
           <button
@@ -279,16 +286,19 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            {/* Name + Dasha */}
-            <div className="hidden sm:flex flex-col items-end">
-              <span className="font-label-sm text-[11px] font-bold text-on-surface uppercase tracking-widest leading-tight">
-                {chartData?.full_name || 'Seeker'}
-              </span>
-              <div className="flex items-center gap-1.5 bg-primary/8 px-2.5 py-0.5 rounded-full border border-primary/15 mt-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                <span className="font-label-sm text-[9px] text-primary font-bold uppercase tracking-wider">
-                  {currentDashaText}
+            {/* Name + Avatar Chip */}
+            <div className="header-avatar-chip">
+              <div className="header-avatar-initials" aria-hidden="true">
+                {getInitials(chartData?.full_name)}
+              </div>
+              <div className="hidden sm:flex flex-col">
+                <span className="header-name-text" title={chartData?.full_name || 'Seeker'}>
+                  {chartData?.full_name || 'Seeker'}
                 </span>
+                <div className="header-dasha-pill">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+                  <span>{currentDashaText}</span>
+                </div>
               </div>
             </div>
 
@@ -331,6 +341,10 @@ export default function DashboardPage() {
 
           {/* ── Left sidebar ────────────────────────────────────────────── */}
           <aside className="dashboard-sidebar flex flex-col gap-4">
+
+            {/* Profile / Name card */}
+            <ProfileCard chartData={chartData} />
+
             {/* Chart viewer */}
             <ChartSidebar
               activeTab={activeTab}
@@ -340,9 +354,10 @@ export default function DashboardPage() {
             />
 
             {/* Planet positions table */}
-            <div className="dashboard-card overflow-hidden animate-up delay-2" style={{ padding: 0 }}>
+            <div className="dashboard-card overflow-hidden animate-up delay-3" style={{ padding: 0 }}>
               <PlanetTable planets={tablePlanets} />
             </div>
+
           </aside>
 
           {/* ── Right content ────────────────────────────────────────────── */}

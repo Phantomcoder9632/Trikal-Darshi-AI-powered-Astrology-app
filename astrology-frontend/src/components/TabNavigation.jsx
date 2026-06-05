@@ -207,7 +207,8 @@ export default function TabNavigation({
 
       {/* ── Content Card ────────────────────────────────────── */}
       <div
-        className="dashboard-tab-content relative"
+        key={activeTab}
+        className="dashboard-tab-content relative tab-panel-enter"
         role="tabpanel"
         id={`tab-panel-${activeTab}`}
         aria-labelledby={`tab-btn-${activeTab}`}

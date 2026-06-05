@@ -42,7 +42,7 @@ export default function CosmicSummary({ summaryText, chartData }) {
   }
 
   return (
-    <section className="relative bg-white border border-outline-variant/30 rounded-2xl p-5 md:p-7 overflow-hidden shadow-sm">
+    <section className="cosmic-summary">
       {/* Subtle background watermark */}
       <div
         className="absolute -right-16 -bottom-16 w-64 h-64 opacity-[0.03] pointer-events-none select-none"

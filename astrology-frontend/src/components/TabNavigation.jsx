@@ -95,7 +95,7 @@ function formatInterpretationText(text) {
     if (subBulletMatch) {
       elements.push(
         <div key={i} className="prose-sub-bullet">
-          {parseInlineBold(subBulletMatch[1])}
+          <span>{parseInlineBold(subBulletMatch[1])}</span>
         </div>
       );
       continue;
@@ -106,7 +106,7 @@ function formatInterpretationText(text) {
     if (bulletMatch) {
       elements.push(
         <div key={i} className="prose-bullet-item">
-          {parseInlineBold(bulletMatch[1])}
+          <span>{parseInlineBold(bulletMatch[1])}</span>
         </div>
       );
       continue;
@@ -118,7 +118,7 @@ function formatInterpretationText(text) {
       elements.push(
         <div key={i} className="prose-numbered-item">
           <span className="prose-num">{numberedMatch[1]}.</span>
-          {parseInlineBold(numberedMatch[2])}
+          <span>{parseInlineBold(numberedMatch[2])}</span>
         </div>
       );
       continue;

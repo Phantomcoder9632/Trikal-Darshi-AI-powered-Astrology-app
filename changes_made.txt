@@ -51,3 +51,19 @@ RATE LIMIT & TRANSLATION FALLBACK FIXES (June 4, 2026)
 2. Database and Cache Cleanup:
    - Deleted all previous Hindi predictions from both PostgreSQL `interpretations` table and Redis cache keys.
    - Successfully verified automatic, resilient regeneration of Hindi/Bengali translations utilizing the new fallback cascade mechanism.
+
+================================================================================
+RAG PERSONALIZATION & API RESILIENCY FIXES (June 9, 2026)
+================================================================================
+
+1. Modified: astrology-backend/rag/retriever.py
+   - Updated `get_context_for_tab` to accept an optional `k` parameter so the background generator can fetch a larger number of chunks (k=5) while falling back to personalized chart context correctly.
+
+2. Modified: astrology-backend/services/background_generator.py
+   - Fixed a critical hallucination bug where RAG context was being generated without passing the user's specific `chart_data`. The background generator now successfully pulls highly personalized RAG passages from ChromaDB instead of generic texts.
+
+3. Modified: astrology-backend/services/ai_prompts.py
+   - Enforced explicit local calculations of Mangal Dosha, Kaal Sarp Dosha, and Pitru Dosha if the primary calculation source omits them. This prevents the LLM from receiving "Unknown" dosha values and subsequently hallucinating incorrect planetary meanings.
+
+4. Modified: astrology-backend/rag/pipeline.py
+   - Increased the connection timeout from 10.0s to 60.0s for the OpenAI clients (primary Gemini and fallback OpenRouter). This prevents premature disconnections during times of high API load or rate limiting, greatly increasing inference completion rates.

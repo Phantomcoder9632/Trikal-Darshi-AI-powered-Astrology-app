@@ -62,7 +62,7 @@ Step 4: Non-Blocking Background Pre-Generation (`services/background_generator.p
     at most 2 tabs concurrently to avoid API rate limits).
   - Skips any tab that already has a completed interpretation (>= 1000 chars) in the DB.
   - For each pending tab:
-      1. Generates an optimized search query using tab properties.
+      1. Generates an optimized search query using tab properties AND the user's specific chart placements (e.g., Aries Lagna with Saturn in 10th house).
       2. Performs a similarity search on the ChromaDB vector database (`chroma_db/`) 
          containing classical scriptures to extract the top 5 relevant passages 
          (up to 4000 characters).
@@ -162,7 +162,8 @@ Directory: astrology-backend/services/
     - `build_tab_prompt(chart_data, tab_number, full_name) -> str`: Merges birth chart 
       details and planetary positions with specific system instructions tailored for the 
       requested tab (e.g. Tab 1 = Lagna analysis, Tab 4 = Career D10 analysis, etc.).
-      Provides structured templates for JSON or structured text outputs.
+      Provides structured templates for JSON or structured text outputs. Includes failsafe 
+      local calculations for doshas (Mangal, Kaal Sarp, Pitru) to avoid "Unknown" status.
 
 * astrologyapi.py
   - Purpose: Interface with the external AstrologyAPI.com HTTP REST service.
@@ -249,6 +250,7 @@ Directory: astrology-backend/rag/
 * retriever.py
   - Purpose: Pulls relevant book passages for LLM context prompts.
   - Functions:
+    - `get_context_for_tab(tab_number, chart_data, k) -> str`: Builds a personalized search context from chart_data, fetches k chunks, and formats them.
     - `search_for_tab(tab_number, chart_context, k) -> List[Document]`: Queries ChromaDB using queries in `TAB_QUERIES` 
       and return the top k relevant text chunks.
     - `format_rag_context(chunks) -> str`: Formats Document chunks into readable text blocks.
@@ -257,8 +259,8 @@ Directory: astrology-backend/rag/
   - Purpose: Core LLM retrieval and fallback generator.
   - Functions:
     - `stream_with_rag(chart_data, tab_number, full_name, tab_prompt)`: Streams the interpretation in real time.
-    - `_stream_primary(messages)`: Calls Gemini via compatibility base URL.
-    - `_stream_fallback(messages, model)`: Calls OpenRouter with fallback models if Gemini fails.
+    - `_stream_primary(messages)`: Calls Gemini via compatibility base URL (60s timeout).
+    - `_stream_fallback(messages, model)`: Calls OpenRouter with fallback models if Gemini fails (60s timeout).
     - `_yield_tokens(stream)`: Strips `<think>...</think>` tags from output stream.
 
 --------------------------------------------------------------------------------

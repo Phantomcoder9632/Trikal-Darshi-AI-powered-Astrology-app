@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: astrology-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-securepassword}
+      POSTGRES_DB: ${DB_NAME:-astrology_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: astrology-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # 3. FastAPI Backend
+  backend:
+    build:
+      context: ./astrology-backend
+      dockerfile: Dockerfile
+    container_name: astrology-backend
+    restart: always
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "7860:7860"
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-securepassword}@db:5432/${DB_NAME:-astrology_db}
+      - REDIS_URL=redis://redis:6379/0
+      - ASTROLOGYAPI_USER_ID=${ASTROLOGYAPI_USER_ID}
+      - ASTROLOGYAPI_API_KEY=${ASTROLOGYAPI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-google/gemma-4-31b-it:free}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - APP_ENV=production
+      - GEMINI_TRANSLATION_KEY=${GEMINI_TRANSLATION_KEY}
+
+volumes:
+  postgres_data:
+  redis_data:

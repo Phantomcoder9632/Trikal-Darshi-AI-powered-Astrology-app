@@ -14,16 +14,47 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+from contextlib import asynccontextmanager
+
+# CORS origins configuration
+cors_origins_str = os.getenv("CORS_ORIGINS", "")
+cors_origins = [o.strip() for o in cors_origins_str.split(",") if o.strip()] if cors_origins_str else ["*"]
+
+@asynccontextmanager
+async def app_lifespan(app: FastAPI):
+    logger.info("Initializing PostgreSQL pool and Redis connection...")
+    await startup_db_event()
+    await init_redis()
+    logger.info("PostgreSQL and Redis ready.")
+
+    # Initialize RAG vector store
+    logger.info("Initializing RAG vector store...")
+    try:
+        from rag.vectorstore import build_vectorstore
+        build_vectorstore(force_rebuild=False)
+        logger.info("RAG vector store ready.")
+    except Exception as e:
+        logger.error(f"RAG vector store initialization failed: {e}")
+        logger.warning("Server will start without RAG — AI responses will use base knowledge only.")
+
+    logger.info("Application startup completed successfully.")
+    yield
+    logger.info("Closing PostgreSQL pool and Redis connection...")
+    await shutdown_db_event()
+    await close_redis()
+    logger.info("Application shutdown completed successfully.")
+
 app = FastAPI(
     title="Vedic Astrology Backend API",
     description="Trikal Darshi Cosmic Architect Vedic Astrology Engine powered by FastAPI, Swiss Ephemeris, Groq LLM, and RAG over classical Jyotish shastras.",
-    version="2.0.0"
+    version="2.0.0",
+    lifespan=app_lifespan
 )
 
 # ── CORS Middleware Configuration (added BEFORE any route includes) ──
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,40 +70,12 @@ from routes.geocode import router as geocode_router
 from routes.progress import router as progress_router
 
 # ── API Router Registration ────────────────────────────────────────────────
-# Register geocode, chart, and interpret routers directly as requested
 app.include_router(geocode_router)
 app.include_router(chart_router, prefix="/chart")
 app.include_router(interpret_router)
 app.include_router(progress_router)
 
-# ── Lifecycle Event Handlers ───────────────────────────────────────────────
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Initializing PostgreSQL pool and Redis connection...")
-    await startup_db_event()
-    await init_redis()
-    logger.info("PostgreSQL and Redis ready.")
 
-    # Initialize RAG vector store
-    # Loads from disk instantly if chroma_db/ exists (normal case).
-    # Runs full build pipeline only on first-ever startup.
-    logger.info("Initializing RAG vector store...")
-    try:
-        from rag.vectorstore import build_vectorstore
-        build_vectorstore(force_rebuild=False)
-        logger.info("RAG vector store ready.")
-    except Exception as e:
-        logger.error(f"RAG vector store initialization failed: {e}")
-        logger.warning("Server will start without RAG — AI responses will use base knowledge only.")
-
-    logger.info("Application startup completed successfully.")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("Closing PostgreSQL pool and Redis connection...")
-    await shutdown_db_event()
-    await close_redis()
-    logger.info("Application shutdown completed successfully.")
 
 
 # ── Health Check Endpoint ──────────────────────────────────────────────────

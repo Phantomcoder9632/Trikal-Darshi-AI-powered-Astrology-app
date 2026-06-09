@@ -49,9 +49,8 @@ PRIMARY_API_KEY    = os.getenv("GEMINI_API_KEY", "")
 FALLBACK_BASE_URL  = "https://openrouter.ai/api/v1"
 FALLBACK_API_KEY   = os.getenv("OPENROUTER_API_KEY", "")
 FALLBACK_MODELS    = [
+    "google/gemma-4-31b-it:free",
     "meta-llama/llama-3.3-70b-instruct:free",
-    "google/gemma-3-27b-it:free",
-    "meta-llama/llama-3-8b-instruct:free",
     "openrouter/free",
 ]
 
@@ -217,6 +216,8 @@ def _stream_primary(messages: list) -> Any:
     primary_client = OpenAI(
         api_key=api_key,
         base_url=PRIMARY_BASE_URL,
+        max_retries=0,
+        timeout=60.0,
     )
     logger.info(f"[pipeline] PRIMARY → Gemini model: {model}")
     return primary_client.chat.completions.create(
@@ -248,6 +249,8 @@ def _stream_fallback(messages: list, model: str) -> Any:
             "HTTP-Referer": "https://trikalmdarshi.app",
             "X-Title": "Trikal Darshi",
         },
+        max_retries=0,
+        timeout=60.0,
     )
     logger.info(f"[pipeline] FALLBACK → OpenRouter model: {model}")
     return fallback_client.chat.completions.create(

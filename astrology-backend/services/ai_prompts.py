@@ -124,6 +124,78 @@ def build_tab_prompt(
             yoga_names = [y.get("name", str(y)) if isinstance(y, dict) else str(y) for y in yogas[:10]]
             lines.append("Yogas: " + ", ".join(yoga_names))
 
+        # Precalculated/Vetted Doshas
+        # 1. Mangal Dosha
+        mangal = chart_data.get("mangal_dosha", {})
+        if not mangal and planets:
+            try:
+                from services.ephemeris import calculate_mangal_dosha
+                mangal = calculate_mangal_dosha(planets)
+            except Exception:
+                pass
+
+        mangal_status = "Unknown"
+        mangal_msg = ""
+        if isinstance(mangal, dict) and mangal:
+            if "mangal_dosha_type" in mangal:
+                mangal_status = mangal["mangal_dosha_type"]
+            elif "manglik_status" in mangal:
+                mangal_status = mangal["manglik_status"]
+            elif "present" in mangal:
+                mangal_status = "Manglik" if mangal["present"] else "Non-Manglik"
+            mangal_msg = mangal.get("message", mangal.get("one_line", ""))
+        lines.append(f"Mangal Dosha: {mangal_status} (Details: {mangal_msg})")
+
+        # 2. Kaal Sarp Dosha
+        kalsarp = chart_data.get("kalsarp", {})
+        if not kalsarp and planets:
+            try:
+                from services.ephemeris import calculate_kalsarp
+                kalsarp = calculate_kalsarp(planets)
+            except Exception:
+                pass
+
+        kalsarp_status = "No"
+        kalsarp_msg = ""
+        if isinstance(kalsarp, dict) and kalsarp:
+            present = kalsarp.get("present", kalsarp.get("kalsarp_present", False))
+            kalsarp_status = f"Yes ({kalsarp.get('type', 'Kaal Sarp')})" if present else "No"
+            kalsarp_msg = kalsarp.get("message", kalsarp.get("one_line", ""))
+        lines.append(f"Kaal Sarp Dosha: {kalsarp_status} (Details: {kalsarp_msg})")
+
+        # 3. Pitru Dosha
+        pitru = chart_data.get("pitru_dosha", {})
+        if not pitru and planets:
+            try:
+                from services.ephemeris import calculate_pitru_dosha
+                pitru = calculate_pitru_dosha(planets)
+            except Exception:
+                pass
+
+        pitru_status = "No"
+        pitru_msg = ""
+        if isinstance(pitru, dict) and pitru:
+            present = pitru.get("present", False)
+            pitru_status = "Yes" if present else "No"
+            pitru_msg = pitru.get("message", "")
+        lines.append(f"Pitru Dosha: {pitru_status} (Details: {pitru_msg})")
+
+        # 4. Gand Mool Nakshatra
+        gand = chart_data.get("nakshatra", {}).get("gand_mool", {})
+        if not gand and planets:
+            try:
+                from services.ephemeris import calculate_gand_mool
+                gand = calculate_gand_mool(planets)
+            except Exception:
+                pass
+        gand_status = "No"
+        gand_msg = ""
+        if isinstance(gand, dict):
+            present = gand.get("present", False)
+            gand_status = "Yes" if present else "No"
+            gand_msg = gand.get("message", "")
+        lines.append(f"Gand Mool Nakshatra: {gand_status} (Details: {gand_msg})")
+
         # DOB / birth info
         for field in ("date_of_birth", "birth_date", "dob"):
             val = chart_data.get(field, "")

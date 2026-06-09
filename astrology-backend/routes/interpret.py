@@ -43,6 +43,9 @@ async def generate_interpretation_stream(
     Groq/Qwen3-32b (primary) or OpenRouter/Gemma-4-31b (fallback),
     and automatically saves + caches the result on stream completion.
     """
+    # Overwrite language to english since translation feature is omitted
+    language = "english"
+
     if tab_number not in TAB_MAP:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -77,30 +80,6 @@ async def generate_interpretation_stream(
             yield cached_text
             
         return StreamingResponse(yield_cached(), media_type="text/plain")
-
-    # ── Check if translation is pending ─────────────────────────────────────
-    if language in ["hindi", "bengali"]:
-        # If we reach here, it means cache miss and DB miss for translation.
-        # Check if we have the English interpretation to translate from.
-        english_row = await conn.fetchrow(
-            "SELECT content FROM interpretations WHERE chart_id = $1 AND tab_number = $2 AND language = 'english'",
-            chart_id,
-            tab_number
-        )
-        if english_row and english_row["content"]:
-            # Trigger background translation
-            from services.background_generator import translate_and_save
-            background_tasks.add_task(
-                translate_and_save,
-                chart_id=chart_id,
-                tab_number=tab_number,
-                english_text=english_row["content"]
-            )
-            logger.info(f"Triggered background translation to {language} for chart={chart_id_str} Tab={tab_number}")
-        else:
-            logger.info(f"Translation pending but English not found yet for chart={chart_id_str} Tab={tab_number} Language={language}")
-        
-        return JSONResponse(content={"status": "pending"})
 
     # ── c. Fetch complete chart from PostgreSQL ─────────────────────────────
     chart_row = await conn.fetchrow(

@@ -160,37 +160,51 @@ def format_rag_context(chunks: List[Any]) -> str:
 def get_context_for_tab(
     tab_number: int,
     chart_data: Optional[Dict[str, Any]] = None,
+    k: int = 3,
 ) -> str:
     """
     High-level entry point: builds a chart-aware search context,
     retrieves relevant chunks, and returns a prompt-ready string.
 
-    Chart personalisation:
-      Extracts lagna sign, key planets (Sun, Moon, Saturn, Jupiter, etc.)
-      from chart_data and prepends them to each search query so results
-      are grounded in this specific chart.
+    Checks Redis cache first if chart_id is provided.
 
     Args:
         tab_number: Report tab (1-8).
-        chart_data: Dict from the chart calculation service, e.g.:
-            {
-                "lagna": "Aries",
-                "planets": {
-                    "Sun":     {"sign": "Leo",   "house": 5},
-                    "Moon":    {"sign": "Taurus", "house": 2},
-                    "Saturn":  {"sign": "Aquarius","house": 11},
-                    ...
-                },
-                "mahadasha": "Saturn",
-            }
-
-    Returns:
-        Formatted RAG context string ready to inject into a prompt.
-        Returns empty string if no relevant chunks found.
+        chart_data: Dict from the chart calculation service.
+        k:          Number of unique chunks to return.
     """
+    chart_id = None
+    if chart_data and isinstance(chart_data, dict):
+        chart_id = chart_data.get("chart_id")
+
+    redis_key = f"rag_context:{chart_id}:{tab_number}:{k}" if chart_id else None
+    
+    # ── Try loading from Redis cache first ──
+    if redis_key:
+        try:
+            from services.background_generator import get_sync_redis
+            r_client = get_sync_redis()
+            cached_val = r_client.get(redis_key)
+            if cached_val is not None:
+                return cached_val
+        except Exception:
+            pass
+
+    # ── Cache miss: execute vector store search ──
     chart_context = _build_chart_context(tab_number, chart_data or {})
-    chunks = search_for_tab(tab_number, chart_context=chart_context)
-    return format_rag_context(chunks)
+    chunks = search_for_tab(tab_number, chart_context=chart_context, k=k)
+    context = format_rag_context(chunks)
+
+    # ── Save result to Redis ──
+    if redis_key:
+        try:
+            from services.background_generator import get_sync_redis
+            r_client = get_sync_redis()
+            r_client.setex(redis_key, 3600, context)
+        except Exception:
+            pass
+
+    return context
 
 
 # ---------------------------------------------------------------------------

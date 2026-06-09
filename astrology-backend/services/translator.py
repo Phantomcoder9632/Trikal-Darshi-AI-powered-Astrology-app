@@ -45,7 +45,9 @@ async def translate_content(english_text: str, language: str) -> str:
             "name": "Gemini Translation Key",
             "client": AsyncOpenAI(
                 api_key=gemini_trans_key,
-                base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                max_retries=0,
+                timeout=10.0
             ),
             "model": MODEL
         })
@@ -56,7 +58,9 @@ async def translate_content(english_text: str, language: str) -> str:
             "name": "Gemini Primary Key",
             "client": AsyncOpenAI(
                 api_key=gemini_key,
-                base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                max_retries=0,
+                timeout=10.0
             ),
             "model": os.getenv("GEMINI_MODEL", MODEL)
         })
@@ -85,7 +89,9 @@ async def translate_content(english_text: str, language: str) -> str:
                     default_headers={
                         "HTTP-Referer": "https://trikalmdarshi.app",
                         "X-Title": "Trikal Darshi",
-                    }
+                    },
+                    max_retries=0,
+                    timeout=10.0
                 ),
                 "model": fb_model
             })

@@ -14,7 +14,7 @@ from services.hybrid import get_complete_chart
 from services.numerology import get_numerology
 from services.cache import cache_chart, get_cached_chart, generate_chart_cache_key, get_redis
 from services.ephemeris import compute_divisional_chart, compute_gochar_chart, ZODIAC_SIGNS
-from services.background_generator import pregenerate_all_tabs
+from services.background_generator import pregenerate_all_tabs, prefetch_rag_contexts
 
 logger = logging.getLogger(__name__)
 
@@ -178,34 +178,23 @@ async def generate_chart(
     """
     logger.info(f"Generating complete chart for {payload.full_name}")
 
-    # ── a. Geocode city_of_birth ────────────────────────────────────────────
-    # Wait 1s according to Nominatim rules
-    await asyncio.sleep(1.0)
-    
+    # ── a. Geocode city_of_birth (using cached helper) ──────────────────────
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(
-                "https://nominatim.openstreetmap.org/search",
-                params={"q": payload.city_of_birth, "format": "json", "limit": 1},
-                headers={"User-Agent": "astrology-app/1.0"}
-            )
-            response.raise_for_status()
-            geo_data = response.json()
+        from routes.geocode import geocode_city_cached
+        geo_res = await geocode_city_cached(payload.city_of_birth)
+        lat = geo_res["lat"]
+        lng = geo_res["lng"]
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Could not resolve birth city coordinates: {payload.city_of_birth}"
+        )
     except Exception as e:
         logger.error(f"Failed to geocode city of birth: {e}")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Geocoding service failed during chart birth place lookup."
         )
-
-    if not geo_data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Could not resolve birth city coordinates: {payload.city_of_birth}"
-        )
-
-    lat = float(geo_data[0]["lat"])
-    lng = float(geo_data[0]["lon"])
 
     # ── b. Build cache key: "chart:{dob}:{tob}:{lat}:{lng}" ──────────────────
     dob_str = payload.date_of_birth.strip()
@@ -229,12 +218,17 @@ async def generate_chart(
                 try:
                     chart_uuid = uuid.UUID(cached_chart_id)
                     background_tasks.add_task(
+                        prefetch_rag_contexts,
+                        chart_id=chart_uuid,
+                        chart_data=cached_chart,
+                    )
+                    background_tasks.add_task(
                         pregenerate_all_tabs,
                         chart_id=chart_uuid,
                         chart_data=cached_chart,
                         full_name=cached_chart.get("full_name", payload.full_name),
                     )
-                    logger.info(f"[chart] Background pre-generation triggered for Redis-cached chart {cached_chart_id}")
+                    logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for Redis-cached chart {cached_chart_id}")
                 except Exception as bg_err:
                     logger.warning(f"[chart] Could not trigger background gen for Redis-cached chart: {bg_err}")
             return cached_chart
@@ -284,12 +278,17 @@ async def generate_chart(
             # Use FastAPI BackgroundTasks (not asyncio.create_task) to prevent
             # silent GC-cancellation of the background coroutine.
             background_tasks.add_task(
+                prefetch_rag_contexts,
+                chart_id=row["id"],
+                chart_data=chart_data,
+            )
+            background_tasks.add_task(
                 pregenerate_all_tabs,
                 chart_id=row["id"],
                 chart_data=chart_data,
                 full_name=chart_data.get("full_name", payload.full_name),
             )
-            logger.info(f"[chart] Background pre-generation triggered for existing chart {row['id']}")
+            logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for existing chart {row['id']}")
             
             return chart_data
     except Exception as e:
@@ -375,12 +374,17 @@ async def generate_chart(
     # Use FastAPI BackgroundTasks (not asyncio.create_task) to prevent
     # silent GC-cancellation of the background coroutine.
     background_tasks.add_task(
+        prefetch_rag_contexts,
+        chart_id=new_id,
+        chart_data=chart_data,
+    )
+    background_tasks.add_task(
         pregenerate_all_tabs,
         chart_id=new_id,
         chart_data=chart_data,
         full_name=payload.full_name,
     )
-    logger.info(f"[chart] Background pre-generation triggered for new chart {new_id}")
+    logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for new chart {new_id}")
 
     # ── j. Return complete chart JSON with chart_id ──────────────────────────
     return chart_data
@@ -430,11 +434,16 @@ async def get_chart(
 
     # Fire background pre-generation for any missing tabs
     background_tasks.add_task(
+        prefetch_rag_contexts,
+        chart_id=chart_id,
+        chart_data=chart_data,
+    )
+    background_tasks.add_task(
         pregenerate_all_tabs,
         chart_id=chart_id,
         chart_data=chart_data,
         full_name=chart_data.get("full_name"),
     )
-    logger.info(f"[chart] Background pre-generation triggered for GET chart {chart_id}")
+    logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for GET chart {chart_id}")
 
     return chart_data

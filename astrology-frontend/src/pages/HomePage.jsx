@@ -16,10 +16,10 @@ const FEATURES = [
     desc: 'Gemini-powered streaming interpretations across 10 life sections — from Career & Wealth to Love, Health & Remedies.',
   },
   {
-    id: 'multilingual',
-    icon: 'translate',
-    title: 'Trilingual Support',
-    desc: 'Full readings instantly available in English, Hindi & Bengali — switch languages at any time from the dashboard.',
+    id: 'remedies',
+    icon: 'healing',
+    title: 'Remedy Tripath System',
+    desc: 'Tailored remedies spanning Vedic Mantras, Lal Kitab Farmaans, and Numerological corrections across three distinct paths.',
   },
 ];
 
@@ -128,7 +128,7 @@ export default function HomePage() {
 
           {/* Feature pill badges */}
           <div className="landing-badge-row animate-up delay-3" aria-label="Key features">
-            {['10+ Life Sections', 'AI Streaming', 'Multilingual'].map((b) => (
+            {['10+ Life Sections', 'AI Streaming', 'Remedy Tripath'].map((b) => (
               <span key={b} className="landing-badge">{b}</span>
             ))}
           </div>

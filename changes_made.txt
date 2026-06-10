@@ -1,3 +1,28 @@
+================================================================================
+SUMMARY OF CHANGES - JUNE 10, 2026
+================================================================================
+
+1. Frontend Syntax & Production Build Restored
+   - Fixed missing closing syntax `);` of React.memo in five component files: DivisionalChart.jsx, ChartSidebar.jsx, PlanetTable.jsx, CosmicSummary.jsx, and ProfileCard.jsx.
+   - Restored index.html logo reference to use favicon.svg (since logo.png was deleted) and verified that npm run build compiles successfully.
+
+2. API Credentials & Swiss Ephemeris Fallback
+   - Modified astrologyapi.py to raise exceptions if the response returns "status: False" (indicating invalid credentials), forcing a graceful fallback to local Swiss Ephemeris calculations instead of saving invalid error dictionaries to the database.
+
+3. Database Self-Healing Logic
+   - Implemented self-healing logic in routes/chart.py to detect incomplete or corrupt database chart objects (lacking planet coordinates or Lagna degrees) and automatically rebuild them dynamically.
+   - Executed a healing database script to correct all previously corrupted chart records and reset stale interpretation cache entries.
+
+4. Markdown Table Rendering & Styling
+   - Upgraded TabNavigation.jsx to parse consecutive lines starting with `|` and render them as clean, native React <table> elements.
+   - Added premium CSS styling in index.css for .prose-table-wrapper, .prose-table, th, td, and hover states to match the gold/slate aesthetic.
+
+5. Inline Formatting & HTML Tag Cleansing
+   - Implemented regex tokenizers in TabNavigation.jsx to support inline italic formatting (*text*).
+   - Added case-insensitive regex normalization of <br> tags (<br>, <br/>, <br />) in both TabNavigation.jsx and RemedyCards.jsx, replacing them with proper line breaks to avoid raw string leakage and allow correct bullet list splitting.
+
+================================================================================
+
 Vedic Astrology App - Summary of Changes Made Today (June 4, 2026)
 
 This document lists the architectural, backend, and frontend modifications implemented today to introduce non-blocking background pre-generation of all 10 tab interpretations.

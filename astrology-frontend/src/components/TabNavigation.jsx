@@ -13,27 +13,85 @@ const TABS = [
   { id: 10, label: 'Gochar',        icon: 'track_changes' },
 ];
 
-function parseInlineBold(str) {
+function parseInlineMarkdown(str) {
   if (!str) return '';
-  const parts = str.split('**');
-  if (parts.length <= 1) return str;
-  return parts.map((part, i) =>
-    i % 2 !== 0
-      ? <strong key={i} className="prose-bold">{part}</strong>
-      : part
-  );
+  // Match bold (**text**) and italics (*text*)
+  const tokens = str.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+  return tokens.map((token, i) => {
+    if (token.startsWith('**') && token.endsWith('**')) {
+      const content = token.slice(2, -2);
+      return <strong key={i} className="prose-bold">{content}</strong>;
+    }
+    if (token.startsWith('*') && token.endsWith('*')) {
+      const content = token.slice(1, -1);
+      return <em key={i} className="prose-italic italic">{content}</em>;
+    }
+    return token;
+  });
 }
 
 function formatInterpretationText(text) {
   if (!text) return null;
 
-  const lines = text.split('\n');
+  const normalizedText = text.replace(/<br\s*\/?>/gi, '\n');
+  const lines = normalizedText.split('\n');
   const elements = [];
-
-  for (let i = 0; i < lines.length; i++) {
+  
+  let i = 0;
+  while (i < lines.length) {
     const rawLine = lines[i];
     const trimmed = rawLine.trim();
 
+    // 1. Detect if it's a table row (starts with |)
+    if (trimmed.startsWith('|')) {
+      const tableLines = [];
+      while (i < lines.length && lines[i].trim().startsWith('|')) {
+        tableLines.push(lines[i].trim());
+        i++;
+      }
+
+      if (tableLines.length > 0) {
+        // Parse the table rows
+        const rows = tableLines.map(line => {
+          const cells = line.split('|').map(c => c.trim());
+          if (cells[0] === '') cells.shift();
+          if (cells[cells.length - 1] === '') cells.pop();
+          return cells;
+        });
+
+        // Filter out the separator row (starts with dashes like |---|)
+        const hasSeparator = rows[1] && rows[1].every(cell => /^[-:\s]+$/.test(cell));
+        const headerRow = rows[0];
+        const dataRows = hasSeparator ? rows.slice(2) : rows.slice(1);
+
+        elements.push(
+          <div key={`table-${i}`} className="prose-table-wrapper">
+            <table className="prose-table">
+              <thead>
+                <tr>
+                  {headerRow.map((cell, idx) => (
+                    <th key={idx}>{parseInlineMarkdown(cell)}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {dataRows.map((row, rowIdx) => (
+                  <tr key={rowIdx}>
+                    {row.map((cell, cellIdx) => (
+                      <td key={cellIdx}>{parseInlineMarkdown(cell)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+      continue;
+    }
+
+    // 2. Otherwise parse as standard line types
+    i++;
     if (!trimmed) continue;
 
     // Horizontal rules
@@ -42,12 +100,12 @@ function formatInterpretationText(text) {
       continue;
     }
 
-    // Markdown headers ## / ###
+    // Markdown headers ## / ### / ####
     const mdHeaderMatch = trimmed.match(/^(#{2,4})\s+(.+)$/);
     if (mdHeaderMatch) {
       elements.push(
         <span key={i} className="prose-section-header">
-          {parseInlineBold(mdHeaderMatch[2])}
+          {parseInlineMarkdown(mdHeaderMatch[2])}
         </span>
       );
       continue;
@@ -58,7 +116,7 @@ function formatInterpretationText(text) {
     if (sectionLetterMatch) {
       elements.push(
         <span key={i} className="prose-section-header">
-          {sectionLetterMatch[1]}) {parseInlineBold(sectionLetterMatch[2])}
+          {sectionLetterMatch[1]}) {parseInlineMarkdown(sectionLetterMatch[2])}
         </span>
       );
       continue;
@@ -84,7 +142,7 @@ function formatInterpretationText(text) {
       const quoteText = trimmed.startsWith('>') ? trimmed.slice(1).trim() : trimmed;
       elements.push(
         <blockquote key={i} className="prose-blockquote">
-          {parseInlineBold(quoteText)}
+          {parseInlineMarkdown(quoteText)}
         </blockquote>
       );
       continue;
@@ -95,7 +153,7 @@ function formatInterpretationText(text) {
     if (subBulletMatch) {
       elements.push(
         <div key={i} className="prose-sub-bullet">
-          <span>{parseInlineBold(subBulletMatch[1])}</span>
+          <span>{parseInlineMarkdown(subBulletMatch[1])}</span>
         </div>
       );
       continue;
@@ -106,7 +164,7 @@ function formatInterpretationText(text) {
     if (bulletMatch) {
       elements.push(
         <div key={i} className="prose-bullet-item">
-          <span>{parseInlineBold(bulletMatch[1])}</span>
+          <span>{parseInlineMarkdown(bulletMatch[1])}</span>
         </div>
       );
       continue;
@@ -118,7 +176,7 @@ function formatInterpretationText(text) {
       elements.push(
         <div key={i} className="prose-numbered-item">
           <span className="prose-num">{numberedMatch[1]}.</span>
-          <span>{parseInlineBold(numberedMatch[2])}</span>
+          <span>{parseInlineMarkdown(numberedMatch[2])}</span>
         </div>
       );
       continue;
@@ -130,7 +188,7 @@ function formatInterpretationText(text) {
       elements.push(
         <p key={i} className="prose-para">
           <span className="prose-key">{keyValueMatch[1]}:</span>
-          {parseInlineBold(keyValueMatch[2])}
+          {parseInlineMarkdown(keyValueMatch[2])}
         </p>
       );
       continue;
@@ -139,7 +197,7 @@ function formatInterpretationText(text) {
     // Standard paragraph
     elements.push(
       <p key={i} className="prose-para">
-        {parseInlineBold(rawLine)}
+        {parseInlineMarkdown(rawLine)}
       </p>
     );
   }

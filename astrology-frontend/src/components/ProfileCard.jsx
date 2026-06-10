@@ -24,7 +24,7 @@ function getInitials(name) {
     .toUpperCase();
 }
 
-export default function ProfileCard({ chartData }) {
+export default React.memo(function ProfileCard({ chartData }) {
   if (!chartData) return null;
 
   const {
@@ -131,4 +131,4 @@ export default function ProfileCard({ chartData }) {
       </div>
     </div>
   );
-}
+});

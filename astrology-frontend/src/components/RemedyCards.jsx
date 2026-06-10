@@ -51,7 +51,8 @@ function formatRemedyText(text, accentClass = 'remedy-label-gold') {
     return <p className="text-outline/60 italic text-xs">Remedy prescriptions calculating...</p>;
   }
 
-  return text.split('\n').map((line, i) => {
+  const normalizedText = text.replace(/<br\s*\/?>/gi, '\n');
+  return normalizedText.split('\n').map((line, i) => {
     const trimmed = line.trim();
     if (!trimmed) return null;
 

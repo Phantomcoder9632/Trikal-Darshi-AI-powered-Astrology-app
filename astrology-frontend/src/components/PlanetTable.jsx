@@ -34,7 +34,7 @@ function getDignity(planetName, signName) {
   return   { text: 'Neutral', dot: '#817563', bg: 'rgba(129,117,99,0.08)', border: 'rgba(211,196,176,0.4)', color: '#817563' };
 }
 
-export default function PlanetTable({ planets }) {
+export default React.memo(function PlanetTable({ planets }) {
   if (!Array.isArray(planets) || planets.length === 0) return null;
 
   return (
@@ -130,4 +130,4 @@ export default function PlanetTable({ planets }) {
       </div>
     </div>
   );
-}
+});

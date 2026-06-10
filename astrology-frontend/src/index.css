@@ -583,6 +583,56 @@ body {
   margin: 20px 0;
 }
 
+.prose-interpretation .prose-italic {
+  font-style: italic;
+  color: #4f4536;
+}
+
+.prose-interpretation .prose-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin: 20px 0;
+  border: 1px solid rgba(211, 196, 176, 0.45);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(124, 88, 0, 0.02);
+}
+
+.prose-interpretation .prose-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.prose-interpretation .prose-table th {
+  background: rgba(238, 238, 235, 0.6);
+  color: #7c5800;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-bottom: 1.5px solid rgba(211, 196, 176, 0.45);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  font-family: "Inter", sans-serif;
+}
+
+.prose-interpretation .prose-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(211, 196, 176, 0.2);
+  color: #1a1c1b;
+  vertical-align: middle;
+}
+
+.prose-interpretation .prose-table tbody tr:nth-child(even) {
+  background: rgba(244, 244, 241, 0.4);
+}
+
+.prose-interpretation .prose-table tbody tr:hover {
+  background: rgba(201, 149, 42, 0.04);
+}
+
+
 /* ──────────────────────────────────────────────────────────────────────────
    REMEDY CARD PROSE
    ────────────────────────────────────────────────────────────────────────── */
@@ -911,7 +961,7 @@ body {
   content: "";
   position: absolute;
   top: 0;
-  left: -100%;
+  left: 0;
   width: 60%;
   height: 100%;
   background: linear-gradient(
@@ -920,13 +970,14 @@ body {
     rgba(255, 255, 255, 0.25),
     transparent
   );
-  transform: skewX(-15deg);
+  transform: translateX(-150%) skewX(-15deg);
   animation: shimmer-slide 3.5s infinite;
+  will-change: transform;
 }
 
 @keyframes shimmer-slide {
-  0%   { left: -100%; }
-  100% { left: 200%;  }
+  0%   { transform: translateX(-150%) skewX(-15deg); }
+  100% { transform: translateX(250%) skewX(-15deg); }
 }
 
 .material-symbols-outlined {
@@ -1029,7 +1080,7 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: linear-gradient(160deg, #1a0d00 0%, #2d1800 45%, #1a0d00 100%);
+  background: linear-gradient(160deg, #ffffff 0%, #fdf8eb 45%, #faf3e0 100%);
 }
 
 /* Subtle radial glow behind the emblem */
@@ -1037,8 +1088,8 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 60% 50% at 50% 40%, rgba(201, 149, 42, 0.12) 0%, transparent 70%),
-    radial-gradient(ellipse 100% 80% at 50% 100%, rgba(124, 88, 0, 0.08) 0%, transparent 60%);
+    radial-gradient(ellipse 60% 50% at 50% 40%, rgba(201, 149, 42, 0.15) 0%, transparent 70%),
+    radial-gradient(ellipse 100% 80% at 50% 100%, rgba(201, 149, 42, 0.1) 0%, transparent 60%);
   pointer-events: none;
 }
 
@@ -1047,10 +1098,10 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M60 0 L120 60 L60 120 L0 60 Z' fill='none' stroke='%23c9952a' stroke-width='0.3' opacity='0.12'/%3E%3Ccircle cx='60' cy='60' r='12' fill='none' stroke='%23c9952a' stroke-width='0.3' opacity='0.12'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M60 0 L120 60 L60 120 L0 60 Z' fill='none' stroke='%23c9952a' stroke-width='0.3' opacity='0.18'/%3E%3Ccircle cx='60' cy='60' r='12' fill='none' stroke='%23c9952a' stroke-width='0.3' opacity='0.18'/%3E%3C/svg%3E");
   background-size: 120px 120px;
   pointer-events: none;
-  opacity: 0.6;
+  opacity: 0.65;
 }
 
 .landing-hero-inner {
@@ -1082,11 +1133,12 @@ body {
   color: #c9952a;
   filter: drop-shadow(0 0 16px rgba(201, 149, 42, 0.5));
   animation: emblem-pulse 4s ease-in-out infinite;
+  will-change: transform;
 }
 
 @keyframes emblem-pulse {
-  0%, 100% { filter: drop-shadow(0 0 12px rgba(201, 149, 42, 0.4)); }
-  50%       { filter: drop-shadow(0 0 28px rgba(201, 149, 42, 0.7)); }
+  0%, 100% { transform: scale(0.96); }
+  50%       { transform: scale(1.04); }
 }
 
 .landing-emblem-ring {
@@ -1114,12 +1166,15 @@ body {
   font-family: "Cinzel Decorative", serif;
   font-size: clamp(28px, 6vw, 52px);
   font-weight: 700;
-  color: #f5e6c8;
+  background: linear-gradient(135deg, #7c5800 0%, #c9952a 50%, #a67820 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   line-height: 1.15;
   margin: 0;
-  text-shadow: 0 2px 20px rgba(201, 149, 42, 0.3);
+  text-shadow: 0 2px 10px rgba(201, 149, 42, 0.12);
 }
 
 /* Tagline */
@@ -1127,7 +1182,7 @@ body {
   font-family: "Crimson Text", serif;
   font-style: italic;
   font-size: clamp(14px, 2.5vw, 18px);
-  color: rgba(201, 149, 42, 0.8);
+  color: #7c5800;
   letter-spacing: 0.06em;
   margin: 0;
 }
@@ -1144,9 +1199,9 @@ body {
 .landing-badge {
   padding: 6px 16px;
   border-radius: 9999px;
-  border: 1px solid rgba(201, 149, 42, 0.35);
-  background: rgba(201, 149, 42, 0.08);
-  color: rgba(245, 230, 200, 0.85);
+  border: 1px solid rgba(201, 149, 42, 0.25);
+  background: rgba(201, 149, 42, 0.05);
+  color: #7c5800;
   font-family: "Inter", sans-serif;
   font-size: 10px;
   font-weight: 600;
@@ -1172,7 +1227,7 @@ body {
   text-transform: uppercase;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 24px rgba(201, 149, 42, 0.45), 0 1px 0 rgba(255,255,255,0.12) inset;
+  box-shadow: 0 4px 20px rgba(166, 120, 32, 0.25), 0 1px 0 rgba(255,255,255,0.15) inset;
   transition: all 0.25s ease;
   position: relative;
   overflow: hidden;
@@ -1182,17 +1237,18 @@ body {
   content: "";
   position: absolute;
   top: 0;
-  left: -100%;
+  left: 0;
   width: 60%;
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transform: skewX(-15deg);
+  transform: translateX(-150%) skewX(-15deg);
   animation: shimmer-slide 3s infinite;
+  will-change: transform;
 }
 
 .landing-cta:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 32px rgba(201, 149, 42, 0.55);
+  box-shadow: 0 8px 30px rgba(166, 120, 32, 0.35);
 }
 
 .landing-cta:active {
@@ -1216,7 +1272,7 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(201, 149, 42, 0.5);
+  background: rgba(124, 88, 0, 0.4);
   animation: scroll-bounce 2s ease-in-out infinite;
 }
 
@@ -1712,7 +1768,7 @@ body {
   overflow: hidden;
   line-height: 0;
   margin-bottom: -2px;
-  background: linear-gradient(160deg, #1a0d00 0%, #2d1800 100%);
+  background: linear-gradient(160deg, #ffffff 0%, #faf3e0 100%);
 }
 .hero-to-feature-wave svg { display: block; width: 100%; height: 64px; }
 
@@ -1723,7 +1779,7 @@ body {
   align-items: center;
   justify-content: center;
   padding-top: 28px;
-  border-top: 1px solid rgba(201, 149, 42, 0.15);
+  border-top: 1px solid rgba(201, 149, 42, 0.25);
   width: 100%;
 }
 
@@ -1743,7 +1799,7 @@ body {
   font-family: "Cinzel", serif;
   font-size: clamp(20px, 3.5vw, 26px);
   font-weight: 700;
-  color: #c9952a;
+  color: #7c5800;
   line-height: 1;
   letter-spacing: 0.03em;
 }
@@ -1752,7 +1808,7 @@ body {
   font-family: "Inter", sans-serif;
   font-size: 9px;
   font-weight: 600;
-  color: rgba(245, 230, 200, 0.55);
+  color: #817563;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   white-space: nowrap;
@@ -1761,7 +1817,7 @@ body {
 .landing-hero-stat-sep {
   width: 1px;
   height: 40px;
-  background: rgba(201, 149, 42, 0.18);
+  background: rgba(201, 149, 42, 0.25);
   flex-shrink: 0;
 }
 

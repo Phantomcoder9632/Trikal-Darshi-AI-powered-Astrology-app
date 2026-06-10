@@ -85,7 +85,7 @@ export const TAB_CHART_CONFIG = {
   },
 };
 
-export default function ChartSidebar({ activeTab, chartData, activeChartIdx, setActiveChartIdx }) {
+export default React.memo(function ChartSidebar({ activeTab, chartData, activeChartIdx, setActiveChartIdx }) {
   const config = TAB_CHART_CONFIG[activeTab] || TAB_CHART_CONFIG[1];
   const { charts, labels, keys } = config;
 
@@ -133,5 +133,5 @@ export default function ChartSidebar({ activeTab, chartData, activeChartIdx, set
       />
     </div>
   );
-}
+});
 

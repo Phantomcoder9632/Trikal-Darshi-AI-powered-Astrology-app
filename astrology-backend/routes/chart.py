@@ -47,6 +47,70 @@ async def ensure_chart_complete(
     If any are missing (legacy charts), computes them on the fly,
     saves the updated chart to the database, and returns the complete chart.
     """
+    # ── Check if the chart is corrupted (e.g. empty planets, error messages saved) ──
+    natal_planets = chart_data.get("planets", [])
+    natal_asc = chart_data.get("ascendant", {})
+    is_corrupted = (
+        not natal_planets 
+        or not isinstance(natal_planets, list) 
+        or len(natal_planets) == 0
+        or not isinstance(natal_asc, dict)
+        or "status" in natal_asc 
+        or "msg" in natal_asc 
+        or not natal_asc.get("sign")
+    )
+
+    if is_corrupted:
+        logger.warning(f"Chart {chart_uuid} is corrupted or empty. Re-calculating using local/external engines...")
+        # Fetch birth details from the DB columns
+        row = await conn.fetchrow(
+            """
+            SELECT full_name, date_of_birth, time_of_birth, city_of_birth, current_city, latitude, longitude, birth_time_confidence
+            FROM charts WHERE id = $1
+            """,
+            chart_uuid
+        )
+        if row:
+            dob_str = str(row["date_of_birth"])
+            tob_str = str(row["time_of_birth"])[:5] # HH:MM
+            
+            user_input = {
+                "full_name": row["full_name"],
+                "date_of_birth": dob_str,
+                "time_of_birth": tob_str,
+                "city_of_birth": row["city_of_birth"],
+                "lat": float(row["latitude"]),
+                "lng": float(row["longitude"]),
+                "birth_time_confidence": row["birth_time_confidence"],
+                "timezone_offset": 5.5
+            }
+
+            # Calculate new chart data
+            chart_data = await get_complete_chart(user_input)
+            
+            # Merge numerology
+            from services.numerology import get_numerology
+            chart_data["numerology"] = get_numerology(row["date_of_birth"], row["full_name"])
+            
+            # Inject standard metadata
+            chart_data["chart_id"] = str(chart_uuid)
+            chart_data["full_name"] = row["full_name"]
+            chart_data["date_of_birth"] = dob_str
+            chart_data["time_of_birth"] = str(row["time_of_birth"])
+            chart_data["city_of_birth"] = row["city_of_birth"]
+            chart_data["current_city"] = row["current_city"]
+
+            # Write the new chart data to PostgreSQL
+            await conn.execute(
+                "UPDATE charts SET raw_chart_data = $1 WHERE id = $2",
+                json.dumps(chart_data, default=str),
+                chart_uuid
+            )
+            logger.info(f"Successfully healed chart {chart_uuid} and saved to database.")
+
+            # Invalidate stale interpretations
+            await conn.execute("DELETE FROM interpretations WHERE chart_id = $1", chart_uuid)
+
     required_keys = ["navamsha", "dashamsha", "chaturthamsa", "saptamsha", "trimsamsa", "chandra_kundali", "surya_kundali", "gochar"]
     
     # Check if any required keys are missing

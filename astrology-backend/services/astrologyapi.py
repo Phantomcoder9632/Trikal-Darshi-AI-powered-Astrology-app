@@ -123,9 +123,14 @@ async def _post(endpoint: str, body: dict[str, Any]) -> Any:
 
     data = response.json()
 
-    # Some endpoints return {"error": "..."} even with HTTP 200
-    if isinstance(data, dict) and data.get("error"):
-        raise AstrologyAPIException(endpoint, 200, str(data["error"]))
+    # Some endpoints return {"error": "..."} or {"status": False, "msg": "..."} even with HTTP 200
+    if isinstance(data, dict):
+        if data.get("error"):
+            raise AstrologyAPIException(endpoint, 200, str(data["error"]))
+        if data.get("status") is False:
+            raise AstrologyAPIException(endpoint, 200, str(data.get("msg", "API response status is False")))
+        if "msg" in data and "invalid" in str(data["msg"]).lower():
+            raise AstrologyAPIException(endpoint, 200, str(data["msg"]))
 
     return data
 

@@ -4,10 +4,10 @@
 body::after {
   content: "";
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  top: -700px;
+  left: -350px;
+  width: calc(100vw + 350px);
+  height: calc(100vh + 700px);
   z-index: -1;
   pointer-events: none;
   background-image:
@@ -20,9 +20,10 @@ body::after {
   background-size: 350px 350px;
   animation: starfieldMove 90s linear infinite;
   opacity: 0.5;
+  will-change: transform;
 }
 
 @keyframes starfieldMove {
-  from { background-position: 0 0; }
-  to   { background-position: 350px 700px; }
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(350px, 700px, 0); }
 }

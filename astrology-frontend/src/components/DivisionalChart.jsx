@@ -85,7 +85,7 @@ function getPlanetStyle(planetName, signNum, isRetrograde) {
  *   natalData  {object}  — For D1 rendering mode (uses ascendant + planets directly)
  *   compact    {boolean} — If true, renders at reduced size (for sidebyside layout)
  */
-export default function DivisionalChart({ chartData, chartType = "D1", natalData = null, compact = false }) {
+export default React.memo(function DivisionalChart({ chartData, chartType = "D1", natalData = null, compact = false }) {
   // ── Determine ascendant sign and planets ──────────────────────────────────
   let ascSignNum = 1;
   let planets = [];
@@ -269,4 +269,4 @@ export default function DivisionalChart({ chartData, chartType = "D1", natalData
 
     </div>
   );
-}
+});

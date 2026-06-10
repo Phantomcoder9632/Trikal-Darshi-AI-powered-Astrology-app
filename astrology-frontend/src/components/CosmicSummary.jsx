@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function CosmicSummary({ summaryText, chartData }) {
+export default React.memo(function CosmicSummary({ summaryText, chartData }) {
   let textLines = [];
 
   if (summaryText && typeof summaryText === 'string') {
@@ -83,4 +83,4 @@ export default function CosmicSummary({ summaryText, chartData }) {
       </ul>
     </section>
   );
-}
+});

@@ -231,16 +231,16 @@ async def google_login(payload: GoogleLoginPayload, conn = Depends(get_db)):
         }
 
     except ValueError as e:
-        logger.warning(f"Google ID token verification failed: {e}")
+        logger.warning(f"Google ID token verification failed (ValueError): {type(e).__name__}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Google authentication token could not be verified."
+            detail=f"Google token verification failed: {str(e)}"
         )
     except Exception as e:
-        logger.error(f"Unexpected authentication failure: {e}")
+        logger.error(f"Unexpected authentication failure: {type(e).__name__}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal login error occurred."
+            detail=f"Internal login error: {type(e).__name__}: {str(e)}"
         )
 
 

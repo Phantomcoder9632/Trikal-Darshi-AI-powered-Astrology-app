@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getChart, getInterpretation, getGenerationProgress } from '../services/api';
+import { getChart, getInterpretation, getGenerationProgress, updateChart, getUserCharts } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 // Child Components
 import ChartSidebar, { TAB_CHART_CONFIG } from '../components/ChartSidebar';
 import PlanetTable   from '../components/PlanetTable';
-import TransitBanner from '../components/TransitBanner';
 import CosmicSummary from '../components/CosmicSummary';
 import TabNavigation from '../components/TabNavigation';
 import RemedyCards   from '../components/RemedyCards';
@@ -20,6 +20,7 @@ function getInitials(name) {
 export default function DashboardPage() {
   const { chartId } = useParams();
   const navigate    = useNavigate();
+  const { user, logout } = useAuth();
 
   const [chartData,    setChartData]    = useState(null);
   const [loadingChart, setLoadingChart] = useState(true);
@@ -35,11 +36,104 @@ export default function DashboardPage() {
   const [bgProgress,       setBgProgress]       = useState(null);
   const pollIntervalRef                         = useRef(null);
 
+  // Edit details modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    full_name: '',
+    date_of_birth: '',
+    time_of_birth: '',
+    birth_time_confidence: 'exact',
+    city_of_birth: '',
+    current_city: '',
+  });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState('');
+
+  // Drawer / Theme State
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [savedCharts, setSavedCharts] = useState([]);
+  const [currentTheme, setCurrentTheme] = useState(
+    localStorage.getItem('app-theme') || 'theme-vedic-gold'
+  );
+
+  const handleThemeChange = (newTheme) => {
+    setCurrentTheme(newTheme);
+    localStorage.setItem('app-theme', newTheme);
+    document.body.className = newTheme;
+  };
+
+  const handleOpenEdit = () => {
+    if (!chartData) return;
+    setEditFormData({
+      full_name: chartData.full_name || '',
+      date_of_birth: chartData.date_of_birth || '',
+      time_of_birth: chartData.time_of_birth ? chartData.time_of_birth.slice(0, 5) : '',
+      birth_time_confidence: chartData.birth_time_confidence || 'exact',
+      city_of_birth: chartData.city_of_birth || '',
+      current_city: chartData.current_city || '',
+    });
+    setEditError('');
+    setShowEditModal(true);
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!editFormData.full_name || !editFormData.date_of_birth || !editFormData.time_of_birth || !editFormData.city_of_birth) {
+      setEditError('Please fill in all required birth parameters marked with *');
+      return;
+    }
+
+    setEditLoading(true);
+    setEditError('');
+
+    try {
+      const updatedData = await updateChart(chartId, editFormData);
+      
+      // Update local state
+      setChartData(updatedData);
+      
+      // Invalidate existing interpretations so they regenerate for new placements
+      setInterpretations({});
+      setTabError({});
+      
+      // Close modal
+      setShowEditModal(false);
+      
+      // Scroll back up to reset view
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error(err);
+      setEditError(err.response?.data?.detail || err.message || 'Failed to update chart details. Please try again.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   // Chart toggle within a tab
   const [activeChartIdx, setActiveChartIdx] = useState(0);
 
   // Reset chart toggle when tab changes
   useEffect(() => { setActiveChartIdx(0); }, [activeTab]);
+
+  // Fetch saved charts list
+  useEffect(() => {
+    async function loadSavedCharts() {
+      try {
+        const data = await getUserCharts();
+        setSavedCharts(data || []);
+      } catch (err) {
+        console.error('Failed to load user charts in dashboard:', err);
+      }
+    }
+    if (user) {
+      loadSavedCharts();
+    }
+  }, [user]);
 
   // ── 1. Fetch chart ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -52,7 +146,12 @@ export default function DashboardPage() {
         setChartData(data);
       } catch (err) {
         console.error(err);
-        setChartError('Could not retrieve your planetary chart. Please return and try again.');
+        if (err.response?.status === 401) {
+          logout();
+          navigate('/', { replace: true });
+          return;
+        }
+        setChartError(err.response?.data?.detail || err.message || 'Could not retrieve your planetary chart. Please return and try again.');
       } finally {
         setLoadingChart(false);
       }
@@ -63,6 +162,7 @@ export default function DashboardPage() {
   // ── 2. Stream interpretation for active tab ─────────────────────────────
   useEffect(() => {
     if (!chartId || loadingChart || chartError) return;
+    if (typeof activeTab !== 'number') return;
     if (interpretations[activeTab]) return; // already loaded
 
     const streamTab = async () => {
@@ -235,8 +335,34 @@ export default function DashboardPage() {
 
 
 
+            {/* Action icons */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={logout}
+                aria-label="Log Out"
+                title="Log Out"
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-500/10 hover:text-red-500 text-on-surface-variant transition-colors cursor-pointer bg-transparent border-none"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  logout
+                </span>
+              </button>
+            </div>
+
             {/* Name + Avatar Chip */}
-            <div className="header-avatar-chip">
+            <div 
+              className="header-avatar-chip cursor-pointer hover:bg-outline-variant/15 transition-all rounded-lg p-1.5"
+              onClick={() => setShowDrawer(true)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setShowDrawer(true);
+                }
+              }}
+              title="Open Cosmic Profile Menu"
+            >
               <div className="header-avatar-initials" aria-hidden="true">
                 {getInitials(chartData?.full_name)}
               </div>
@@ -250,40 +376,12 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-
-            {/* Action icons */}
-            <div className="flex items-center gap-2">
-              <button
-                id="notifBtn"
-                aria-label="Notifications"
-                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors cursor-pointer bg-transparent border-none"
-              >
-                <span className="material-symbols-outlined text-on-surface-variant text-[20px]">
-                  notifications
-                </span>
-              </button>
-              <button
-                id="accountBtn"
-                aria-label="Account"
-                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors cursor-pointer bg-transparent border-none"
-              >
-                <span
-                  className="material-symbols-outlined text-primary text-[28px]"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  account_circle
-                </span>
-              </button>
-            </div>
           </div>
         </div>
       </header>
 
       {/* ── Main Content ──────────────────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-[1280px] mx-auto px-4 sm:px-8 md:px-10 py-5 flex flex-col">
-
-        {/* Jupiter Transit Banner */}
-        <TransitBanner />
+      <main className="flex-1 w-full max-w-[1650px] mx-auto px-4 sm:px-8 md:px-10 py-5 flex flex-col">
 
         {/* Two-column grid */}
         <div className="dashboard-grid">
@@ -292,7 +390,7 @@ export default function DashboardPage() {
           <aside className="dashboard-sidebar flex flex-col gap-4">
 
             {/* Profile / Name card */}
-            <ProfileCard chartData={chartData} />
+            <ProfileCard chartData={chartData} onEdit={handleOpenEdit} />
 
             {/* Chart viewer */}
             <ChartSidebar
@@ -311,11 +409,6 @@ export default function DashboardPage() {
 
           {/* ── Right content ────────────────────────────────────────────── */}
           <div className="dashboard-content flex flex-col gap-4">
-
-            {/* Cosmic Blueprint Summary */}
-            <div className="animate-up delay-3">
-              <CosmicSummary chartData={chartData} />
-            </div>
 
             {/* Tab navigation + interpretation */}
             <div className="animate-up delay-4 flex flex-col gap-4">
@@ -368,7 +461,7 @@ export default function DashboardPage() {
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className="w-full border-t border-outline-variant/20 bg-white/70 mt-12">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-8 md:px-10 py-7 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="max-w-[1650px] mx-auto px-4 sm:px-8 md:px-10 py-7 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex flex-col items-center sm:items-start gap-1">
             <span className="font-wordmark text-primary text-[15px] tracking-wider">
               TRIKAL DARSHI
@@ -386,6 +479,379 @@ export default function DashboardPage() {
           </nav>
         </div>
       </footer>
+
+      {/* ── Slide-over Profile Drawer ── */}
+      {showDrawer && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-xs transition-opacity duration-300 animate-fade-in"
+          onClick={() => setShowDrawer(false)}
+        />
+      )}
+      <div 
+        className={`fixed top-0 right-0 bottom-0 h-full w-[85%] sm:w-[33%] md:w-[30%] lg:w-[26%] xl:w-[22%] bg-surface border-l border-outline-variant/30 shadow-2xl z-[101] flex flex-col transition-transform duration-300 ease-in-out ${
+          showDrawer ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {/* Drawer Header */}
+        <div className="flex items-center justify-between p-5 border-b border-outline-variant/20">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-primary text-[24px]">
+              settings_accessibility
+            </span>
+            <h3 className="text-sm font-headline-md font-bold tracking-wide text-on-surface">
+              Cosmic Profile Menu
+            </h3>
+          </div>
+          <button 
+            onClick={() => setShowDrawer(false)}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-outline-variant/15 text-on-surface-variant transition-colors cursor-pointer bg-transparent border-none"
+          >
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+
+        {/* Drawer Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          
+          {/* Section 1: Personal Details */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs uppercase font-bold tracking-widest text-primary">
+                Personal Details
+              </h4>
+              <button 
+                onClick={() => {
+                  setShowDrawer(false);
+                  handleOpenEdit();
+                }}
+                className="text-xs text-primary hover:underline flex items-center gap-1 font-semibold cursor-pointer bg-transparent border-none"
+              >
+                <span className="material-symbols-outlined text-[12px]">edit</span>
+                Edit Birth Details
+              </button>
+            </div>
+            {chartData && (
+              <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/20 space-y-3">
+                <div className="grid grid-cols-2 gap-y-3 text-xs">
+                  <div>
+                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">Name</span>
+                    <span className="font-semibold text-on-surface text-sm">{chartData.full_name}</span>
+                  </div>
+                  <div>
+                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">Confidence</span>
+                    <span className="font-semibold text-on-surface capitalize text-sm">{chartData.birth_time_confidence}</span>
+                  </div>
+                  <div>
+                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">Date of Birth</span>
+                    <span className="font-semibold text-on-surface text-sm">{chartData.date_of_birth}</span>
+                  </div>
+                  <div>
+                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">Time of Birth</span>
+                    <span className="font-semibold text-on-surface text-sm">{chartData.time_of_birth ? chartData.time_of_birth.slice(0, 5) : ''}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">Place of Birth</span>
+                    <span className="font-semibold text-on-surface text-sm">{chartData.city_of_birth}</span>
+                  </div>
+                  {chartData.current_city && (
+                    <div className="col-span-2">
+                      <span className="text-outline/80 block uppercase tracking-wider text-[10px]">Current City</span>
+                      <span className="font-semibold text-on-surface text-sm">{chartData.current_city}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: Saved Charts */}
+          <div className="space-y-4">
+            <h4 className="text-xs uppercase font-bold tracking-widest text-primary">
+              Saved Blueprints
+            </h4>
+            <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+              {savedCharts.length > 0 ? (
+                savedCharts.map((chart) => (
+                  <button
+                    key={chart.id}
+                    onClick={() => {
+                      setShowDrawer(false);
+                      navigate(`/dashboard/${chart.id}`);
+                    }}
+                    className={`w-full text-left p-3 rounded-lg border text-xs flex items-center justify-between transition-all cursor-pointer ${
+                      chart.id === chartId 
+                        ? 'bg-primary/10 border-primary/30 text-primary font-bold'
+                        : 'bg-surface-container-lowest border-outline-variant/15 hover:bg-outline-variant/10 text-on-surface'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[16px] text-primary/70">
+                        account_circle
+                      </span>
+                      <span>{chart.full_name}</span>
+                    </div>
+                    <span className="text-[10px] text-outline/70 font-normal">
+                      {chart.date_of_birth}
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <div className="text-center py-4 text-xs text-outline/60 italic">
+                  No other blueprints saved.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Section 3: Read Another Chart */}
+          <div className="space-y-3">
+            <h4 className="text-xs uppercase font-bold tracking-widest text-primary">
+              Cosmic Journey
+            </h4>
+            <button
+              onClick={() => {
+                setShowDrawer(false);
+                navigate('/');
+              }}
+              className="w-full py-3 px-4 bg-primary text-on-primary rounded-xl font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer border-none"
+            >
+              <span className="material-symbols-outlined text-[16px]">add_circle</span>
+              Read Another Chart
+            </button>
+          </div>
+
+          {/* Section 4: Themes */}
+          <div className="space-y-3">
+            <h4 className="text-xs uppercase font-bold tracking-widest text-primary">
+              Cosmic Themes
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { id: 'theme-vedic-gold', label: 'Vedic Gold', bg: 'bg-[#f9f9f6]', text: 'text-[#1a1c1b]', border: 'border-[#d3c4b0]' },
+                { id: 'theme-midnight', label: 'Midnight Cosmic', bg: 'bg-[#090a0f]', text: 'text-[#f1f1ee]', border: 'border-[#48443b]' },
+                { id: 'theme-nebula', label: 'Nebula Indigo', bg: 'bg-[#0c0714]', text: 'text-[#f1edf7]', border: 'border-[#3f3154]' },
+                { id: 'theme-solar', label: 'Solar Flare', bg: 'bg-[#120907]', text: 'text-[#f5eeee]', border: 'border-[#5c2d1c]' }
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => handleThemeChange(t.id)}
+                  className={`p-3 rounded-lg border text-xs flex flex-col gap-1 transition-all cursor-pointer bg-transparent text-left ${
+                    currentTheme === t.id
+                      ? 'border-primary ring-2 ring-primary/30 font-bold'
+                      : 'border-outline-variant/20 hover:bg-outline-variant/10'
+                  }`}
+                >
+                  <span className="font-semibold text-on-surface">{t.label}</span>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className={`w-3.5 h-3.5 rounded-full ${t.bg} ${t.border} border`} />
+                    <span className="text-[10px] text-outline/80">Preview</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 5: Logout */}
+          <div className="pt-4 border-t border-outline-variant/20">
+            <button
+              onClick={() => {
+                setShowDrawer(false);
+                logout();
+              }}
+              className="w-full py-3 px-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-red-500/20 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[16px]">logout</span>
+              Log Out Session
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── Edit Birth Details Modal ── */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-background/60 backdrop-filter backdrop-blur-md" 
+            onClick={() => !editLoading && setShowEditModal(false)}
+          />
+
+          {/* Modal Container */}
+          <div className="relative z-10 w-full max-w-[480px] bg-surface/90 border border-outline-variant/50 rounded-2xl shadow-2xl p-6 md:p-8 animate-up max-h-[90vh] overflow-y-auto">
+            
+            {/* Header */}
+            <header className="flex items-center justify-between mb-6">
+              <div>
+                <span className="text-[10px] font-bold text-primary tracking-widest uppercase">CORRECT CELESTIAL ALIGNMENT</span>
+                <h3 className="font-headline-md text-primary text-xl mt-1">Edit Birth Details</h3>
+              </div>
+              <button
+                disabled={editLoading}
+                onClick={() => setShowEditModal(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-outline-variant/20 text-on-surface-variant transition-colors cursor-pointer bg-transparent border-none"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </header>
+
+            {/* Error Banner */}
+            {editError && (
+              <div className="mb-6 flex items-start gap-3 bg-error/8 border border-error/25 rounded-xl p-4 text-xs text-error font-medium">
+                <span
+                  className="material-symbols-outlined text-[16px] shrink-0 mt-0.5"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  error
+                </span>
+                <span>{editError}</span>
+              </div>
+            )}
+
+            {editLoading ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center gap-6">
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary-container text-[36px] animate-spin">
+                    progress_activity
+                  </span>
+                  <span className="absolute inset-0 rounded-full border border-primary/20 animate-ping opacity-50" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-headline-md text-primary text-md tracking-wide">
+                    Recalculating Cosmic Matrix…
+                  </h4>
+                  <p className="text-on-surface-variant text-xs font-accent-italic italic">
+                    Re-aligning houses, planets &amp; divisional tables
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleEditSubmit} className="blueprint-form">
+                
+                {/* Full Name */}
+                <div className="blueprint-form-group">
+                  <label htmlFor="edit_full_name" className="blueprint-label">Full Name *</label>
+                  <input
+                    id="edit_full_name"
+                    type="text"
+                    name="full_name"
+                    value={editFormData.full_name}
+                    onChange={handleEditChange}
+                    placeholder="Enter full name"
+                    autoComplete="name"
+                    className="blueprint-input"
+                  />
+                </div>
+
+                {/* Date of Birth */}
+                <div className="blueprint-form-group">
+                  <label htmlFor="edit_date_of_birth" className="blueprint-label">Date of Birth *</label>
+                  <input
+                    id="edit_date_of_birth"
+                    type="date"
+                    name="date_of_birth"
+                    value={editFormData.date_of_birth}
+                    onChange={handleEditChange}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="blueprint-input"
+                  />
+                </div>
+
+                {/* Time of Birth + Confidence */}
+                <div className="blueprint-form-group">
+                  <label htmlFor="edit_time_of_birth" className="blueprint-label">Time of Birth *</label>
+                  <input
+                    id="edit_time_of_birth"
+                    type="time"
+                    name="time_of_birth"
+                    value={editFormData.time_of_birth}
+                    onChange={handleEditChange}
+                    className="blueprint-input"
+                  />
+                  <div className="blueprint-pill-container">
+                    {[
+                      { value: 'exact',       label: 'Exact'       },
+                      { value: 'approximate', label: 'Approximate' },
+                      { value: 'unknown',     label: 'Unknown'     },
+                    ].map(({ value, label }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setEditFormData((prev) => ({ ...prev, birth_time_confidence: value }))}
+                        className={`blueprint-pill${editFormData.birth_time_confidence === value ? ' active' : ''}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* City of Birth */}
+                <div className="blueprint-form-group">
+                  <label htmlFor="edit_city_of_birth" className="blueprint-label">City of Birth *</label>
+                  <div className="blueprint-input-row">
+                    <span className="material-symbols-outlined text-outline text-[18px] shrink-0">
+                      location_on
+                    </span>
+                    <input
+                      id="edit_city_of_birth"
+                      type="text"
+                      name="city_of_birth"
+                      value={editFormData.city_of_birth}
+                      onChange={handleEditChange}
+                      placeholder="e.g. Kolkata, West Bengal"
+                      autoComplete="off"
+                      className="blueprint-input"
+                    />
+                  </div>
+                </div>
+
+                {/* Current City */}
+                <div className="blueprint-form-group">
+                  <label htmlFor="edit_current_city" className="blueprint-label">
+                    Current City{' '}
+                    <span className="font-normal normal-case opacity-60">(optional)</span>
+                  </label>
+                  <div className="blueprint-input-row">
+                    <span className="material-symbols-outlined text-outline text-[18px] shrink-0">
+                      my_location
+                    </span>
+                    <input
+                      id="edit_current_city"
+                      type="text"
+                      name="current_city"
+                      value={editFormData.current_city}
+                      onChange={handleEditChange}
+                      placeholder="e.g. Mumbai, Maharashtra"
+                      autoComplete="off"
+                      className="blueprint-input"
+                    />
+                  </div>
+                </div>
+
+                {/* Actions row */}
+                <div className="flex items-center gap-3 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="flex-1 py-3 border border-outline-variant/60 hover:border-outline text-outline hover:bg-outline-variant/10 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer bg-transparent"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 blueprint-button shimmer-button mt-0"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">refresh</span>
+                    Recalculate
+                  </button>
+                </div>
+
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );

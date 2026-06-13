@@ -15,3 +15,7 @@ sentence-transformers
 pymupdf
 groq
 tqdm
+google-auth
+pyjwt
+email-validator
+

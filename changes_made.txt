@@ -1,4 +1,66 @@
 ================================================================================
+SUMMARY OF CHANGES - JUNE 13, 2026
+================================================================================
+
+1. Dual-Database Synchronous Sync
+   - DB Wrappers: Created transparent `DualPool` and `DualConnection` wrappers in [db/database.py](file:///e:/TRIKAL/astrology-backend/db/database.py) to execute queries on both pools.
+   - Write Replication: Automatically replicates all write operations (`conn.execute`) to both primary (Aiven) and secondary (local) databases simultaneously.
+   - Resilient Fallbacks: Configured read queries (`fetch`, `fetchrow`, `fetchval`) to cascade to the local database if Aiven is unreachable.
+   - Environment: Configured `LOCAL_DATABASE_URL` and `DATABASE_URL` side-by-side in [.env](file:///e:/TRIKAL/astrology-backend/.env).
+
+2. Removed Jupiter Exaltation Transit Banner
+   - UI Cleanup: Removed the `TransitBanner` component import and rendering from [DashboardPage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/DashboardPage.jsx).
+
+3. Profile Privacy Enhancement
+   - Removed Profile Displays: Completely removed the profile details section (user avatar image/initials and name text display) from the top navigation/header bar in [HomePage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/HomePage.jsx) and [DashboardPage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/DashboardPage.jsx).
+   - This prevents any personal information (such as "Ramen Buoy" or Google account picture initials) from leaking or displaying on screen, leaving only the Logout action.
+
+4. Slide-over Profile Drawer & Cosmic Themes
+   - Interactivity: Added click handlers to the chart name header chip (`header-avatar-chip`) in [DashboardPage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/DashboardPage.jsx) to trigger a beautiful right-aligned slide-over menu drawer.
+   - Layout Tweak: Swapped the layout rendering order so that the Profile Name chip is positioned at the absolute far right of the header bar, and reduced the slide-over drawer width to 2/3 of its original size (22% to 33% width).
+   - Menu Options: Integrated five major controls in the drawer:
+     - **Personal Details**: Displays current chart's birth details and coordinates, with an option to trigger the Recalculation/Edit modal.
+     - **Read Another Chart**: Navigates directly to the home screen to perform new chart entries.
+     - **Saved Blueprints**: Fetches all saved blueprints (`getUserCharts`) and displays them as active links to instantly load other charts.
+     - **Cosmic Themes**: Implemented live theme switching between four premium presets (Vedic Gold, Midnight Cosmic, Nebula Indigo, Solar Flare).
+     - **Log Out**: Clear session storage and log out.
+   - Persistence: Automatically initializes and saves selected themes globally in `localStorage` in [App.jsx](file:///e:/TRIKAL/astrology-frontend/src/App.jsx).
+   - Theme Styles: Appended classes (`theme-midnight`, `theme-nebula`, `theme-solar`) to [index.css](file:///e:/TRIKAL/astrology-frontend/src/index.css) to adjust text, cards, tables, headers, and Yantra background opacities automatically for each theme.
+   - Widescreen Optimization: Expanded layout containers (header, footer, and main grid) from `1280px` to a spacious `1650px` to consume empty margins and make full use of widescreen displays.
+   - Horizontal Scroll Fix: Added `overflow-x: hidden` to the HTML, body, and root selectors in `index.css` to completely eliminate horizontal viewport scrolling caused by off-screen rendering of the slide-over menu drawer.
+
+5. Removed Cosmic Blueprint Summary Section
+   - UI Cleanup: Completely removed the "Current Manifestation Blueprint" (`CosmicSummary` rendering) section from the dashboard right content column in [DashboardPage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/DashboardPage.jsx).
+
+6. Reorganized Tab Hierarchy & Virtual Tab Interfaces
+   - Primary Segmented Toggles: Replaced the horizontal scrollable row of 10 tabs with a sleek, gold-accented segmented control containing three primary categories: **Basics**, **Chart Description**, and **Report & Analysis** in [TabNavigation.jsx](file:///e:/TRIKAL/astrology-frontend/src/components/TabNavigation.jsx).
+   - Category Sub-tabs:
+     - **Basics**: Displays a blank/placeholder area for future basic content.
+     - **Chart Description**: Features sub-tabs for `Lagna and Soul`, `D10`, `D4`, `D9`, `D30`, `D7`, `Gochar`, and a virtual blank placeholder tab for `Education`.
+     - **Report & Analysis**: Features sub-tabs for `Lal Kitab Report`, `Numerology`, `Remedies`, and a virtual blank placeholder tab for `Vedic Report`.
+   - Streaming Exclusions: Added a check in [DashboardPage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/DashboardPage.jsx#L162) to skip LLM streaming calls for virtual non-numeric string tabs (like `'education'` or `'vedic_report'`).
+   - Download Report: Integrated a **Download Report** print button inside the Report & Analysis category. Appended print-only styles to [index.css](file:///e:/TRIKAL/astrology-frontend/src/index.css#L2663) and implemented a hidden print-only book-style container in `TabNavigation.jsx` that prints/PDF-downloads all loaded tab interpretations sequentially while hiding standard website header/footer/sidebar layouts.
+
+================================================================================
+SUMMARY OF CHANGES - JUNE 11, 2026
+================================================================================
+
+1. Email/Password Authentication & Landing Page Flow Refactored
+   - Backend auth: Added `POST /auth/register` and `POST /auth/login` to [routes/auth.py](file:///e:/TRIKAL/astrology-backend/routes/auth.py) implementing secure PBKDF2 password hashing.
+   - Database schema: Added `password_hash` column to the `users` table.
+   - Auth Provider: Integrated `loginWithEmail` and `registerWithEmail` methods in [AuthContext.jsx](file:///e:/TRIKAL/astrology-frontend/src/context/AuthContext.jsx) and added API wrappers in [api.js](file:///e:/TRIKAL/astrology-frontend/src/services/api.js).
+   - UI Refactor: Replaced the guest birth form in the split hero right column of [HomePage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/HomePage.jsx) with a unified gold-glassmorphic Login/Registration tabbed card. Once authenticated, users transition to view the birth form and their saved blueprints.
+
+2. Session Self-Healing & API Error Propagation
+   - Token propagation: Modified `get_optional_current_user` in [routes/auth.py](file:///e:/TRIKAL/astrology-backend/routes/auth.py) to raise `401 Unauthorized` on expired/invalid JWT tokens instead of silently swallowing the exception.
+   - Frontend Auto-Logout: Updated [DashboardPage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/DashboardPage.jsx) and [HomePage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/HomePage.jsx) to catch `401` errors and automatically log out user session, clearing stale localStorage.
+   - Error Diagnostics: Modified dashboard error display to render actual API error messages on screen.
+
+3. Cache Collision & Ownership Verification
+   - Cache ownership filter: Updated chart cache lookups in [routes/chart.py](file:///e:/TRIKAL/astrology-backend/routes/chart.py) (both Redis and PostgreSQL queries) to strictly filter by the current logged-in user.
+   - Bypassing collisions: If a cached chart with matching birth details is owned by a different user, the backend bypasses the cache and generates a new, owned copy for the current user, resolving `403 Forbidden` access issues.
+
+================================================================================
 SUMMARY OF CHANGES - JUNE 10, 2026
 ================================================================================
 

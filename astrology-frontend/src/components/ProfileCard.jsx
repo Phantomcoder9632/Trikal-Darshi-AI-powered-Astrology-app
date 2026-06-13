@@ -24,7 +24,7 @@ function getInitials(name) {
     .toUpperCase();
 }
 
-export default React.memo(function ProfileCard({ chartData }) {
+export default React.memo(function ProfileCard({ chartData, onEdit }) {
   if (!chartData) return null;
 
   const {
@@ -129,6 +129,16 @@ export default React.memo(function ProfileCard({ chartData }) {
         )}
 
       </div>
+
+      {onEdit && (
+        <button
+          onClick={onEdit}
+          className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 border border-outline/35 hover:border-primary/60 bg-transparent text-primary hover:bg-primary/5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-[16px]">edit</span>
+          <span>Edit Birth Details</span>
+        </button>
+      )}
     </div>
   );
 });

@@ -58,6 +58,7 @@ html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }
 
 body {
@@ -87,7 +88,7 @@ body {
 }
 
 .dashboard-header-inner {
-  max-width: 1280px;
+  max-width: 1650px;
   margin: 0 auto;
   padding: 14px 16px;
   display: flex;
@@ -2190,3 +2191,509 @@ body {
   left: 0;
   font-weight: bold;
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   COSMIC LOGIN PAGE STYLES
+   ────────────────────────────────────────────────────────────────────────── */
+
+.login-page-wrapper {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #0c0d10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: hidden;
+  font-family: "Inter", sans-serif;
+}
+
+.cosmic-glow-1 {
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  width: 60%;
+  height: 60%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201, 149, 42, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.cosmic-glow-2 {
+  position: absolute;
+  bottom: -20%;
+  right: -20%;
+  width: 60%;
+  height: 60%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(93, 92, 115, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.login-card-container {
+  position: relative;
+  z-index: 10;
+  background: rgba(18, 20, 26, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(211, 196, 176, 0.25);
+  border-radius: 24px;
+  padding: 44px 36px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  text-align: center;
+}
+
+.login-logo-ornament {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(201, 149, 42, 0.08);
+  border: 1.5px solid rgba(201, 149, 42, 0.35);
+  margin-bottom: 24px;
+  box-shadow: 0 0 24px rgba(201, 149, 42, 0.12);
+}
+
+.login-title {
+  color: #ffffff;
+  font-family: "Cinzel", serif;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.login-subtitle {
+  color: #817563;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.login-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(211, 196, 176, 0.25), transparent);
+  margin-bottom: 32px;
+}
+
+.login-action-container {
+  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+}
+
+.google-login-btn-wrapper {
+  transform: scale(1.03);
+  transition: transform 0.2s;
+}
+
+.google-login-btn-wrapper:hover {
+  transform: scale(1.05);
+}
+
+.login-error-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #ba1a1a;
+  background: rgba(186, 26, 26, 0.1);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 14px;
+  border: 1px solid rgba(186, 26, 26, 0.2);
+}
+
+.login-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(129, 117, 99, 0.6);
+  font-size: 10px;
+  line-height: 1.4;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.login-footer span {
+  display: inline-block;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   HERO SPLIT LAYOUT SYSTEM
+   ────────────────────────────────────────────────────────────────────────── */
+
+.hero-split-layout {
+  display: grid !important;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: center;
+  max-width: 1200px !important;
+  width: 100% !important;
+  padding: 60px 24px 80px !important;
+  text-align: center;
+}
+
+.hero-left-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.hero-right-column {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+/* Glassmorphic Inline Login Card */
+.login-card-container-inline {
+  width: 100%;
+  max-width: 440px;
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(24px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
+  border: 1px solid rgba(211, 196, 176, 0.45) !important;
+  box-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 4px 20px rgba(124, 88, 0, 0.05),
+    0 12px 40px rgba(93, 92, 115, 0.06) !important;
+  border-radius: 24px !important;
+  padding: 36px 28px !important;
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .hero-split-layout {
+    grid-template-columns: 1.15fr 1fr !important;
+    gap: 64px;
+    text-align: left !important;
+    padding: 80px 24px 100px !important;
+  }
+
+  .hero-left-column {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .hero-left-column .landing-badge-row {
+    justify-content: flex-start;
+  }
+  
+  .hero-left-column .landing-emblem {
+    margin-bottom: 4px;
+  }
+}
+
+/* ==========================================================================
+   COSMIC THEMES & DRAWER SYSTEM
+   ========================================================================== */
+
+/* Theme Variables configuration */
+body.theme-midnight {
+  --color-primary: #d4ab4c;
+  --color-primary-container: #7c5800;
+  --color-on-primary: #0b0c0d;
+  --color-background: #08090d;
+  --color-on-background: #e6e7eb;
+  --color-surface: #11131c;
+  --color-on-surface: #e6e7eb;
+  --color-on-surface-variant: #c4bcae;
+  --color-outline: #8d8271;
+  --color-outline-variant: #3a362f;
+  --color-surface-container-low: #151722;
+  --color-surface-container: #1b1e2a;
+  --color-surface-container-lowest: #07080a;
+  --yantra-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0 L100 50 L50 100 L0 50 Z' fill='none' stroke='%23d4ab4c' stroke-width='0.5' opacity='0.08'/%3E%3Ccircle cx='50' cy='50' r='10' fill='none' stroke='%23d4ab4c' stroke-width='0.5' opacity='0.08'/%3E%3C/svg%3E");
+  background-color: #08090d !important;
+  color: #e6e7eb;
+}
+
+body.theme-midnight .dashboard-header {
+  background: rgba(13, 14, 21, 0.85) !important;
+  border-bottom-color: rgba(211, 196, 176, 0.08) !important;
+}
+
+body.theme-midnight .sidebar-card,
+body.theme-midnight .dashboard-card,
+body.theme-midnight .profile-card,
+body.theme-midnight .planet-table-wrapper,
+body.theme-midnight .cosmic-summary,
+body.theme-midnight .tab-nav-container,
+body.theme-midnight .remedy-card-wrapper,
+body.theme-midnight .edit-modal-content,
+body.theme-midnight .login-card-container-inline {
+  background: #11131c !important;
+  border-color: rgba(211, 196, 176, 0.12) !important;
+  color: #e6e7eb !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.theme-midnight .header-name-text,
+body.theme-midnight .feature-section-title,
+body.theme-midnight .navbar-brand,
+body.theme-midnight .profile-name,
+body.theme-midnight .planet-table th,
+body.theme-midnight .prose-bold,
+body.theme-midnight .blueprint-label,
+body.theme-midnight .prose-section-header {
+  color: #e5c17d !important;
+}
+
+body.theme-midnight .prose-interpretation,
+body.theme-midnight .prose-para,
+body.theme-midnight .prose-remedy,
+body.theme-midnight .planet-table td {
+  color: #c4bcae !important;
+}
+
+body.theme-midnight .chart-toggle-btn {
+  background: rgba(22, 25, 36, 0.6) !important;
+  border-color: rgba(211, 196, 176, 0.12) !important;
+  color: #b3a99a !important;
+}
+
+body.theme-midnight .chart-toggle-btn:hover {
+  background: rgba(201, 149, 42, 0.15) !important;
+  color: #e5c17d !important;
+}
+
+body.theme-midnight .chart-toggle-btn-active {
+  background: #e5c17d !important;
+  border-color: #e5c17d !important;
+  color: #11131c !important;
+}
+
+/* 2. Nebula Indigo (Dark Mode) */
+body.theme-nebula {
+  --color-primary: #b088f5;
+  --color-primary-container: #492a83;
+  --color-on-primary: #0b0714;
+  --color-background: #0b0714;
+  --color-on-background: #ebe7f2;
+  --color-surface: #150d22;
+  --color-on-surface: #ebe7f2;
+  --color-on-surface-variant: #ccc4d6;
+  --color-outline: #9b89b8;
+  --color-outline-variant: #402f5c;
+  --color-surface-container-low: #1e142e;
+  --color-surface-container: #261a3b;
+  --color-surface-container-lowest: #08040d;
+  --yantra-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0 L100 50 L50 100 L0 50 Z' fill='none' stroke='%23b088f5' stroke-width='0.5' opacity='0.08'/%3E%3Ccircle cx='50' cy='50' r='10' fill='none' stroke='%23b088f5' stroke-width='0.5' opacity='0.08'/%3E%3C/svg%3E");
+  background-color: #0b0714 !important;
+  color: #ebe7f2;
+}
+
+body.theme-nebula .dashboard-header {
+  background: rgba(17, 11, 28, 0.85) !important;
+  border-bottom-color: rgba(176, 136, 245, 0.08) !important;
+}
+
+body.theme-nebula .sidebar-card,
+body.theme-nebula .dashboard-card,
+body.theme-nebula .profile-card,
+body.theme-nebula .planet-table-wrapper,
+body.theme-nebula .cosmic-summary,
+body.theme-nebula .tab-nav-container,
+body.theme-nebula .remedy-card-wrapper,
+body.theme-nebula .edit-modal-content,
+body.theme-nebula .login-card-container-inline {
+  background: #150d22 !important;
+  border-color: rgba(176, 136, 245, 0.12) !important;
+  color: #ebe7f2 !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.theme-nebula .header-name-text,
+body.theme-nebula .feature-section-title,
+body.theme-nebula .navbar-brand,
+body.theme-nebula .profile-name,
+body.theme-nebula .planet-table th,
+body.theme-nebula .prose-bold,
+body.theme-nebula .blueprint-label,
+body.theme-nebula .prose-section-header {
+  color: #c2a6f7 !important;
+}
+
+body.theme-nebula .prose-interpretation,
+body.theme-nebula .prose-para,
+body.theme-nebula .prose-remedy,
+body.theme-nebula .planet-table td {
+  color: #ccc4d6 !important;
+}
+
+body.theme-nebula .chart-toggle-btn {
+  background: rgba(30, 20, 48, 0.6) !important;
+  border-color: rgba(176, 136, 245, 0.12) !important;
+  color: #b2a8c0 !important;
+}
+
+body.theme-nebula .chart-toggle-btn:hover {
+  background: rgba(176, 136, 245, 0.15) !important;
+  color: #c2a6f7 !important;
+}
+
+body.theme-nebula .chart-toggle-btn-active {
+  background: #b088f5 !important;
+  border-color: #b088f5 !important;
+  color: #0b0714 !important;
+}
+
+/* 3. Solar Flare (Dark Mode) */
+body.theme-solar {
+  --color-primary: #e06a3b;
+  --color-primary-container: #7a2d11;
+  --color-on-primary: #120907;
+  --color-background: #120907;
+  --color-on-background: #f7eded;
+  --color-surface: #1c0e0b;
+  --color-on-surface: #f7eded;
+  --color-on-surface-variant: #e5d1cb;
+  --color-outline: #ba9387;
+  --color-outline-variant: #5c2c1e;
+  --color-surface-container-low: #25130f;
+  --color-surface-container: #2f1913;
+  --color-surface-container-lowest: #0b0504;
+  --yantra-pattern: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0 L100 50 L50 100 L0 50 Z' fill='none' stroke='%23e06a3b' stroke-width='0.5' opacity='0.08'/%3E%3Ccircle cx='50' cy='50' r='10' fill='none' stroke='%23e06a3b' stroke-width='0.5' opacity='0.08'/%3E%3C/svg%3E");
+  background-color: #120907 !important;
+  color: #f7eded;
+}
+
+body.theme-solar .dashboard-header {
+  background: rgba(26, 13, 10, 0.85) !important;
+  border-bottom-color: rgba(224, 106, 59, 0.08) !important;
+}
+
+body.theme-solar .sidebar-card,
+body.theme-solar .dashboard-card,
+body.theme-solar .profile-card,
+body.theme-solar .planet-table-wrapper,
+body.theme-solar .cosmic-summary,
+body.theme-solar .tab-nav-container,
+body.theme-solar .remedy-card-wrapper,
+body.theme-solar .edit-modal-content,
+body.theme-solar .login-card-container-inline {
+  background: #1c0e0b !important;
+  border-color: rgba(224, 106, 59, 0.12) !important;
+  color: #f7eded !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.theme-solar .header-name-text,
+body.theme-solar .feature-section-title,
+body.theme-solar .navbar-brand,
+body.theme-solar .profile-name,
+body.theme-solar .planet-table th,
+body.theme-solar .prose-bold,
+body.theme-solar .blueprint-label,
+body.theme-solar .prose-section-header {
+  color: #f28b61 !important;
+}
+
+body.theme-solar .prose-interpretation,
+body.theme-solar .prose-para,
+body.theme-solar .prose-remedy,
+body.theme-solar .planet-table td {
+  color: #e5d1cb !important;
+}
+
+body.theme-solar .chart-toggle-btn {
+  background: rgba(43, 21, 17, 0.6) !important;
+  border-color: rgba(224, 106, 59, 0.12) !important;
+  color: #cfb9b3 !important;
+}
+
+body.theme-solar .chart-toggle-btn:hover {
+  background: rgba(224, 106, 59, 0.15) !important;
+  color: #f28b61 !important;
+}
+
+body.theme-solar .chart-toggle-btn-active {
+  background: #e06a3b !important;
+  border-color: #e06a3b !important;
+  color: #120907 !important;
+}
+
+/* Forms & inputs override for dark themes */
+body.theme-midnight input, body.theme-midnight select, body.theme-midnight textarea,
+body.theme-nebula input, body.theme-nebula select, body.theme-nebula textarea,
+body.theme-solar input, body.theme-solar select, body.theme-solar textarea {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  color: inherit !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.theme-midnight input:focus,
+body.theme-nebula input:focus,
+body.theme-solar input:focus {
+  border-color: var(--color-primary) !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Animations & transitions for drawer */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Print Media Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  header, footer, aside, .dashboard-sidebar, .dashboard-header, .navbar-profile {
+    display: none !important;
+  }
+
+  body, html, #root, .dashboard-grid, .dashboard-content, .dashboard-tab-content {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  .prose-interpretation {
+    color: black !important;
+  }
+  
+  .prose-table-wrapper {
+    overflow: visible !important;
+  }
+  
+  .page-break-inside-avoid {
+    page-break-inside: avoid !important;
+  }
+}
+
+

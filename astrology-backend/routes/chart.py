@@ -3,7 +3,7 @@ import logging
 import asyncio
 import json
 from datetime import date, time, datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -15,6 +15,7 @@ from services.numerology import get_numerology
 from services.cache import cache_chart, get_cached_chart, generate_chart_cache_key, get_redis
 from services.ephemeris import compute_divisional_chart, compute_gochar_chart, ZODIAC_SIGNS
 from services.background_generator import pregenerate_all_tabs, prefetch_rag_contexts
+from routes.auth import get_current_user, get_optional_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -233,7 +234,8 @@ class ChartGenerateRequest(BaseModel):
 async def generate_chart(
     payload: ChartGenerateRequest,
     background_tasks: BackgroundTasks,
-    conn: asyncpg.Connection = Depends(get_db)
+    conn: asyncpg.Connection = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_current_user)
 ):
     """
     POST /chart/generate
@@ -275,27 +277,40 @@ async def generate_chart(
         is_complete = all(k in cached_chart for k in required_keys)
         if is_complete:
             logger.info(f"Redis cache hit under coordinate key: {cache_key}")
-            # Fire background pre-generation for any missing tabs.
-            # The generator skips tabs already in DB, so this is always safe.
             cached_chart_id = cached_chart.get("chart_id")
             if cached_chart_id:
                 try:
                     chart_uuid = uuid.UUID(cached_chart_id)
-                    background_tasks.add_task(
-                        prefetch_rag_contexts,
-                        chart_id=chart_uuid,
-                        chart_data=cached_chart,
-                    )
-                    background_tasks.add_task(
-                        pregenerate_all_tabs,
-                        chart_id=chart_uuid,
-                        chart_data=cached_chart,
-                        full_name=cached_chart.get("full_name", payload.full_name),
-                    )
-                    logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for Redis-cached chart {cached_chart_id}")
+                    db_owner = await conn.fetchval("SELECT user_id FROM charts WHERE id = $1", chart_uuid)
+                    
+                    # If guest chart and user is logged in, associate it
+                    if db_owner is None and current_user:
+                        user_uuid = uuid.UUID(str(current_user["id"]))
+                        await conn.execute("UPDATE charts SET user_id = $1 WHERE id = $2", user_uuid, chart_uuid)
+                        logger.info(f"Associated Redis cached chart {chart_uuid} with user {user_uuid}")
+                        db_owner = user_uuid
+                        
+                    user_uuid = uuid.UUID(str(current_user["id"])) if current_user else None
+                    
+                    # Only accept hit if owned by current user or guest
+                    if db_owner == user_uuid or db_owner is None:
+                        background_tasks.add_task(
+                            prefetch_rag_contexts,
+                            chart_id=chart_uuid,
+                            chart_data=cached_chart,
+                        )
+                        background_tasks.add_task(
+                            pregenerate_all_tabs,
+                            chart_id=chart_uuid,
+                            chart_data=cached_chart,
+                            full_name=cached_chart.get("full_name", payload.full_name),
+                        )
+                        logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for Redis-cached chart {cached_chart_id}")
+                        return cached_chart
+                    else:
+                        logger.info(f"Redis cache hit but chart belongs to different user {db_owner}, bypass cache")
                 except Exception as bg_err:
-                    logger.warning(f"[chart] Could not trigger background gen for Redis-cached chart: {bg_err}")
-            return cached_chart
+                    logger.warning(f"[chart] Could not verify owner/trigger background gen for Redis-cached chart: {bg_err}")
         else:
             logger.info(f"Redis cache hit but chart incomplete (missing divisional charts), falling through to PostgreSQL: {cache_key}")
 
@@ -303,15 +318,17 @@ async def generate_chart(
     parsed_dob = date.fromisoformat(dob_str)
     parsed_tob = time.fromisoformat(tob_str)
     try:
+        user_uuid = uuid.UUID(str(current_user["id"])) if current_user else None
         row = await conn.fetchrow(
             """
-            SELECT id, raw_chart_data FROM charts 
+            SELECT id, raw_chart_data, user_id FROM charts 
             WHERE LOWER(full_name) = LOWER($1)
               AND date_of_birth = $2 
               AND time_of_birth = $3 
               AND birth_time_confidence = $4
               AND ABS(latitude - $5) < 0.0001 
               AND ABS(longitude - $6) < 0.0001
+              AND (user_id IS NULL OR user_id = $7)
             ORDER BY created_at DESC LIMIT 1
             """,
             payload.full_name,
@@ -319,10 +336,17 @@ async def generate_chart(
             parsed_tob,
             payload.birth_time_confidence,
             lat,
-            lng
+            lng,
+            user_uuid
         )
         if row:
             logger.info(f"PostgreSQL chart hit under matching inputs: id={row['id']}")
+            
+            # Associate user_id if logged in and chart doesn't have one
+            if current_user and not row["user_id"]:
+                await conn.execute("UPDATE charts SET user_id = $1 WHERE id = $2", user_uuid, row["id"])
+                logger.info(f"Associated existing chart {row['id']} with user {user_uuid}")
+
             raw_data = row["raw_chart_data"]
             if isinstance(raw_data, str):
                 chart_data = json.loads(raw_data)
@@ -339,8 +363,6 @@ async def generate_chart(
             await cache_chart(cache_key, chart_data)
 
             # Fire background pre-generation for any missing tabs
-            # Use FastAPI BackgroundTasks (not asyncio.create_task) to prevent
-            # silent GC-cancellation of the background coroutine.
             background_tasks.add_task(
                 prefetch_rag_contexts,
                 chart_id=row["id"],
@@ -400,16 +422,18 @@ async def generate_chart(
     parsed_tob = time.fromisoformat(tob_str)
     created_at = datetime.now()
 
+    user_uuid = uuid.UUID(str(current_user["id"])) if current_user else None
     try:
         await conn.execute(
             """
             INSERT INTO charts (
-                id, full_name, date_of_birth, time_of_birth, city_of_birth, current_city,
+                id, user_id, full_name, date_of_birth, time_of_birth, city_of_birth, current_city,
                 latitude, longitude, timezone, birth_time_confidence, ayanamsha,
                 data_source, raw_chart_data, created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             """,
             new_id,
+            user_uuid,
             payload.full_name,
             parsed_dob,
             parsed_tob,
@@ -453,11 +477,174 @@ async def generate_chart(
     # ── j. Return complete chart JSON with chart_id ──────────────────────────
     return chart_data
 
+@router.put("/{chart_id}", response_model=Dict[str, Any])
+async def update_chart(
+    chart_id: uuid.UUID,
+    payload: ChartGenerateRequest,
+    background_tasks: BackgroundTasks,
+    conn: asyncpg.Connection = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    PUT /chart/{chart_id}
+    Updates birth details of a saved chart, re-geocodes, re-calculates everything,
+    invalidates stale cache, updates DB, and triggers background pre-generation.
+    """
+    logger.info(f"Updating chart {chart_id} for user {current_user['id']}")
+
+    # 1. Verify chart exists and is owned by the current user
+    row = await conn.fetchrow(
+        "SELECT user_id, city_of_birth FROM charts WHERE id = $1",
+        chart_id
+    )
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Chart with ID {chart_id} not found."
+        )
+
+    chart_owner_id = row["user_id"]
+    if not chart_owner_id or uuid.UUID(str(current_user["id"])) != chart_owner_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to modify this chart."
+        )
+
+    # 2. Geocode city_of_birth
+    try:
+        from routes.geocode import geocode_city_cached
+        geo_res = await geocode_city_cached(payload.city_of_birth)
+        lat = geo_res["lat"]
+        lng = geo_res["lng"]
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Could not resolve birth city coordinates: {payload.city_of_birth}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to geocode city of birth during update: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Geocoding service failed during chart birth place lookup."
+        )
+
+    # 3. Calculate new complete chart
+    dob_str = payload.date_of_birth.strip()
+    tob_str = payload.time_of_birth.strip()
+    user_input = {
+        "full_name": payload.full_name,
+        "date_of_birth": dob_str,
+        "time_of_birth": tob_str,
+        "city_of_birth": payload.city_of_birth,
+        "lat": lat,
+        "lng": lng,
+        "birth_time_confidence": payload.birth_time_confidence,
+        "timezone_offset": 5.5
+    }
+
+    try:
+        chart_data = await get_complete_chart(user_input)
+    except Exception as e:
+        logger.exception("Hybrid calculation engine failed during update.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Astrological calculation failed: {str(e)}"
+        )
+
+    # 4. Calculate numerology
+    parsed_dob = date.fromisoformat(dob_str)
+    numerology_data = get_numerology(parsed_dob, payload.full_name)
+    chart_data["numerology"] = numerology_data
+
+    # Merge metadata
+    chart_data["chart_id"] = str(chart_id)
+    chart_data["full_name"] = payload.full_name
+    chart_data["date_of_birth"] = payload.date_of_birth
+    chart_data["time_of_birth"] = payload.time_of_birth
+    chart_data["city_of_birth"] = payload.city_of_birth
+    chart_data["current_city"] = payload.current_city
+
+    # 5. Update PostgreSQL record
+    parsed_tob = time.fromisoformat(tob_str)
+    try:
+        await conn.execute(
+            """
+            UPDATE charts SET
+                full_name = $1,
+                date_of_birth = $2,
+                time_of_birth = $3,
+                city_of_birth = $4,
+                current_city = $5,
+                latitude = $6,
+                longitude = $7,
+                birth_time_confidence = $8,
+                data_source = $9,
+                raw_chart_data = $10,
+                created_at = NOW()
+            WHERE id = $11
+            """,
+            payload.full_name,
+            parsed_dob,
+            parsed_tob,
+            payload.city_of_birth,
+            payload.current_city,
+            lat,
+            lng,
+            payload.birth_time_confidence,
+            chart_data.get("source", "astrologyapi"),
+            json.dumps(chart_data, default=str),
+            chart_id
+        )
+    except Exception as e:
+        logger.error(f"Failed to update chart in PostgreSQL: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update calculations in PostgreSQL."
+        )
+
+    # 6. Delete old interpretation records (since planetary degrees changed completely)
+    try:
+        await conn.execute("DELETE FROM interpretations WHERE chart_id = $1", chart_id)
+        logger.info(f"Deleted old interpretations for chart {chart_id}")
+    except Exception as db_err:
+        logger.error(f"Failed to clear database interpretations: {db_err}")
+
+    # 7. Invalidate Redis cache
+    try:
+        redis_client = await get_redis()
+        chart_id_str = str(chart_id)
+        for tab_num in range(1, 11):
+            for lang in ("english", "hindi", "bengali"):
+                await redis_client.delete(f"interpretation:{chart_id_str}:{tab_num}:{lang}")
+        
+        cache_key = generate_chart_cache_key(dob_str, tob_str, round(lat, 4), round(lng, 4))
+        await cache_chart(cache_key, chart_data)
+        logger.info(f"Invalidated Redis interpretation cache and stored updated chart in Redis")
+    except Exception as redis_err:
+        logger.error(f"Failed to clear Redis cache: {redis_err}")
+
+    # 8. Trigger background pre-generation task for the new coordinates/planetary placements
+    background_tasks.add_task(
+        prefetch_rag_contexts,
+        chart_id=chart_id,
+        chart_data=chart_data,
+    )
+    background_tasks.add_task(
+        pregenerate_all_tabs,
+        chart_id=chart_id,
+        chart_data=chart_data,
+        full_name=payload.full_name,
+    )
+    logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for updated chart {chart_id}")
+
+    return chart_data
+
 @router.get("/{chart_id}", response_model=Dict[str, Any])
 async def get_chart(
     chart_id: uuid.UUID,
     background_tasks: BackgroundTasks,
-    conn: asyncpg.Connection = Depends(get_db)
+    conn: asyncpg.Connection = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_current_user)
 ):
     """
     GET /chart/{chart_id}
@@ -467,7 +654,7 @@ async def get_chart(
     
     row = await conn.fetchrow(
         """
-        SELECT full_name, date_of_birth, time_of_birth, city_of_birth, current_city, raw_chart_data 
+        SELECT user_id, full_name, date_of_birth, time_of_birth, city_of_birth, current_city, raw_chart_data 
         FROM charts 
         WHERE id = $1
         """,
@@ -478,6 +665,15 @@ async def get_chart(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Chart with ID {chart_id} not found."
         )
+
+    # Check ownership if user_id is set
+    chart_owner_id = row["user_id"]
+    if chart_owner_id:
+        if not current_user or uuid.UUID(str(current_user["id"])) != chart_owner_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to access this chart."
+            )
 
     raw_data = row["raw_chart_data"]
     if isinstance(raw_data, str):
@@ -511,3 +707,43 @@ async def get_chart(
     logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for GET chart {chart_id}")
 
     return chart_data
+
+
+@router.get("", response_model=list[Dict[str, Any]])
+async def list_user_charts(
+    current_user: dict = Depends(get_current_user),
+    conn: asyncpg.Connection = Depends(get_db)
+):
+    """
+    GET /chart
+    Returns list of all charts created by the currently logged-in user.
+    """
+    try:
+        user_uuid = uuid.UUID(str(current_user["id"]))
+        rows = await conn.fetch(
+            """
+            SELECT id, full_name, date_of_birth, time_of_birth, city_of_birth, current_city, created_at
+            FROM charts
+            WHERE user_id = $1
+            ORDER BY created_at DESC
+            """,
+            user_uuid
+        )
+        charts = []
+        for r in rows:
+            charts.append({
+                "chart_id": str(r["id"]),
+                "full_name": r["full_name"],
+                "date_of_birth": str(r["date_of_birth"]),
+                "time_of_birth": str(r["time_of_birth"]),
+                "city_of_birth": r["city_of_birth"],
+                "current_city": r["current_city"],
+                "created_at": r["created_at"].isoformat() if r["created_at"] else None
+            })
+        return charts
+    except Exception as e:
+        logger.error(f"Failed to fetch user charts: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve saved charts."
+        )

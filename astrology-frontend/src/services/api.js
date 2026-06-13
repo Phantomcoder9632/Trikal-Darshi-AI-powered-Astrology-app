@@ -9,6 +9,18 @@ const apiClient = axios.create({
   },
 });
 
+// Interceptor to inject JWT token
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 /**
  * Geocode a city to retrieve its coordinates.
  * POST /geocode
@@ -73,11 +85,17 @@ export async function getChart(chartId) {
 export async function getInterpretation(chartId, tabNumber, language = 'english', onChunk) {
   try {
     // Standard fetch is more reliable for real-time text chunk streaming in browsers
+    const token = localStorage.getItem('token');
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${BASE_URL}/interpret/${chartId}/${tabNumber}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ language }),
     });
 
@@ -144,3 +162,64 @@ export async function getGenerationProgress(chartId) {
     return null;
   }
 }
+
+/**
+ * Fetch all charts saved under the current user's profile.
+ * GET /chart
+ */
+export async function getUserCharts() {
+  try {
+    const response = await apiClient.get('/chart');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user charts:', error.response?.data || error.message);
+    throw error;
+  }
+}
+
+/**
+ * Update birth details and recalculate chart.
+ * PUT /chart/{chartId}
+ * @param {string} chartId 
+ * @param {Object} formData 
+ */
+export async function updateChart(chartId, formData) {
+  try {
+    const response = await apiClient.put(`/chart/${chartId}`, {
+      full_name: formData.full_name,
+      date_of_birth: formData.date_of_birth,
+      time_of_birth: formData.time_of_birth,
+      city_of_birth: formData.city_of_birth,
+      current_city: formData.current_city,
+      birth_time_confidence: formData.birth_time_confidence,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating chart:', error.response?.data || error.message);
+    throw error;
+  }
+}
+
+/**
+ * Log in using email and password.
+ * POST /auth/login
+ * @param {string} email
+ * @param {string} password
+ */
+export async function loginWithEmail(email, password) {
+  const response = await apiClient.post('/auth/login', { email, password });
+  return response.data;
+}
+
+/**
+ * Register a new user using email and password.
+ * POST /auth/register
+ * @param {string} email
+ * @param {string} password
+ * @param {string} name
+ */
+export async function registerWithEmail(email, password, name) {
+  const response = await apiClient.post('/auth/register', { email, password, name });
+  return response.data;
+}
+

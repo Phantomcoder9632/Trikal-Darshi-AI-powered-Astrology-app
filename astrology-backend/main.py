@@ -68,12 +68,15 @@ from routes.chart import router as chart_router
 from routes.interpret import router as interpret_router
 from routes.geocode import router as geocode_router
 from routes.progress import router as progress_router
+from routes.auth import router as auth_router
 
 # ── API Router Registration ────────────────────────────────────────────────
+app.include_router(auth_router)
 app.include_router(geocode_router)
 app.include_router(chart_router, prefix="/chart")
 app.include_router(interpret_router)
 app.include_router(progress_router)
+
 
 
 
@@ -120,4 +123,5 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     
     logger.info(f"Starting server on {host}:{port}")
+    # Trigger restart to reload new Google Client ID from .env
     uvicorn.run("main:app", host=host, port=port, reload=True)

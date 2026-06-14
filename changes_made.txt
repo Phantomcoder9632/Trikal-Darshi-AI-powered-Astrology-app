@@ -1,5 +1,28 @@
 ================================================================================
-SUMMARY OF CHANGES - JUNE 14, 2026
+SUMMARY OF CHANGES - JUNE 14, 2026 (Trikal Darshi Feature Expansion)
+================================================================================
+
+1. Basics Tab (ID: `basics` / Segmented Category Toggle)
+   - Calculations: Added `get_astro_details` AstrologyAPI.com POST call and fallback local `calculate_astro_details_local` calculations in `services/ephemeris.py` to compute Vedic Panchang (Tithi, Karan, Yoga) and Avakhada Chakra (Varna, Vashya, Yoni, Gana, Nadi).
+   - Integration: Tied it into the `ensure_chart_complete` self-healing list in `routes/chart.py` to dynamically calculate for legacy charts and store it in `raw_chart_data.astro_details` inside PostgreSQL.
+   - Frontend: Developed a 6-section static card grid (Birth Identity, Lagna/Moon, Panchang, Avakhada, Dasha, and active Dosha Summary badges) within `TabNavigation.jsx`.
+
+2. Education Tab (ID: `education` / Tab 11)
+   - Schema Migration: Updated interpretations table CHECK constraint check to `BETWEEN 1 AND 11` dynamically on startup in `database.py` and in `schema.sql`.
+   - Prompt & Routing: Registered tab 11 as "Education & Intelligence" in `TAB_MAP` within `routes/interpret.py`, added a specialized streaming prompt in `services/ai_prompts.py`, and included it in the background pre-generation queue.
+   - Frontend: Connected tab 11 into `TabNavigation.jsx` and dashboard streaming triggers in `DashboardPage.jsx` to display real-time streamed interpretations.
+
+3. Vedic Report Tab (ID: `vedic_report` / Category Toggle)
+   - On-screen Compilation: Aggregated all 11 interpretation chapters sequentially within a printable cosmic report view.
+   - Completion Check: Implemented a progress banner (e.g. "X of 11 sections ready") and a "Generate Full Report" button to sequentially stream any ungenerated chapters.
+   - Optimized Loading: Created a new GET `/interpret/{chart_id}` endpoint in `routes/interpret.py` to retrieve all generated interpretations in a single database query.
+
+4. Remedy Precision Upgrade (Tab 8 Prompt)
+   - Dignity Helper: Added the `_planet_dignity` calculation helper in `services/ai_prompts.py` to assess exalted, debilitated, own, friend, and enemy sign statuses.
+   - Rich Context Injection: Injected planetary dignity maps, active doshas, Lal Kitab house positions, and Chaldean/Vedic numerology numbers directly into the Remedies prompt to enforce highly personalized outputs.
+
+================================================================================
+SUMMARY OF CHANGES - JUNE 14, 2026 (Infrastructure Improvements)
 ================================================================================
 
 1. Database Schema Self-Healing & Automated Migration

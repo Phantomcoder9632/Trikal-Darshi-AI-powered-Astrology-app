@@ -53,12 +53,13 @@ Step 3: Chart Generation Request (`POST /chart/generate` or `GET /chart/{id}`)
     and appended.
   - The completed chart data is saved to PostgreSQL and cached in Redis.
   - A FastAPI `BackgroundTask` is fired to start background pre-generation of 
-    all 10 tab interpretations.
+  - A FastAPI `BackgroundTask` is fired to start background pre-generation of 
+    all 11 tab interpretations.
 
 Step 4: Non-Blocking Background Pre-Generation (`services/background_generator.py`)
   - Runs in the background using `asyncio.to_thread` to prevent blocking the 
     main ASGI event loop.
-  - Iterates through the 10 report tabs using `asyncio.Semaphore(2)` (processing 
+  - Iterates through the 11 report tabs using `asyncio.Semaphore(2)` (processing 
     at most 2 tabs concurrently to avoid API rate limits).
   - Skips any tab that already has a completed interpretation (>= 1000 chars) in the DB.
   - For each pending tab:
@@ -78,12 +79,13 @@ Step 4: Non-Blocking Background Pre-Generation (`services/background_generator.p
 Step 5: Frontend Polling and State Rendering
   - Once the dashboard loads, the frontend polls `GET /progress/{chart_id}` 
     every 4 seconds.
-  - Displays a real-time animated badge: "✦ Preparing cosmic blueprint — X of 10 sections ready" 
+  - Displays a real-time animated badge: "✦ Preparing cosmic blueprint — X of 11 sections ready" 
     with a progress bar.
   - If the user clicks a tab that is already pre-generated, the frontend fetches 
     it instantly from the cached database responses.
   - If they click a tab that is still pending, the backend streams the live 
     generation on-demand and caches it upon completion.
+  - The compiled Vedic Report tab (Tab 12 / `vedic_report`) fetches all completed interpretations in a single request and displays them sequentially, with a progress banner and stream trigger button for any missing chapters.
 
 --------------------------------------------------------------------------------
 3. BACKEND DIRECTORY STRUCTURE AND MODULE BREAKDOWN
@@ -114,7 +116,7 @@ Directory: astrology-backend/routes/
   - Purpose: API endpoints for chart calculations and retrieval.
   - Functions:
     - `ensure_chart_complete(chart_data, conn, chart_uuid)`: Examines a chart payload 
-      to ensure all divisional Kundalis (D9, D10, D4, etc.) are computed and saved.
+      to ensure all divisional Kundalis (D9, D10, D4, etc.) and `astro_details` are computed and saved.
     - `generate_chart(payload, background_tasks, conn)`: `POST /chart/generate` endpoint.
       Performs geocoding, checks Redis cache, queries postgres, routes to external or 
       local calculation engine, caches findings, fires background pre-generation task, 
@@ -131,17 +133,19 @@ Directory: astrology-backend/routes/
       API to return latitude, longitude, and timezone calculations for the birth location.
 
 * interpret.py
-  - Purpose: Streaming route for on-demand tab interpretations.
+  - Purpose: Routes for on-demand and bulk tab interpretations.
   - Functions:
     - `generate_interpretation_stream(chart_id, tab_number)`: `POST /interpret/{chart_id}/{tab_number}`.
-      Checks the Redis cache first. If a cache miss occurs, it temporarily acquires a database connection to check for existing PostgreSQL interpretations and fetch the parent birth chart, releasing the connection immediately prior to initiating the external LLM stream. This prevents connection starvation during streaming. Saves and caches the generated interpretation upon stream completion.
+      Checks the Redis cache first. If a cache miss occurs, it temporarily acquires a database connection to check for existing PostgreSQL interpretations and fetch the parent birth chart, releasing the connection immediately prior to initiating the external LLM stream. This prevents connection starvation during streaming. Saves and caches the generated interpretation upon stream completion. Supports tab numbers 1-11.
+    - `get_all_interpretations(chart_id, conn)`: `GET /interpret/{chart_id}` endpoint.
+      Retrieves all completed interpretations for a chart from PostgreSQL in a single database query, mapping tab 11 to the `'education'` key and others to their respective tab numbers.
 
 * progress.py
   - Purpose: Tracks the status of background task pre-generations.
   - Functions:
     - `get_generation_progress(chart_id, conn)`: `GET /progress/{chart_id}` endpoint.
       Queries the database to count completed tab interpretations for a given chart UUID.
-      Returns total_tabs (10), completed_tabs list, pending_tabs list, percent (0-100), 
+      Returns total_tabs (11), completed_tabs list, pending_tabs list, percent (0-100), 
       and a boolean is_complete.
 
 =========================================
@@ -184,7 +188,7 @@ Directory: astrology-backend/services/
       run inside `asyncio.to_thread()`. Retrieves k=5 chunks of RAG texts, builds the 
       prompts, streams Gemini/OpenRouter, cleans up thinking tags, and returns the compiled text.
     - `pregenerate_all_tabs(chart_id, chart_data, full_name) -> None`: Initiates concurrent 
-      `_generate_single_tab` tasks for all 10 tabs using `asyncio.gather()`.
+      `_generate_single_tab` tasks for all 11 tabs using `asyncio.gather()`.
 
 * cache.py
   - Purpose: Redis cache interface.
@@ -297,7 +301,7 @@ Table 3: `interpretations`
   - Columns:
     - `id` (UUID, Primary Key)
     - `chart_id` (UUID, Foreign Key referencing charts.id)
-    - `tab_number` (INTEGER, CHECK between 1 and 10)
+    - `tab_number` (INTEGER, CHECK between 1 and 11)
     - `tab_name` (TEXT)
     - `content` (TEXT)
     - `model_used` (TEXT)

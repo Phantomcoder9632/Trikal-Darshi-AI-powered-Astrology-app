@@ -21,7 +21,7 @@
 <br/><br/>
 
 <!-- Stats Row -->
-<img src="https://img.shields.io/badge/10_Interpretation_Tabs-Active-gold?style=flat-square"/>
+<img src="https://img.shields.io/badge/11_Interpretation_Tabs-Active-gold?style=flat-square"/>
 <img src="https://img.shields.io/badge/8_Divisional_Charts-Computed-blueviolet?style=flat-square"/>
 <img src="https://img.shields.io/badge/27_Nakshatras-Analyzed-darkgreen?style=flat-square"/>
 <img src="https://img.shields.io/badge/3_Ancient_Systems-Unified-crimson?style=flat-square"/>
@@ -72,7 +72,7 @@ Enter your exact birth details. Watch as the cosmos reveals itself — from your
 │              └───────────┬──────────┘                      │
 │                          │                                 │
 │         ┌────────────────▼───────────────┐                 │
-│         │   10-Tab Personalized Reading  │                 │
+│         │   11-Tab Personalized Reading  │                 │
 │         └────────────────────────────────┘                 │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
@@ -89,8 +89,8 @@ Here are the latest architectural and visual updates implemented for maximum rel
 * **Database Schema Self-Healing & Automated Migration**: Added startup database schema verification (`db/database.py`) that checks tables, columns, constraints, and extensions (`uuid-ossp`) on startup, running automated schema creation and migrative alters to prevent database drift.
 * **Hugging Face Spaces Deployment Compatibility**: Integrated root GET `/` health-check endpoints and standardized on port `7860` as the default fallback port for deployment compatibility with Hugging Face Spaces.
 * **LangChain Integration & Modernized Dependency Upgrades**: Updated vector database and sentence embedding utilities to run `langchain_chroma` and `langchain_huggingface` directly, with robust fallbacks to `langchain_community`.
-* **Print System & PDF Report Builder**: Implemented a hidden print-only book container that compiles all 10 tab reports sequentially for clean, styled browser print or PDF downloads of the user's complete astrological profile.
-* **Segmented Navigation & Virtual Tabs**: Reorganized the 10-tab row into three sleek category groups (Basics, Chart Description, Report & Analysis) with clean segmented tabs and virtual placeholders.
+* **Print System & PDF Report Builder**: Implemented a hidden print-only book container that compiles all 11 tab reports sequentially for clean, styled browser print or PDF downloads of the user's complete astrological profile.
+* **Segmented Navigation & Virtual Tabs**: Reorganized the 11-tab row into three sleek category groups (Basics, Chart Description, Report & Analysis) with clean segmented tabs and virtual placeholders.
 * **Interactive Profile Drawer & Cosmic Themes**: Designed a premium right-aligned slide-over settings drawer that displays birth coordinate details, saved blueprints list, and 4 cosmic color themes (Vedic Gold, Midnight Cosmic, Nebula Indigo, Solar Flare) with state persistence.
 * **Dual-Database Write Replication & Read Fallbacks**: Created a transparent database wrapper (`DualPool`/`DualConnection`) that writes to both Aiven PostgreSQL and a local secondary database in parallel, while gracefully cascading reads to the secondary on network failure.
 * **Secure Email/Password Authentication**: Added backend registration and login routes with PBKDF2 secure password hashing, integrated with frontend `AuthContext` to secure natal charts and user profile association.
@@ -251,6 +251,18 @@ The **karmic debt reader** — using Lal Kitab exclusively (never mixed with Ved
 
 </details>
 
+<details>
+<summary><b>🎓 Tab 11 — Education & Intelligence</b></summary>
+
+**Vedic cognitive mapping** analyzing the native's learning capability, intelligence foundation, and academic path.
+
+- **Intelligence Foundation (D1)** — analysis of the 5th house, Mercury (Budh) status, Jupiter (Guru) placements, and early childhood learning.
+- **Academic Yogas** — scanning for Budha-Aditya, Saraswati, and other classical intelligence-enhancing yogas.
+- **Field Direction** — personalized guidance on best fields of study (Technical/Sciences, Arts, Business/Commerce).
+- **Dasha & Transit Timings** — educational forecasts indicating windows for success in exams, research, and foreign certifications.
+
+</details>
+
 ---
 
 ## 🏗️ System Architecture
@@ -277,7 +289,7 @@ flowchart TD
     
     H --> N[Cache in Redis\n30-day TTL]
     M --> N
-    N --> O[📊 Dashboard\n10-Tab Layout]
+    N --> O[📊 Dashboard\n11-Tab Layout]
     
     O --> P{Tab Selected}
     P --> Q{Interpretation\nCached?}
@@ -309,7 +321,7 @@ flowchart TD
 | **Styling** | Vanilla CSS + CSS Variables | Full design system — no Tailwind dependency |
 | **Backend** | FastAPI (Python 3.10+) | Async API with full Pydantic validation |
 | **Astro Engine** | Swiss Ephemeris (`pyswisseph`) | Arc-second precision planetary calculations |
-| **AI/LLM** | Groq API (LLaMA / Mixtral) | Ultra-fast inference for 10 specialized prompts |
+| **AI/LLM** | Groq API (LLaMA / Mixtral) | Ultra-fast inference for 11 specialized prompts |
 | **RAG** | LangChain + ChromaDB | Classical shastra text retrieval as AI context |
 | **Embeddings** | Sentence Transformers | Semantic search over classical Vedic texts |
 | **Primary DB** | PostgreSQL + asyncpg | Persistent chart & interpretation storage |
@@ -510,14 +522,14 @@ Trikal-Darshi-AI-powered-Astrology-app/
         │
         ├── pages/
         │   ├── HomePage.jsx      # Birth details form + validation
-        │   └── DashboardPage.jsx # 10-tab dashboard with chart sidebar
+        │   └── DashboardPage.jsx # 11-tab dashboard with chart sidebar
         │
         ├── components/
         │   ├── ChartSidebar.jsx  # Kundali chart + divisional chart toggler
         │   ├── DivisionalChart.jsx # SVG chart renderer + "best used for" badge
         │   ├── KundaliChart.jsx  # North Indian Kundali SVG renderer
         │   ├── PlanetTable.jsx   # Planetary positions table (synced to active chart)
-        │   ├── TabNavigation.jsx # 10-tab navigator with load states
+        │   ├── TabNavigation.jsx # 11-tab navigator with load states
         │   ├── CosmicSummary.jsx # Birth details summary card
         │   ├── TransitBanner.jsx # Live transit countdown + planetary positions
         │   ├── RemedyCards.jsx   # Formatted remedy display cards
@@ -630,7 +642,7 @@ CREATE TABLE charts (
 CREATE TABLE interpretations (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     chart_id     UUID REFERENCES charts(id) ON DELETE CASCADE,
-    tab_number   INTEGER NOT NULL,        -- 1-10
+    tab_number   INTEGER NOT NULL,        -- 1-11
     content      TEXT NOT NULL,           -- Full AI interpretation
     created_at   TIMESTAMP DEFAULT NOW(),
     UNIQUE(chart_id, tab_number)          -- One per chart per tab

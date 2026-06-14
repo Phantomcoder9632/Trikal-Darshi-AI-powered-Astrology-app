@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body, BackgroundT
 from fastapi.responses import StreamingResponse, JSONResponse
 import asyncpg
 
-from db.database import get_db
+from db.database import get_db, get_db_pool
 from services.ai import stream_interpretation
 from services.cache import cache_interpretation, get_cached_interpretation
 
@@ -34,7 +34,6 @@ async def generate_interpretation_stream(
     tab_number: int,
     background_tasks: BackgroundTasks,
     language: str = Body("english", embed=True),
-    conn: asyncpg.Connection = Depends(get_db)
 ):
     """
     POST /interpret/{chart_id}/{tab_number}
@@ -55,23 +54,7 @@ async def generate_interpretation_stream(
     tab_name = TAB_MAP[tab_number]
     chart_id_str = str(chart_id)
 
-    # ── a. Check interpretations table (Already generated?) ────────────────
-    row = await conn.fetchrow(
-        "SELECT content FROM interpretations WHERE chart_id = $1 AND tab_number = $2 AND language = $3",
-        chart_id,
-        tab_number,
-        language
-    )
-    if row:
-        logger.info(f"Interpretation found in PostgreSQL: chart={chart_id_str} Tab={tab_number} Language={language}")
-        content = row["content"]
-        
-        async def yield_stored():
-            yield content
-            
-        return StreamingResponse(yield_stored(), media_type="text/plain")
-
-    # ── b. Check Redis cache ────────────────────────────────────────────────
+    # ── a. Check Redis cache first (fastest) ────────────────────────────────────────────────
     cached_text = await get_cached_interpretation(chart_id_str, tab_number, language)
     if cached_text:
         logger.info(f"Interpretation cache hit: chart={chart_id_str} Tab={tab_number} Language={language}")
@@ -81,15 +64,36 @@ async def generate_interpretation_stream(
             
         return StreamingResponse(yield_cached(), media_type="text/plain")
 
-    # ── c. Fetch complete chart from PostgreSQL ─────────────────────────────
-    chart_row = await conn.fetchrow(
-        """
-        SELECT full_name, date_of_birth, time_of_birth, city_of_birth, current_city, raw_chart_data 
-        FROM charts 
-        WHERE id = $1
-        """,
-        chart_id
-    )
+    # ── b. Query PostgreSQL for existing interpretation or chart details ────
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        # Check interpretations table
+        row = await conn.fetchrow(
+            "SELECT content FROM interpretations WHERE chart_id = $1 AND tab_number = $2 AND language = $3",
+            chart_id,
+            tab_number,
+            language
+        )
+        if row:
+            logger.info(f"Interpretation found in PostgreSQL: chart={chart_id_str} Tab={tab_number} Language={language}")
+            content = row["content"]
+            
+            async def yield_stored():
+                yield content
+                
+            return StreamingResponse(yield_stored(), media_type="text/plain")
+
+        # Fetch chart row
+        chart_row = await conn.fetchrow(
+            """
+            SELECT full_name, date_of_birth, time_of_birth, city_of_birth, current_city, raw_chart_data 
+            FROM charts 
+            WHERE id = $1
+            """,
+            chart_id
+        )
+
+    # Beyond this point, the database connection is fully released back to the pool!
     if not chart_row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

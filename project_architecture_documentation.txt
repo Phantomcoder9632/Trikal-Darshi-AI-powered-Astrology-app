@@ -133,11 +133,8 @@ Directory: astrology-backend/routes/
 * interpret.py
   - Purpose: Streaming route for on-demand tab interpretations.
   - Functions:
-    - `generate_interpretation_stream(chart_id, tab_number, conn)`: `POST /interpret/{chart_id}/{tab_number}`.
-      If the interpretation is already stored in PostgreSQL or cached in Redis, it 
-      returns it instantly. Otherwise, it calls `stream_interpretation()` from `services/ai.py` 
-      to stream the LLM generation to the client in real-time, saving and caching it 
-      to PostgreSQL and Redis once completed.
+    - `generate_interpretation_stream(chart_id, tab_number)`: `POST /interpret/{chart_id}/{tab_number}`.
+      Checks the Redis cache first. If a cache miss occurs, it temporarily acquires a database connection to check for existing PostgreSQL interpretations and fetch the parent birth chart, releasing the connection immediately prior to initiating the external LLM stream. This prevents connection starvation during streaming. Saves and caches the generated interpretation upon stream completion.
 
 * progress.py
   - Purpose: Tracks the status of background task pre-generations.

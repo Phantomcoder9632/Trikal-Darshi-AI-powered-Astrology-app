@@ -21,6 +21,11 @@ SUMMARY OF CHANGES - JUNE 14, 2026
    - Verification Check: Updated `generate_chart` in [routes/chart.py](file:///d:/AstrologyApp/astrology-backend/routes/chart.py) to verify that a Redis cache hit actually exists in the PostgreSQL database.
    - Safe Recovery: If a chart is present in Redis cache but not in PostgreSQL (e.g., due to a database reset/wipe), the backend safely bypasses the cache hit and triggers a fresh calculation and database insert.
 
+5. Database Connection Starvation & Timeout Fix
+   - Scoped Connection Lifespans: Refactored `generate_interpretation_stream` in [routes/interpret.py](file:///d:/AstrologyApp/astrology-backend/routes/interpret.py) to acquire and release the database connection immediately after retrieving initial data, rather than keeping the connection open as a FastAPI parameter dependency.
+   - Streaming Isolation: By releasing the database connection prior to triggering the long-running external LLM streaming API calls, the connection pool is spared from starvation (preventing client-cancellation timeouts and 500 errors on endpoints like `/progress`).
+   - Prioritized Redis Hits: Moved Redis cache check to the absolute top of the route to skip Postgres queries entirely when warm cache hits occur.
+
 ================================================================================
 SUMMARY OF CHANGES - JUNE 13, 2026
 ================================================================================

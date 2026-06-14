@@ -74,6 +74,21 @@ export async function getChart(chartId) {
 }
 
 /**
+ * Fetch all already-generated interpretations for a chart.
+ * GET /interpret/{chartId}
+ * @param {string} chartId 
+ */
+export async function getAllInterpretations(chartId) {
+  try {
+    const response = await apiClient.get(`/interpret/${chartId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all interpretations:', error.response?.data || error.message);
+    throw error;
+  }
+}
+
+/**
  * Fetch streamed interpretations for a specific tab.
  * POST /interpret/{chartId}/{tabNumber}
  * Supports standard browser streaming.

@@ -414,3 +414,19 @@ async def get_numerology(
     """
     body = _build_body(dob, tob, lat, lon, tzone, extra={"name": full_name})
     return await _call("/numero_table", body)
+
+
+async def get_astro_details(
+    dob: date,
+    tob: time,
+    lat: float,
+    lon: float,
+    tzone: float = _DEFAULT_TZONE,
+) -> dict[str, Any]:
+    """
+    POST /astro_details
+    Vedic astrology details: tithi, karan, yog, nakshatra, varna, vashya, yoni, gan, nadi.
+    """
+    body = _build_body(dob, tob, lat, lon, tzone)
+    return await _call("/astro_details", body)
+

@@ -26,6 +26,7 @@ TAB_MAP = {
     8: "Remedies Tripath System",
     9: "Progeny Lineage & Saptamsha D7",
     10: "Gochar Current Transits",
+    11: "Education & Intelligence",
 }
 
 @router.post("/interpret/{chart_id}/{tab_number}")
@@ -37,7 +38,7 @@ async def generate_interpretation_stream(
 ):
     """
     POST /interpret/{chart_id}/{tab_number}
-    Real-time streaming interpretation for Vedic astrology tabs (1-8).
+    Real-time streaming interpretation for Vedic astrology tabs (1-11).
     Checks DB and cache first (yielding immediately), falls back to streaming
     Groq/Qwen3-32b (primary) or OpenRouter/Gemma-4-31b (fallback),
     and automatically saves + caches the result on stream completion.
@@ -48,7 +49,7 @@ async def generate_interpretation_stream(
     if tab_number not in TAB_MAP:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid tab number {tab_number}. Must be between 1 and 10."
+            detail=f"Invalid tab number {tab_number}. Must be between 1 and 11."
         )
 
     tab_name = TAB_MAP[tab_number]
@@ -191,3 +192,28 @@ async def generate_interpretation_stream(
             logger.error(f"Failed to save final stream output: {save_err}")
 
     return StreamingResponse(ai_stream_generator(), media_type="text/plain")
+
+
+@router.get("/interpret/{chart_id}")
+async def get_all_interpretations(
+    chart_id: uuid.UUID,
+    conn: asyncpg.Connection = Depends(get_db),
+):
+    """
+    GET /interpret/{chart_id}
+    Retrieves all generated interpretations for a chart from PostgreSQL.
+    """
+    rows = await conn.fetch(
+        "SELECT tab_number, content FROM interpretations WHERE chart_id = $1 AND language = 'english'",
+        chart_id
+    )
+    result = {}
+    for row in rows:
+        tab_num = row["tab_number"]
+        content = row["content"]
+        if tab_num == 11:
+            result['education'] = content
+        else:
+            result[tab_num] = content
+    return result
+

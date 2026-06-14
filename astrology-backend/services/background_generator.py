@@ -50,6 +50,7 @@ TAB_MAP = {
     8: "Remedies Tripath System",
     9: "Progeny Lineage & Saptamsha D7",
     10: "Gochar Current Transits",
+    11: "Education & Intelligence",
 }
 
 # Max concurrency: 2 tabs at a time to avoid LLM rate-limit hammering
@@ -356,7 +357,7 @@ async def pregenerate_all_tabs(
                 full_name=full_name,
                 tab_number=tab_num,
             )
-            for tab_num in range(1, 11)
+            for tab_num in range(1, 12)
         ]
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -417,7 +418,7 @@ async def prefetch_rag_contexts(
         
         def _sync_prefetch():
             r_client = get_sync_redis()
-            for tab_num in range(1, 11):
+            for tab_num in range(1, 12):
                 redis_key = f"rag_context:{chart_id_str}:{tab_num}:{_BG_RAG_K}"
                 # If already cached, skip
                 if r_client.exists(redis_key):

@@ -846,3 +846,137 @@ def compute_gochar_chart(lat: float = 28.6139, lng: float = 77.2090) -> Dict[str
         return {"chart_type": "gochar", "error": str(e), "ascendant": {}, "planets": []}
     finally:
         swe.close()
+
+
+def calculate_astro_details_local(
+    sun_lon: float,
+    moon_lon: float,
+    moon_sign: str,
+    moon_nak: str,
+    moon_pada: int
+) -> Dict[str, Any]:
+    """
+    Calculate Vedic Panchang (Tithi, Karana, Yoga) and Avakhada Chakra
+    (Varna, Vashya, Yoni, Gana, Nadi) locally.
+    """
+    # 1. Tithi
+    TITHIS = [
+        "Shukla Pratipada", "Shukla Dwitiya", "Shukla Tritiya", "Shukla Chaturthi", "Shukla Panchami",
+        "Shukla Shasthi", "Shukla Saptami", "Shukla Ashtami", "Shukla Navami", "Shukla Dashami",
+        "Shukla Ekadashi", "Shukla Dwadashi", "Shukla Trayodashi", "Shukla Chaturdashi", "Purnima",
+        "Krishna Pratipada", "Krishna Dwitiya", "Krishna Tritiya", "Krishna Chaturthi", "Krishna Panchami",
+        "Krishna Shasthi", "Krishna Saptami", "Krishna Ashtami", "Krishna Navami", "Krishna Dashami",
+        "Krishna Ekadashi", "Krishna Dwadashi", "Krishna Trayodashi", "Krishna Chaturdashi", "Amavasya"
+    ]
+    tithi_idx = int(((moon_lon - sun_lon) % 360) / 12)
+    tithi = TITHIS[tithi_idx % 30]
+
+    # 2. Karan
+    REPEATING_KARANAS = ["Bava", "Balava", "Kaulava", "Taitila", "Gara", "Vanija", "Vishti"]
+    karan_idx = int(((moon_lon - sun_lon) % 360) / 6)
+    karan_idx = karan_idx % 60
+    if karan_idx == 0:
+        karan = "Kintughna"
+    elif karan_idx == 57:
+        karan = "Shakuni"
+    elif karan_idx == 58:
+        karan = "Chatushpada"
+    elif karan_idx == 59:
+        karan = "Naga"
+    else:
+        karan = REPEATING_KARANAS[(karan_idx - 1) % 7]
+
+    # 3. Yog
+    YOGAS = [
+        "Vishkumbha", "Priti", "Ayushman", "Saubhagya", "Shobhana", "Atiganda",
+        "Sukarma", "Dhriti", "Shula", "Ganda", "Vridhi", "Dhruva", "Vyaghata",
+        "Harshana", "Vajra", "Siddhi", "Vyatipata", "Variyan", "Parigha", "Shiva",
+        "Siddha", "Sadhya", "Shubha", "Shukla", "Brahma", "Indra", "Vaidhriti"
+    ]
+    yoga_idx = int(((sun_lon + moon_lon) % 360) / (360.0 / 27))
+    yog = YOGAS[yoga_idx % 27]
+
+    # 4. Varna
+    if moon_sign in ["Cancer", "Scorpio", "Pisces"]:
+        varna = "Brahmin"
+    elif moon_sign in ["Aries", "Leo", "Sagittarius"]:
+        varna = "Kshatriya"
+    elif moon_sign in ["Taurus", "Virgo", "Capricorn"]:
+        varna = "Vaishya"
+    else:
+        varna = "Shudra"
+
+    # 5. Vashya
+    moon_lon_in_sign = moon_lon % 30
+    if moon_sign in ["Aries", "Taurus"]:
+        vashya = "Chatuspad"
+    elif moon_sign in ["Gemini", "Virgo", "Libra", "Aquarius"]:
+        vashya = "Dwipad"
+    elif moon_sign in ["Cancer", "Pisces", "Capricorn"]:
+        vashya = "Jalachar"
+    elif moon_sign == "Leo":
+        vashya = "Vanachar"
+    elif moon_sign == "Scorpio":
+        vashya = "Keeta"
+    elif moon_sign == "Sagittarius":
+        vashya = "Chatuspad" if moon_lon_in_sign < 15 else "Dwipad"
+    else:
+        vashya = "Dwipad"
+
+    # 6. Yoni
+    YONI_MAP = {
+        "Ashwini": "Horse", "Shatabhisha": "Horse",
+        "Bharani": "Elephant", "Revati": "Elephant",
+        "Krittika": "Goat", "Pushya": "Goat",
+        "Rohini": "Serpent", "Mrigashira": "Serpent",
+        "Ardra": "Dog", "Mula": "Dog",
+        "Punarvasu": "Cat", "Ashlesha": "Cat",
+        "Magha": "Rat", "Purva Phalguni": "Rat",
+        "Uttara Phalguni": "Cow", "Uttara Bhadrapada": "Cow",
+        "Hasta": "Buffalo", "Swati": "Buffalo",
+        "Chitra": "Tiger", "Vishakha": "Tiger",
+        "Anuradha": "Deer", "Jyeshtha": "Deer",
+        "Purva Ashadha": "Monkey", "Shravana": "Monkey",
+        "Uttara Ashadha": "Mongoose",
+        "Dhanishtha": "Lion", "Purva Bhadrapada": "Lion"
+    }
+    yoni = YONI_MAP.get(moon_nak, "Cow")
+
+    # 7. Gana
+    GANA_MAP = {
+        "Ashwini": "Deva", "Mrigashira": "Deva", "Punarvasu": "Deva", "Pushya": "Deva",
+        "Hasta": "Deva", "Swati": "Deva", "Anuradha": "Deva", "Shravana": "Deva", "Revati": "Deva",
+        "Bharani": "Manushya", "Rohini": "Manushya", "Ardra": "Manushya", "Purva Phalguni": "Manushya",
+        "Uttara Phalguni": "Manushya", "Purva Ashadha": "Manushya", "Uttara Ashadha": "Manushya",
+        "Purva Bhadrapada": "Manushya", "Uttara Bhadrapada": "Manushya",
+        "Krittika": "Rakshasa", "Ashlesha": "Rakshasa", "Magha": "Rakshasa", "Chitra": "Rakshasa",
+        "Vishakha": "Rakshasa", "Jyeshtha": "Rakshasa", "Mula": "Rakshasa", "Dhanishtha": "Rakshasa",
+        "Shatabhisha": "Rakshasa"
+    }
+    gan = GANA_MAP.get(moon_nak, "Manushya")
+
+    # 8. Nadi
+    NADI_MAP = {
+        "Ashwini": "Adi", "Bharani": "Madhya", "Krittika": "Antya",
+        "Rohini": "Antya", "Mrigashira": "Madhya", "Ardra": "Adi",
+        "Punarvasu": "Adi", "Pushya": "Madhya", "Ashlesha": "Antya",
+        "Magha": "Antya", "Purva Phalguni": "Madhya", "Uttara Phalguni": "Adi",
+        "Hasta": "Adi", "Chitra": "Madhya", "Swati": "Antya",
+        "Vishakha": "Antya", "Anuradha": "Madhya", "Jyeshtha": "Adi",
+        "Mula": "Adi", "Purva Ashadha": "Madhya", "Uttara Ashadha": "Antya",
+        "Shravana": "Antya", "Dhanishtha": "Madhya", "Shatabhisha": "Adi",
+        "Purva Bhadrapada": "Adi", "Uttara Bhadrapada": "Madhya", "Revati": "Antya"
+    }
+    nadi = NADI_MAP.get(moon_nak, "Madhya")
+
+    return {
+        "tithi": tithi,
+        "karan": karan,
+        "yog": yog,
+        "nakshatra": moon_nak,
+        "varna": varna,
+        "vashya": vashya,
+        "yoni": yoni,
+        "gan": gan,
+        "nadi": nadi
+    }

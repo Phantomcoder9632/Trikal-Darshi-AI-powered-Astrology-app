@@ -94,16 +94,17 @@ Directory: astrology-backend/db/
 =========================================
 
 * database.py
-  - Purpose: Connects to and manages the PostgreSQL connection pool.
+  - Purpose: Connects to, manages, and synchronizes the Dual-Database connection pools (primary and secondary).
+  - Classes:
+    - `DualConnection`: Wrapper that replicates write operations to both pools, and falls back to secondary pool for read operations on primary failures.
+    - `DualConnectionAcquirer`: Handles entering and exiting connection scopes for both databases.
+    - `DualPool`: Wrapper containing the primary and secondary asyncpg connection pools.
   - Functions:
-    - `get_db_pool() -> asyncpg.Pool`: Returns the active global database connection 
-      pool (configured via `DATABASE_URL` environment variable). Initializes pool 
-      with a min size of 5 and max size of 20 connections on first call.
-    - `close_db_pool()`: Closes the active global database connection pool.
-    - `startup_db_event()` / `shutdown_db_event()`: FastAPI event hooks to open/close 
-      the pool on application start and shutdown.
-    - `get_db() -> AsyncGenerator[asyncpg.Connection, None]`: FastAPI dependency injection 
-      helper that yields a single database connection from the global pool.
+    - `get_db_pool() -> DualPool`: Initializes or returns the global dual connection pool wrapper.
+    - `close_db_pool()`: Closes the active connection pool wrapper.
+    - `initialize_schema(pool: DualPool)`: Automatically checks, creates, and migrates database schemas (tables, columns, extensions, constraints) on startup for both pools (self-healing).
+    - `startup_db_event()` / `shutdown_db_event()`: FastAPI event hooks to open/migrate and close the pools.
+    - `get_db() -> AsyncGenerator[DualConnection, None]`: FastAPI dependency injection helper that yields a `DualConnection` from the global pool.
 
 =========================================
 Directory: astrology-backend/routes/
@@ -267,42 +268,54 @@ Directory: astrology-backend/rag/
 4. DATABASE SCHEMA (POSTGRESQL)
 --------------------------------------------------------------------------------
 
-Table 1: `charts`
+Table 1: `users`
   - Columns:
     - `id` (UUID, Primary Key)
-    - `full_name` (VARCHAR)
+    - `google_id` (TEXT, Unique)
+    - `email` (TEXT, Unique)
+    - `name` (TEXT)
+    - `picture` (TEXT)
+    - `password_hash` (TEXT, for email/password authentication)
+    - `created_at` (TIMESTAMP)
+
+Table 2: `charts`
+  - Columns:
+    - `id` (UUID, Primary Key)
+    - `user_id` (UUID, Foreign Key referencing users.id)
+    - `full_name` (TEXT)
     - `date_of_birth` (DATE)
     - `time_of_birth` (TIME)
-    - `city_of_birth` (VARCHAR)
-    - `current_city` (VARCHAR)
-    - `latitude` (NUMERIC)
-    - `longitude` (NUMERIC)
-    - `timezone` (VARCHAR)
-    - `birth_time_confidence` (VARCHAR)
-    - `ayanamsha` (VARCHAR)
-    - `calculation_source` (VARCHAR)
+    - `city_of_birth` (TEXT)
+    - `current_city` (TEXT)
+    - `latitude` (FLOAT)
+    - `longitude` (FLOAT)
+    - `timezone` (TEXT)
+    - `birth_time_confidence` (TEXT)
+    - `ayanamsha` (TEXT)
+    - `data_source` (TEXT)
     - `raw_chart_data` (JSONB)
     - `created_at` (TIMESTAMP)
 
-Table 2: `interpretations`
+Table 3: `interpretations`
   - Columns:
     - `id` (UUID, Primary Key)
-    - `chart_id` (UUID, Foreign Key referencing charts.id, CASCADE)
-    - `tab_number` (INTEGER)
-    - `tab_name` (VARCHAR)
+    - `chart_id` (UUID, Foreign Key referencing charts.id)
+    - `tab_number` (INTEGER, CHECK between 1 and 10)
+    - `tab_name` (TEXT)
     - `content` (TEXT)
-    - `model_used` (VARCHAR)
+    - `model_used` (TEXT)
+    - `language` (TEXT)
     - `generated_at` (TIMESTAMP)
   - Constraints:
-    - `UNIQUE(chart_id, tab_number)`: Guarantees one interpretation per tab per chart.
+    - `UNIQUE(chart_id, tab_number, language)`: Guarantees one interpretation per tab per language per chart.
 
-Table 3: `api_usage`
+Table 4: `api_usage`
   - Columns:
-    - `id` (SERIAL, Primary Key)
-    - `service` (VARCHAR)  -- 'astrologyapi' or 'ephemeris'
-    - `endpoint` (VARCHAR)
-    - `success` (BOOLEAN)
+    - `id` (UUID, Primary Key)
+    - `service` (TEXT)  -- 'astrologyapi' or 'ephemeris'
+    - `endpoint` (TEXT)
     - `called_at` (TIMESTAMP)
+    - `success` (BOOLEAN)
 
 --------------------------------------------------------------------------------
 5. FRONTEND DIRECTORY STRUCTURE AND COMPONENT BREAKDOWN

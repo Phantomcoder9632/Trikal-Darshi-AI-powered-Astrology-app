@@ -11,7 +11,10 @@ Exposes:
 from __future__ import annotations
 
 import os
-from langchain_community.vectorstores import Chroma
+try:
+    from langchain_chroma import Chroma
+except ImportError:
+    from langchain_community.vectorstores import Chroma
 from rag.embeddings import get_embeddings
 
 # Folder where ChromaDB persists its data (relative to backend root)

@@ -1,4 +1,27 @@
 ================================================================================
+SUMMARY OF CHANGES - JUNE 14, 2026
+================================================================================
+
+1. Database Schema Self-Healing & Automated Migration
+   - Schema Initialization: Implemented `initialize_schema(pool)` in [db/database.py](file:///d:/AstrologyApp/astrology-backend/db/database.py) that triggers on application startup.
+   - Self-Healing Checks: Automatically verifies the existence of all expected tables (`users`, `charts`, `interpretations`, `api_usage`) and column definitions.
+   - Dynamic Migration: Automatically executes missing column schema SQL alterations (e.g. adding `password_hash` to `users` if missing) and applies unique key constraints (`UNIQUE(chart_id, tab_number, language)` for `interpretations`) on startup.
+   - UUID Extension: Ensures `uuid-ossp` extension is initialized on both primary and secondary databases.
+   - Created Schema Checker Script: Added [scripts/check_schema.py](file:///d:/AstrologyApp/astrology-backend/scripts/check_schema.py) to inspect local database table schemas.
+
+2. Hugging Face Spaces Compatibility & Port Handling
+   - Health-Check Endpoint: Added a root GET `/` endpoint to [main.py](file:///d:/AstrologyApp/astrology-backend/main.py) to return application status, required by Hugging Face Spaces for health validation.
+   - Dynamic Port Assignment: Updated default port configuration to default to `7860` (the standard port required by Hugging Face Spaces) while still respecting the `PORT` environment variable.
+
+3. LangChain Package Integration & Dependency Upgrades
+   - Deprecation Mitigation: Refactored vectorstore and embeddings modules to try importing `langchain_huggingface` and `langchain_chroma` first, falling back to legacy `langchain_community` imports.
+   - Dependency Manifest: Added `langchain-huggingface` and `langchain-chroma` to [requirements.txt](file:///d:/AstrologyApp/astrology-backend/requirements.txt) to ensure modern LangChain library packages are utilized.
+
+4. Cache Hit Verification & Sync Integrity
+   - Verification Check: Updated `generate_chart` in [routes/chart.py](file:///d:/AstrologyApp/astrology-backend/routes/chart.py) to verify that a Redis cache hit actually exists in the PostgreSQL database.
+   - Safe Recovery: If a chart is present in Redis cache but not in PostgreSQL (e.g., due to a database reset/wipe), the backend safely bypasses the cache hit and triggers a fresh calculation and database insert.
+
+================================================================================
 SUMMARY OF CHANGES - JUNE 13, 2026
 ================================================================================
 

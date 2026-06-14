@@ -174,12 +174,145 @@ async def close_db_pool() -> None:
         await _pool.close()
         _pool = None
 
+async def initialize_schema(pool: DualPool) -> None:
+    """
+    Ensures that database tables, columns, and constraints are created and up-to-date.
+    Uses db/schema.sql and EXPECTED_SCHEMA mapping for self-healing verification.
+    """
+    schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
+    if not os.path.exists(schema_path):
+        logger.warning(f"Schema file not found at {schema_path}. Skipping schema initialization.")
+        return
+
+    try:
+        with open(schema_path, "r", encoding="utf-8") as f:
+            schema_sql = f.read()
+    except Exception as e:
+        logger.error(f"Failed to read schema file {schema_path}: {e}")
+        return
+
+    # Define schema specifications for automatic migration checks
+    EXPECTED_SCHEMA = {
+        "users": {
+            "id": "UUID PRIMARY KEY DEFAULT uuid_generate_v4()",
+            "google_id": "TEXT UNIQUE NOT NULL",
+            "email": "TEXT UNIQUE NOT NULL",
+            "name": "TEXT",
+            "picture": "TEXT",
+            "password_hash": "TEXT",
+            "created_at": "TIMESTAMP DEFAULT NOW()"
+        },
+        "charts": {
+            "id": "UUID PRIMARY KEY DEFAULT uuid_generate_v4()",
+            "user_id": "UUID REFERENCES users(id)",
+            "full_name": "TEXT NOT NULL",
+            "date_of_birth": "DATE NOT NULL",
+            "time_of_birth": "TIME NOT NULL",
+            "city_of_birth": "TEXT NOT NULL",
+            "current_city": "TEXT NOT NULL",
+            "latitude": "FLOAT NOT NULL",
+            "longitude": "FLOAT NOT NULL",
+            "timezone": "TEXT NOT NULL DEFAULT 'Asia/Kolkata'",
+            "birth_time_confidence": "TEXT DEFAULT 'exact'",
+            "ayanamsha": "TEXT DEFAULT 'LAHIRI'",
+            "data_source": "TEXT DEFAULT 'astrologyapi'",
+            "raw_chart_data": "JSONB",
+            "created_at": "TIMESTAMP DEFAULT NOW()"
+        },
+        "interpretations": {
+            "id": "UUID PRIMARY KEY DEFAULT uuid_generate_v4()",
+            "chart_id": "UUID REFERENCES charts(id)",
+            "tab_number": "INTEGER NOT NULL CHECK (tab_number BETWEEN 1 AND 10)",
+            "tab_name": "TEXT NOT NULL",
+            "content": "TEXT NOT NULL",
+            "model_used": "TEXT NOT NULL",
+            "language": "TEXT NOT NULL DEFAULT 'english'",
+            "generated_at": "TIMESTAMP DEFAULT NOW()"
+        },
+        "api_usage": {
+            "id": "UUID PRIMARY KEY DEFAULT uuid_generate_v4()",
+            "service": "TEXT NOT NULL",
+            "endpoint": "TEXT NOT NULL",
+            "called_at": "TIMESTAMP DEFAULT NOW()",
+            "success": "BOOLEAN DEFAULT TRUE"
+        }
+    }
+
+    async def apply_to_pool(p, name: str):
+        if not p:
+            return
+        try:
+            logger.info(f"Checking database schema for {name} database...")
+            async with p.acquire() as conn:
+                # 1. Ensure uuid-ossp extension exists
+                try:
+                    await conn.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
+                except Exception as ext_err:
+                    logger.warning(f"Could not create 'uuid-ossp' extension on {name} database: {ext_err}. "
+                                   f"This can be ignored if the extension is already pre-installed.")
+
+                # 2. Check if tables exist. If any missing, run the whole schema.sql
+                for table in EXPECTED_SCHEMA.keys():
+                    table_exists = await conn.fetchval(
+                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = $1);",
+                        table
+                    )
+                    if not table_exists:
+                        logger.info(f"Table '{table}' does not exist on {name} database. Creating tables using schema.sql...")
+                        # Run schema_sql clean (without duplicate CREATE EXTENSION lines to avoid noise)
+                        cleaned_sql = "\n".join(
+                            line for line in schema_sql.splitlines() 
+                            if "CREATE EXTENSION" not in line
+                        )
+                        await conn.execute(cleaned_sql)
+                        break  # schema.sql creates all tables, so we can stop checking missing tables
+                
+                # 3. Check for missing columns in existing tables and auto-alter them
+                for table, columns in EXPECTED_SCHEMA.items():
+                    existing_cols = {row['column_name'] for row in await conn.fetch(
+                        "SELECT column_name FROM information_schema.columns WHERE table_name = $1;",
+                        table
+                    )}
+                    
+                    for col_name, col_def in columns.items():
+                        if col_name not in existing_cols:
+                            logger.info(f"Column '{col_name}' is missing in table '{table}' on {name} database. Altering table...")
+                            try:
+                                await conn.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col_name} {col_def};")
+                                logger.info(f"Successfully added column '{col_name}' to '{table}' on {name} database.")
+                            except Exception as alter_err:
+                                logger.error(f"Failed to add column '{col_name}' to '{table}' on {name} database: {alter_err}")
+
+                # 4. Ensure interpretations unique constraint exists
+                has_unique = await conn.fetchval("""
+                    SELECT EXISTS (
+                        SELECT 1 FROM information_schema.table_constraints 
+                        WHERE table_name='interpretations' AND constraint_type='UNIQUE'
+                    );
+                """)
+                if not has_unique:
+                    try:
+                        logger.info(f"Adding unique constraint to interpretations on {name} database...")
+                        await conn.execute(
+                            "ALTER TABLE interpretations ADD CONSTRAINT interpretations_chart_id_tab_number_language_key UNIQUE(chart_id, tab_number, language);"
+                        )
+                    except Exception as uniq_err:
+                        logger.warning(f"Could not add unique constraint to interpretations on {name} database: {uniq_err}")
+
+            logger.info(f"Successfully verified schema on {name} database.")
+        except Exception as e:
+            logger.error(f"Failed to verify/apply schema on {name} database: {e}")
+
+    await apply_to_pool(pool.primary_pool, "primary")
+    await apply_to_pool(pool.secondary_pool, "secondary")
+
 # FastAPI startup and shutdown event handlers
 async def startup_db_event() -> None:
     """
-    FastAPI startup event handler to initialize the pool.
+    FastAPI startup event handler to initialize the pool and apply/migrate schema.
     """
-    await get_db_pool()
+    pool = await get_db_pool()
+    await initialize_schema(pool)
 
 async def shutdown_db_event() -> None:
     """

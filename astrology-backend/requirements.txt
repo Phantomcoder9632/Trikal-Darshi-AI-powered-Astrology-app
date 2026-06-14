@@ -10,6 +10,8 @@ python-multipart
 langchain
 langchain-community
 langchain-groq
+langchain-huggingface
+langchain-chroma
 chromadb
 sentence-transformers
 pymupdf

@@ -11,7 +11,10 @@ import os
 os.environ["USE_TORCH"] = "1"
 os.environ["USE_TF"] = "0"
 
-from langchain_community.embeddings import HuggingFaceEmbeddings
+try:
+    from langchain_huggingface import HuggingFaceEmbeddings
+except ImportError:
+    from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # Model used for all embedding operations
 EMBED_MODEL_NAME = "all-MiniLM-L6-v2"

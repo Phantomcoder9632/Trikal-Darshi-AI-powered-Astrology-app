@@ -281,34 +281,39 @@ async def generate_chart(
             if cached_chart_id:
                 try:
                     chart_uuid = uuid.UUID(cached_chart_id)
-                    db_owner = await conn.fetchval("SELECT user_id FROM charts WHERE id = $1", chart_uuid)
+                    db_row = await conn.fetchrow("SELECT id, user_id FROM charts WHERE id = $1", chart_uuid)
                     
-                    # If guest chart and user is logged in, associate it
-                    if db_owner is None and current_user:
-                        user_uuid = uuid.UUID(str(current_user["id"]))
-                        await conn.execute("UPDATE charts SET user_id = $1 WHERE id = $2", user_uuid, chart_uuid)
-                        logger.info(f"Associated Redis cached chart {chart_uuid} with user {user_uuid}")
-                        db_owner = user_uuid
+                    if db_row is not None:
+                        db_owner = db_row["user_id"]
                         
-                    user_uuid = uuid.UUID(str(current_user["id"])) if current_user else None
-                    
-                    # Only accept hit if owned by current user or guest
-                    if db_owner == user_uuid or db_owner is None:
-                        background_tasks.add_task(
-                            prefetch_rag_contexts,
-                            chart_id=chart_uuid,
-                            chart_data=cached_chart,
-                        )
-                        background_tasks.add_task(
-                            pregenerate_all_tabs,
-                            chart_id=chart_uuid,
-                            chart_data=cached_chart,
-                            full_name=cached_chart.get("full_name", payload.full_name),
-                        )
-                        logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for Redis-cached chart {cached_chart_id}")
-                        return cached_chart
+                        # If guest chart and user is logged in, associate it
+                        if db_owner is None and current_user:
+                            user_uuid = uuid.UUID(str(current_user["id"]))
+                            await conn.execute("UPDATE charts SET user_id = $1 WHERE id = $2", user_uuid, chart_uuid)
+                            logger.info(f"Associated Redis cached chart {chart_uuid} with user {user_uuid}")
+                            db_owner = user_uuid
+                            
+                        user_uuid = uuid.UUID(str(current_user["id"])) if current_user else None
+                        
+                        # Only accept hit if owned by current user or guest
+                        if db_owner == user_uuid or db_owner is None:
+                            background_tasks.add_task(
+                                prefetch_rag_contexts,
+                                chart_id=chart_uuid,
+                                chart_data=cached_chart,
+                            )
+                            background_tasks.add_task(
+                                pregenerate_all_tabs,
+                                chart_id=chart_uuid,
+                                chart_data=cached_chart,
+                                full_name=cached_chart.get("full_name", payload.full_name),
+                            )
+                            logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for Redis-cached chart {cached_chart_id}")
+                            return cached_chart
+                        else:
+                            logger.info(f"Redis cache hit but chart belongs to different user {db_owner}, bypass cache")
                     else:
-                        logger.info(f"Redis cache hit but chart belongs to different user {db_owner}, bypass cache")
+                        logger.info(f"Redis cache hit for {cached_chart_id} but chart is not present in PostgreSQL. Bypassing cache to rebuild.")
                 except Exception as bg_err:
                     logger.warning(f"[chart] Could not verify owner/trigger background gen for Redis-cached chart: {bg_err}")
         else:

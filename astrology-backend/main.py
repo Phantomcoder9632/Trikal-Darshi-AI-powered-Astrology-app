@@ -81,6 +81,20 @@ app.include_router(progress_router)
 
 
 
+# ── Root Route (required by Hugging Face Spaces) ─────────────────────────
+@app.get("/", tags=["Health"])
+async def root():
+    """
+    GET /
+    Root health-check route required by Hugging Face Spaces.
+    """
+    return {
+        "status": "ok",
+        "app": "Trikal Darshi",
+        "version": "2.0.0",
+        "description": "AI-powered Vedic Astrology Engine"
+    }
+
 # ── Health Check Endpoint ──────────────────────────────────────────────────
 @app.get("/health", tags=["Health"])
 async def health_check():
@@ -120,7 +134,8 @@ if __name__ == "__main__":
     import uvicorn
     # Load host/port configurations (runs on port 8000 by default)
     host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", "8000"))
+    # HF Spaces requires port 7860; locally defaults to 8000
+    port = int(os.getenv("PORT", "7860"))
     
     logger.info(f"Starting server on {host}:{port}")
     # Trigger restart to reload new Google Client ID from .env

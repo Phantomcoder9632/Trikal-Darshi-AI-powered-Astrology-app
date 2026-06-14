@@ -86,6 +86,14 @@ Enter your exact birth details. Watch as the cosmos reveals itself — from your
 
 Here are the latest architectural and visual updates implemented for maximum reliability and Vedic consistency:
 
+* **Database Schema Self-Healing & Automated Migration**: Added startup database schema verification (`db/database.py`) that checks tables, columns, constraints, and extensions (`uuid-ossp`) on startup, running automated schema creation and migrative alters to prevent database drift.
+* **Hugging Face Spaces Deployment Compatibility**: Integrated root GET `/` health-check endpoints and standardized on port `7860` as the default fallback port for deployment compatibility with Hugging Face Spaces.
+* **LangChain Integration & Modernized Dependency Upgrades**: Updated vector database and sentence embedding utilities to run `langchain_chroma` and `langchain_huggingface` directly, with robust fallbacks to `langchain_community`.
+* **Print System & PDF Report Builder**: Implemented a hidden print-only book container that compiles all 10 tab reports sequentially for clean, styled browser print or PDF downloads of the user's complete astrological profile.
+* **Segmented Navigation & Virtual Tabs**: Reorganized the 10-tab row into three sleek category groups (Basics, Chart Description, Report & Analysis) with clean segmented tabs and virtual placeholders.
+* **Interactive Profile Drawer & Cosmic Themes**: Designed a premium right-aligned slide-over settings drawer that displays birth coordinate details, saved blueprints list, and 4 cosmic color themes (Vedic Gold, Midnight Cosmic, Nebula Indigo, Solar Flare) with state persistence.
+* **Dual-Database Write Replication & Read Fallbacks**: Created a transparent database wrapper (`DualPool`/`DualConnection`) that writes to both Aiven PostgreSQL and a local secondary database in parallel, while gracefully cascading reads to the secondary on network failure.
+* **Secure Email/Password Authentication**: Added backend registration and login routes with PBKDF2 secure password hashing, integrated with frontend `AuthContext` to secure natal charts and user profile association.
 * **AI Hallucination & RAG Personalization Fix**: Corrected the background RAG generation pipeline to properly pass the user's specific `chart_data` to the vector store instead of generic queries, eliminating AI hallucinations related to planetary placements.
 * **Enhanced AI API Fallback Durability**: Increased connection timeouts from 10s to 60s for both primary and fallback APIs to prevent premature termination, and improved the system's resilience when navigating rate limits across free-tier models (Gemini, OpenRouter).
 * **Explicit Dosha Fallback Calculations**: Enforced explicit local calculations for Mangal Dosha, Kaal Sarp Dosha, and Pitru Dosha prior to RAG generation to ensure the AI never receives an "Unknown" status that could trigger hallucinated interpretations.

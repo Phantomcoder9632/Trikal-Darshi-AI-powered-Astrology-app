@@ -5,11 +5,11 @@ import { useAuth } from '../context/AuthContext';
 
 // Child Components
 import ChartSidebar, { TAB_CHART_CONFIG } from '../components/ChartSidebar';
-import PlanetTable   from '../components/PlanetTable';
+import PlanetTable from '../components/PlanetTable';
 import CosmicSummary from '../components/CosmicSummary';
 import TabNavigation from '../components/TabNavigation';
-import RemedyCards   from '../components/RemedyCards';
-import ProfileCard   from '../components/ProfileCard';
+import RemedyCards from '../components/RemedyCards';
+import ProfileCard from '../components/ProfileCard';
 
 // Helper: get 1-2 capital initials from a full name
 function getInitials(name) {
@@ -19,22 +19,22 @@ function getInitials(name) {
 
 export default function DashboardPage() {
   const { chartId } = useParams();
-  const navigate    = useNavigate();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const [chartData,    setChartData]    = useState(null);
+  const [chartData, setChartData] = useState(null);
   const [loadingChart, setLoadingChart] = useState(true);
-  const [chartError,   setChartError]   = useState('');
+  const [chartError, setChartError] = useState('');
 
   // Tab state
-  const [activeTab,        setActiveTab]        = useState(1);
-  const [interpretations,  setInterpretations]  = useState({});
-  const [tabLoading,       setTabLoading]       = useState({});
-  const [tabError,         setTabError]         = useState({});
+  const [activeTab, setActiveTab] = useState(1);
+  const [interpretations, setInterpretations] = useState({});
+  const [tabLoading, setTabLoading] = useState({});
+  const [tabError, setTabError] = useState({});
 
   // Background pre-generation progress
-  const [bgProgress,       setBgProgress]       = useState(null);
-  const pollIntervalRef                         = useRef(null);
+  const [bgProgress, setBgProgress] = useState(null);
+  const pollIntervalRef = useRef(null);
 
   // Edit details modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -93,17 +93,17 @@ export default function DashboardPage() {
 
     try {
       const updatedData = await updateChart(chartId, editFormData);
-      
+
       // Update local state
       setChartData(updatedData);
-      
+
       // Invalidate existing interpretations so they regenerate for new placements
       setInterpretations({});
       setTabError({});
-      
+
       // Close modal
       setShowEditModal(false);
-      
+
       // Scroll back up to reset view
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
@@ -166,8 +166,8 @@ export default function DashboardPage() {
     if (interpretations[activeTab]) return; // already loaded
 
     const streamTab = async () => {
-      setTabLoading((prev)  => ({ ...prev, [activeTab]: true  }));
-      setTabError((prev)    => ({ ...prev, [activeTab]: ''    }));
+      setTabLoading((prev) => ({ ...prev, [activeTab]: true }));
+      setTabError((prev) => ({ ...prev, [activeTab]: '' }));
       setInterpretations((prev) => ({ ...prev, [activeTab]: '' }));
 
       try {
@@ -273,8 +273,8 @@ export default function DashboardPage() {
       : 'Calculations Active';
 
   // ── Planet table data: follows active chart idx ──────────────────────────
-  const tabConfig    = TAB_CHART_CONFIG[activeTab] || TAB_CHART_CONFIG[1];
-  const currentKey   = tabConfig?.keys?.[activeChartIdx];
+  const tabConfig = TAB_CHART_CONFIG[activeTab] || TAB_CHART_CONFIG[1];
+  const currentKey = tabConfig?.keys?.[activeChartIdx];
   const tablePlanets = currentKey && chartData?.[currentKey]?.planets
     ? chartData[currentKey].planets
     : chartData?.planets;
@@ -350,7 +350,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Name + Avatar Chip */}
-            <div 
+            <div
               className="header-avatar-chip cursor-pointer hover:bg-outline-variant/15 transition-all rounded-lg p-1.5"
               onClick={() => setShowDrawer(true)}
               role="button"
@@ -482,15 +482,14 @@ export default function DashboardPage() {
 
       {/* ── Slide-over Profile Drawer ── */}
       {showDrawer && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-xs transition-opacity duration-300 animate-fade-in"
           onClick={() => setShowDrawer(false)}
         />
       )}
-      <div 
-        className={`fixed top-0 right-0 bottom-0 h-full w-[85%] sm:w-[33%] md:w-[30%] lg:w-[26%] xl:w-[22%] bg-surface border-l border-outline-variant/30 shadow-2xl z-[101] flex flex-col transition-transform duration-300 ease-in-out ${
-          showDrawer ? 'translate-x-0' : 'translate-x-full'
-        }`}
+      <div
+        className={`fixed top-0 right-0 bottom-0 h-full w-[85%] sm:w-[33%] md:w-[30%] lg:w-[26%] xl:w-[22%] bg-surface border-l border-outline-variant/30 shadow-2xl z-[101] flex flex-col transition-transform duration-300 ease-in-out ${showDrawer ? 'translate-x-0' : 'translate-x-full'
+          }`}
       >
         {/* Drawer Header */}
         <div className="flex items-center justify-between p-5 border-b border-outline-variant/20">
@@ -502,7 +501,7 @@ export default function DashboardPage() {
               Cosmic Profile Menu
             </h3>
           </div>
-          <button 
+          <button
             onClick={() => setShowDrawer(false)}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-outline-variant/15 text-on-surface-variant transition-colors cursor-pointer bg-transparent border-none"
           >
@@ -512,14 +511,14 @@ export default function DashboardPage() {
 
         {/* Drawer Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
-          
+
           {/* Section 1: Personal Details */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-xs uppercase font-bold tracking-widest text-primary">
                 Personal Details
               </h4>
-              <button 
+              <button
                 onClick={() => {
                   setShowDrawer(false);
                   handleOpenEdit();
@@ -578,11 +577,10 @@ export default function DashboardPage() {
                       setShowDrawer(false);
                       navigate(`/dashboard/${chart.id}`);
                     }}
-                    className={`w-full text-left p-3 rounded-lg border text-xs flex items-center justify-between transition-all cursor-pointer ${
-                      chart.id === chartId 
+                    className={`w-full text-left p-3 rounded-lg border text-xs flex items-center justify-between transition-all cursor-pointer ${chart.id === chartId
                         ? 'bg-primary/10 border-primary/30 text-primary font-bold'
                         : 'bg-surface-container-lowest border-outline-variant/15 hover:bg-outline-variant/10 text-on-surface'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-[16px] text-primary/70">
@@ -635,11 +633,10 @@ export default function DashboardPage() {
                 <button
                   key={t.id}
                   onClick={() => handleThemeChange(t.id)}
-                  className={`p-3 rounded-lg border text-xs flex flex-col gap-1 transition-all cursor-pointer bg-transparent text-left ${
-                    currentTheme === t.id
+                  className={`p-3 rounded-lg border text-xs flex flex-col gap-1 transition-all cursor-pointer bg-transparent text-left ${currentTheme === t.id
                       ? 'border-primary ring-2 ring-primary/30 font-bold'
                       : 'border-outline-variant/20 hover:bg-outline-variant/10'
-                  }`}
+                    }`}
                 >
                   <span className="font-semibold text-on-surface">{t.label}</span>
                   <div className="flex items-center gap-1.5 mt-1">
@@ -672,14 +669,14 @@ export default function DashboardPage() {
       {showEditModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-background/60 backdrop-filter backdrop-blur-md" 
+          <div
+            className="absolute inset-0 bg-background/60 backdrop-filter backdrop-blur-md"
             onClick={() => !editLoading && setShowEditModal(false)}
           />
 
           {/* Modal Container */}
           <div className="relative z-10 w-full max-w-[480px] bg-surface/90 border border-outline-variant/50 rounded-2xl shadow-2xl p-6 md:p-8 animate-up max-h-[90vh] overflow-y-auto">
-            
+
             {/* Header */}
             <header className="flex items-center justify-between mb-6">
               <div>
@@ -727,7 +724,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <form onSubmit={handleEditSubmit} className="blueprint-form">
-                
+
                 {/* Full Name */}
                 <div className="blueprint-form-group">
                   <label htmlFor="edit_full_name" className="blueprint-label">Full Name *</label>
@@ -770,9 +767,9 @@ export default function DashboardPage() {
                   />
                   <div className="blueprint-pill-container">
                     {[
-                      { value: 'exact',       label: 'Exact'       },
+                      { value: 'exact', label: 'Exact' },
                       { value: 'approximate', label: 'Approximate' },
-                      { value: 'unknown',     label: 'Unknown'     },
+                      { value: 'unknown', label: 'Unknown' },
                     ].map(({ value, label }) => (
                       <button
                         key={value}

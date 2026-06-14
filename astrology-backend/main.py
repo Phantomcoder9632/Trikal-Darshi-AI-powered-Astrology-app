@@ -135,7 +135,7 @@ if __name__ == "__main__":
     # Load host/port configurations (runs on port 8000 by default)
     host = os.getenv("HOST", "0.0.0.0")
     # HF Spaces requires port 7860; locally defaults to 8000
-    port = int(os.getenv("PORT", "7860"))
+    port = int(os.getenv("PORT", "8000"))
     
     logger.info(f"Starting server on {host}:{port}")
     # Trigger restart to reload new Google Client ID from .env

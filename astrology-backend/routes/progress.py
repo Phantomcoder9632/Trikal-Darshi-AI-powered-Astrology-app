@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Progress"])
 
-TOTAL_TABS = 10
+TOTAL_TABS = 11
 
 
 @router.get("/progress/{chart_id}", response_model=Dict[str, Any])

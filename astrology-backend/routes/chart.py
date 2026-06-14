@@ -112,7 +112,7 @@ async def ensure_chart_complete(
             # Invalidate stale interpretations
             await conn.execute("DELETE FROM interpretations WHERE chart_id = $1", chart_uuid)
 
-    required_keys = ["navamsha", "dashamsha", "chaturthamsa", "saptamsha", "trimsamsa", "chandra_kundali", "surya_kundali", "gochar"]
+    required_keys = ["navamsha", "dashamsha", "chaturthamsa", "saptamsha", "trimsamsa", "chandra_kundali", "surya_kundali", "gochar", "astro_details"]
     
     # Check if any required keys are missing
     missing = [k for k in required_keys if k not in chart_data]
@@ -182,6 +182,26 @@ async def ensure_chart_complete(
         chart_data["surya_kundali"] = compute_divisional_chart(clean_planets, natal_asc, "surya")
     if "gochar" in missing or not chart_data.get("gochar"):
         chart_data["gochar"] = compute_gochar_chart(lat, lng)
+    if "astro_details" in missing or not chart_data.get("astro_details"):
+        from services.ephemeris import calculate_astro_details_local
+        sun_planet = next((p for p in clean_planets if p.get("name") == "Sun"), None)
+        moon_planet = next((p for p in clean_planets if p.get("name") == "Moon"), None)
+        sun_lon = float(sun_planet.get("fullDegree", 0.0)) if sun_planet else 0.0
+        moon_lon = float(moon_planet.get("fullDegree", 0.0)) if moon_planet else 0.0
+        moon_sign = moon_planet.get("sign", "") if moon_planet else ""
+        moon_nak = moon_planet.get("nakshatra", "") if moon_planet else ""
+        moon_pada = moon_planet.get("nakshatra_pada") or moon_planet.get("nakshatra_pad") or 1
+        try:
+            moon_pada = int(moon_pada)
+        except Exception:
+            moon_pada = 1
+        chart_data["astro_details"] = calculate_astro_details_local(
+            sun_lon=sun_lon,
+            moon_lon=moon_lon,
+            moon_sign=moon_sign,
+            moon_nak=moon_nak,
+            moon_pada=moon_pada
+        )
 
     # Clean up planets array in chart_data
     chart_data["planets"] = clean_planets

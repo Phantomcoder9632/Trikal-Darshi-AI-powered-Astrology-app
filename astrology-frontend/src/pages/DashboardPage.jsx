@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getChart, getInterpretation, getGenerationProgress, updateChart, getUserCharts } from '../services/api';
+import { getChart, getInterpretation, getGenerationProgress, updateChart, getUserCharts, getAllInterpretations } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 // Child Components
@@ -144,6 +144,13 @@ export default function DashboardPage() {
         setChartError('');
         const data = await getChart(chartId);
         setChartData(data);
+        
+        try {
+          const interpretationsData = await getAllInterpretations(chartId);
+          setInterpretations(interpretationsData || {});
+        } catch (interpErr) {
+          console.warn('Failed to load interpretations on mount:', interpErr);
+        }
       } catch (err) {
         console.error(err);
         if (err.response?.status === 401) {
@@ -162,7 +169,7 @@ export default function DashboardPage() {
   // ── 2. Stream interpretation for active tab ─────────────────────────────
   useEffect(() => {
     if (!chartId || loadingChart || chartError) return;
-    if (typeof activeTab !== 'number') return;
+    if (typeof activeTab !== 'number' && activeTab !== 'education') return;
     if (interpretations[activeTab]) return; // already loaded
 
     const streamTab = async () => {
@@ -170,8 +177,10 @@ export default function DashboardPage() {
       setTabError((prev)    => ({ ...prev, [activeTab]: ''    }));
       setInterpretations((prev) => ({ ...prev, [activeTab]: '' }));
 
+      const targetTabNumber = activeTab === 'education' ? 11 : activeTab;
+
       try {
-        await getInterpretation(chartId, activeTab, 'english', (chunk) => {
+        await getInterpretation(chartId, targetTabNumber, 'english', (chunk) => {
           setInterpretations((prev) => ({
             ...prev,
             [activeTab]: (prev[activeTab] || '') + chunk,
@@ -219,6 +228,38 @@ export default function DashboardPage() {
       }
     };
   }, [chartId, loadingChart, chartError]);
+
+  const generateMissingTabs = async () => {
+    const allTabsToCheck = [1, 4, 'education', 5, 6, 7, 9, 10, 2, 3, 8];
+    const missingTabs = allTabsToCheck.filter(
+      (tabId) => !interpretations[tabId] && !tabLoading[tabId]
+    );
+    
+    for (const tabId of missingTabs) {
+      setTabLoading((prev) => ({ ...prev, [tabId]: true }));
+      setTabError((prev) => ({ ...prev, [tabId]: '' }));
+      setInterpretations((prev) => ({ ...prev, [tabId]: '' }));
+
+      const targetTabNumber = tabId === 'education' ? 11 : tabId;
+
+      try {
+        await getInterpretation(chartId, targetTabNumber, 'english', (chunk) => {
+          setInterpretations((prev) => ({
+            ...prev,
+            [tabId]: (prev[tabId] || '') + chunk,
+          }));
+        });
+      } catch (err) {
+        console.error(`Error generating tab ${tabId}:`, err);
+        setTabError((prev) => ({
+          ...prev,
+          [tabId]: 'Generation failed. Click retry or try again.',
+        }));
+      } finally {
+        setTabLoading((prev) => ({ ...prev, [tabId]: false }));
+      }
+    }
+  };
 
   // ── Loading state ────────────────────────────────────────────────────────
   if (loadingChart) {
@@ -418,6 +459,8 @@ export default function DashboardPage() {
                 onTabChange={(tabId) => setActiveTab(tabId)}
                 interpretations={interpretations}
                 tabLoadingState={tabLoading}
+                chartData={chartData}
+                onGenerateMissingTabs={generateMissingTabs}
               />
 
 

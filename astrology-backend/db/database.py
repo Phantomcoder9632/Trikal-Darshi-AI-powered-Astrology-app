@@ -222,7 +222,7 @@ async def initialize_schema(pool: DualPool) -> None:
         "interpretations": {
             "id": "UUID PRIMARY KEY DEFAULT uuid_generate_v4()",
             "chart_id": "UUID REFERENCES charts(id)",
-            "tab_number": "INTEGER NOT NULL CHECK (tab_number BETWEEN 1 AND 10)",
+            "tab_number": "INTEGER NOT NULL CHECK (tab_number BETWEEN 1 AND 11)",
             "tab_name": "TEXT NOT NULL",
             "content": "TEXT NOT NULL",
             "model_used": "TEXT NOT NULL",
@@ -298,6 +298,14 @@ async def initialize_schema(pool: DualPool) -> None:
                         )
                     except Exception as uniq_err:
                         logger.warning(f"Could not add unique constraint to interpretations on {name} database: {uniq_err}")
+
+                # 5. Ensure tab_number check constraint allows up to 11
+                try:
+                    logger.info(f"Updating interpretations tab_number check constraint on {name} database...")
+                    await conn.execute("ALTER TABLE interpretations DROP CONSTRAINT IF EXISTS interpretations_tab_number_check;")
+                    await conn.execute("ALTER TABLE interpretations ADD CONSTRAINT interpretations_tab_number_check CHECK (tab_number BETWEEN 1 AND 11);")
+                except Exception as const_err:
+                    logger.warning(f"Could not update tab_number check constraint on {name} database: {const_err}")
 
             logger.info(f"Successfully verified schema on {name} database.")
         except Exception as e:

@@ -49,6 +49,59 @@ Rules:
 # Tab prompt builder
 # ---------------------------------------------------------------------------
 
+def _planet_dignity(planets: List[Dict[str, Any]]) -> str:
+    """
+    Generate a compact text summary of planetary dignity.
+    """
+    EXALTED_SIGNS = {
+        "Sun": "Aries", "Moon": "Taurus", "Mars": "Capricorn",
+        "Mercury": "Virgo", "Jupiter": "Cancer", "Venus": "Pisces",
+        "Saturn": "Libra", "Rahu": "Taurus", "Ketu": "Scorpio"
+    }
+    DEBILITATED_SIGNS = {
+        "Sun": "Libra", "Moon": "Scorpio", "Mars": "Cancer",
+        "Mercury": "Pisces", "Jupiter": "Capricorn", "Venus": "Virgo",
+        "Saturn": "Aries", "Rahu": "Scorpio", "Ketu": "Taurus"
+    }
+    OWN_SIGNS = {
+        "Sun": ["Leo"], "Moon": ["Cancer"], "Mars": ["Aries", "Scorpio"],
+        "Mercury": ["Gemini", "Virgo"], "Jupiter": ["Sagittarius", "Pisces"],
+        "Venus": ["Taurus", "Libra"], "Saturn": ["Capricorn", "Aquarius"]
+    }
+    FRIEND_SIGNS = {
+        "Sun": ["Aries", "Leo", "Sagittarius", "Cancer", "Scorpio", "Pisces"],
+        "Moon": ["Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra"],
+        "Mars": ["Aries", "Scorpio", "Leo", "Sagittarius", "Cancer", "Pisces", "Capricorn"],
+        "Mercury": ["Taurus", "Gemini", "Virgo", "Libra", "Capricorn", "Aquarius"],
+        "Jupiter": ["Aries", "Leo", "Sagittarius", "Cancer", "Scorpio", "Pisces"],
+        "Venus": ["Taurus", "Gemini", "Virgo", "Libra", "Capricorn", "Aquarius"],
+        "Saturn": ["Taurus", "Gemini", "Virgo", "Libra", "Capricorn", "Aquarius"]
+    }
+    
+    lines = []
+    for p in planets:
+        name = p.get("name")
+        sign = p.get("sign")
+        house = p.get("house")
+        if not name or not sign or name == "Ascendant":
+            continue
+            
+        status = "Neutral"
+        if EXALTED_SIGNS.get(name) == sign:
+            status = "Exalted ✓✓"
+        elif DEBILITATED_SIGNS.get(name) == sign:
+            status = "Debilitated ⚠"
+        elif sign in OWN_SIGNS.get(name, []):
+            status = "Own Sign ✓"
+        elif sign in FRIEND_SIGNS.get(name, []):
+            status = "Friendly Sign"
+        else:
+            status = "Enemy Sign ⚠"
+            
+        lines.append(f"{name}: {sign} H{house} — {status}")
+    return "\n".join(lines)
+
+
 def build_tab_prompt(
     chart_data: Dict[str, Any],
     tab_number: int,
@@ -588,57 +641,57 @@ E) VITALITY BOOSTING ADVICE
         8: f"""
 {base_context}
 
+─── DOSHA REPORT (Directly from chart calculations) ───
+Kalsarp Dosha: {chart_data.get('kalsarp', {}).get('present', 'N/A')}
+  Type: {chart_data.get('kalsarp', {}).get('type', 'N/A')}
+Mangal Dosha:  {chart_data.get('mangal_dosha', {}).get('present', 'N/A')}
+  From House: {chart_data.get('mangal_dosha', {}).get('from', 'N/A')}
+Pitru Dosha:   {chart_data.get('pitru_dosha', {}).get('present', 'N/A')}
+Gand Mool:     {chart_data.get('nakshatra', {}).get('gand_mool', {}).get('present', 'N/A')}
+  Nakshatra: {chart_data.get('nakshatra', {}).get('nakshatra', 'N/A')}
+
+─── PLANETARY DIGNITY SUMMARY ───
+{_planet_dignity(chart_data.get('planets', []))}
+
+─── LAL KITAB PLANET PLACEMENTS ───
+{json.dumps(chart_data.get('lalkitab', {}), indent=2) if chart_data.get('lalkitab') else 'Not available (Swiss Ephemeris fallback was used)'}
+
+─── NUMEROLOGY BASE NUMBERS ───
+Life Path: {chart_data.get('numerology', {}).get('life_path', 'N/A')}
+Name Number: {chart_data.get('numerology', {}).get('name_number', 'N/A')}
+Destiny Number: {chart_data.get('numerology', {}).get('destiny_number', 'N/A')}
+
 TASK: Generate Tab 8 — Remedies (Tripath System)
 
-Provide remedies in THREE completely separate tracks.
-NEVER mix tracks. Each is a distinct system.
+[CRITICAL RULE]: Every remedy MUST directly reference the specific planet,
+its house number, its dignity condition (exalted/debilitated/enemy),
+and the dosha it is addressing from the data above.
+Generic remedies that do NOT reference specific chart data are FORBIDDEN.
+
+If a dosha is present above (Kalsarp/Mangal/Pitru/Gand Mool), you MUST include
+a dedicated remedy sub-section for that dosha with specific puja, mantra, and timing.
 
 TRACK 1 — VEDIC JYOTISH UPAYAS
-Identify the 2 most problematic planets in this chart.
+Identify the 2 most afflicted planets from the DIGNITY SUMMARY above.
 For each planet provide:
-
-MANTRA:
-- Exact mantra text
-- Count: 108x daily or weekly
-- Best day and time to chant
-- Duration: how many days/weeks
-
-GEMSTONE:
-- Which gemstone
-- Which metal to set in
-- Which finger to wear on
-- Which day to wear first
-- Minimum weight in ratti
-- Any contraindications
-
-DANA (CHARITY):
-- What to donate
-- To whom (which type of person/place)
-- On which day of week
-
-FASTING:
-- Which day to fast
-- What to eat/avoid on fast day
+  MANTRA: Exact mantra text, count (108x), best day/time, duration (weeks)
+  GEMSTONE: Which stone, metal, finger, first-wearing day, weight (ratti), contraindications
+  DANA (CHARITY): What to donate, to whom, on which weekday
+  FASTING: Which day, what to eat/avoid
+  [If a dosha is active] DOSHA-SPECIFIC PUJA: Temple, ritual name, muhurta window
 
 TRACK 2 — LAL KITAB FARMAAN
 5 specific genuine Lal Kitab remedies.
-These must be practical and non-ritualistic.
-For each:
-- Target planet
-- Exact action required
-- Day to perform
-- Duration
-- Behavioral restriction if any (kya na karein)
+Reference the Lal Kitab house placements above for each remedy.
+For each: Target planet, exact action, day, duration, behavioral restriction (kya na karein)
+If Lal Kitab data is unavailable, derive from D1 house positions instead.
 
 TRACK 3 — NUMEROLOGY CORRECTIONS
-- Name spelling adjustment if needed
-  (which letter to add/modify, what it changes)
-- Lucky color to wear on specific days
-  (one color per day of week based on planet)
+- Name spelling adjustment referencing the Name Number above
+- Lucky color to wear on specific days (one per day based on ruling planet)
 - Number-based affirmation or meditation practice
-- Lucky number grid suggestion for wallet or home
-- Best days this month to start new things
-  based on personal numbers
+- Lucky number grid for wallet or home
+- Best days this month based on personal Life Path number
 """,
 
         9: f"""
@@ -749,6 +802,49 @@ F) GOCHARA VEDHA CHECK
 
 Be highly specific. Every prediction must name the transiting planet,
 the natal house being activated, and the expected life event.
+""",
+        11: f"""
+{base_context}
+
+D10 DASHAMSHA CHART DATA (Education & Career Learning Chart):
+{_div_json("dashamsha", "D10 Dashamsha")}
+
+TASK: Generate Tab 11 — Education & Intelligence Report
+
+Analyze D1 natal + D10 Dashamsha for education domain:
+
+A) INTELLIGENCE FOUNDATION (D1)
+- 5th house (creativity, education): lord, sign, planets in D1
+- Mercury (Budh) placement: sign, house, dignity, aspects
+- Jupiter (Guru) placement: sign, house — wisdom and higher learning
+- 2nd house (early education, speech): lord and planets
+- Any afflictions to 5th house lord or Mercury?
+
+B) ACADEMIC STRENGTH ASSESSMENT
+- Is Mercury exalted/own/friend/enemy/debilitated?
+- Saraswati Yoga check: Jupiter + Venus + Mercury in strength
+- Budha-Aditya Yoga check: Sun + Mercury conjunct
+- 5th house planet count and quality (benefic vs malefic)
+- D10 Dashamsha: professional learning ability shown
+
+C) EDUCATION FIELD DIRECTION
+Based on the 5th house sign, lord, and Mercury's nature:
+- Arts / Sciences / Commerce / Law / Technical / Spiritual
+- Which subjects come naturally vs require effort?
+- Foreign education potential (9th/12th house indicators)
+- Higher education likelihood (Jupiter strength in D1 and D9)
+
+D) CURRENT PERIOD EDUCATION FORECAST (Dasha Lens)
+- Does current Mahadasha/Antardasha support learning?
+- Jupiter transit impact on 5th house (2026-2027)
+- Best window to start new courses or certifications
+- Any disruption period to avoid for exams
+
+E) SPECIFIC ADVICE
+- Top 3 fields of study most aligned with this chart
+- Best learning style for this Lagna and Mercury placement
+- One hard truth about academic life shown in this chart
+- One specific action before Dec 2026 for educational growth
 """,
     }
 

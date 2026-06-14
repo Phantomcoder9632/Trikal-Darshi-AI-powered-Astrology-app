@@ -89,16 +89,19 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
             kalsarp_task = external.get_kalsarp(dob, tob, lat, lng, tzone)
             mangal_task = external.get_mangal_dosha(dob, tob, lat, lng, tzone)
             numerology_task = external.get_numerology(dob, tob, lat, lng, full_name, tzone)
+            astro_details_task = external.get_astro_details(dob, tob, lat, lng, tzone)
 
             # Concurrent execution
             (
                 planets, ascendant, navamsha, dashamsha, dasha,
                 dasha_periods, ashtakavarga, yogas, lalkitab,
-                remedies, nakshatra, kalsarp, mangal, numerology
+                remedies, nakshatra, kalsarp, mangal, numerology,
+                astro_details
             ) = await asyncio.gather(
                 planets_task, ascendant_task, navamsha_task, dashamsha_task, dasha_task,
                 dasha_periods_task, ashtakavarga_task, yogas_task, lalkitab_task,
-                remedies_task, nakshatra_task, kalsarp_task, mangal_task, numerology_task
+                remedies_task, nakshatra_task, kalsarp_task, mangal_task, numerology_task,
+                astro_details_task
             )
 
             logger.info("Successfully calculated chart using external AstrologyAPI.")
@@ -162,6 +165,7 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
                 "lalkitab_remedies": remedies,
                 "kalsarp": kalsarp,
                 "mangal_dosha": mangal,
+                "astro_details": astro_details,
                 "navamsha": d9_chart,
                 "dashamsha": d10_chart,
                 "chaturthamsa": d4_chart,
@@ -214,6 +218,22 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
         # Append Gand Mool info directly to nakshatra payload
         moon_nakshatra["gand_mool"] = gand_res
 
+        # Calculate local astro details
+        sun_planet = next((p for p in local_chart["planets"] if p["name"] == "Sun"), None)
+        sun_lon = sun_planet["fullDegree"] if sun_planet else 0.0
+        moon_lon = moon_planet["fullDegree"] if moon_planet else 0.0
+        moon_sign = moon_planet.get("sign", "") if moon_planet else ""
+        moon_nak = moon_planet.get("nakshatra", "") if moon_planet else ""
+        moon_pada = moon_planet.get("nakshatra_pada", 1) if moon_planet else 1
+
+        local_astro_details = local_eph.calculate_astro_details_local(
+            sun_lon=sun_lon,
+            moon_lon=moon_lon,
+            moon_sign=moon_sign,
+            moon_nak=moon_nak,
+            moon_pada=moon_pada
+        )
+
         logger.info("Successfully calculated chart & doshas using local Swiss Ephemeris fallback engine.")
 
         # Compute all divisional charts from local natal data
@@ -244,6 +264,7 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
             "kalsarp": kalsarp_res,
             "mangal_dosha": mangal_res,
             "pitru_dosha": pitru_res,
+            "astro_details": local_astro_details,
             "navamsha": d9_chart,
             "dashamsha": d10_chart,
             "chaturthamsa": d4_chart,

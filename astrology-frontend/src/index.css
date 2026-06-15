@@ -2063,6 +2063,15 @@ body {
 .lp-google-wrapper {
   display: flex;
   justify-content: center;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Force Google's iframe/button to stretch on narrow screens */
+.lp-google-wrapper > div,
+.lp-google-wrapper iframe {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 /* Form divider ornament */

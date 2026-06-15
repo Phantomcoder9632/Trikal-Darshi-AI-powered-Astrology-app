@@ -358,11 +358,11 @@ export default function HomePage() {
                 }
               }}
               onError={() => setAuthError('Google Sign-in failed. Please try again.')}
-              useOneTap
               theme="outline"
               shape="pill"
               size="large"
-              width="280"
+              auto_select={false}
+              cancel_on_tap_outside={false}
             />
           </div>
         </form>

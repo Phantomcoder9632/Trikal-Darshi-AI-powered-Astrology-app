@@ -27,6 +27,10 @@ SUMMARY OF CHANGES - JUNE 15, 2026
    - Configuration: Reduced the Aiven cloud primary PostgreSQL pool size from `min_size=2, max_size=10` to `min_size=1, max_size=3` inside [database.py](file:///e:/TRIKAL/astrology-backend/db/database.py). Changed the local secondary pool size to `min_size=1, max_size=5`. This prevents database connection slot exhaustion when multiple server workers and local processes run simultaneously.
    - Resilience: Configured a `timeout=5.0` parameter on all connection acquisition operations in [database.py](file:///e:/TRIKAL/astrology-backend/db/database.py). This ensures that when the database is congested or busy, requests fail-fast instead of hanging the entire backend server indefinitely.
 
+7. Tablet & Mobile Responsive Enhancements (Dashboard Layout)
+   - Tablet Column Adjustment: Enabled side-by-side row-based layouts for screens starting at `768px` (tablets) in [index.css](file:///e:/TRIKAL/astrology-frontend/src/index.css), and adjusted the sidebar width to a responsive `280px` (down from `360px`) to maximize content space on narrower screen viewports.
+   - Mobile Sidebar Toggle: Added a collapsible mobile layout for screens under `768px` in [DashboardPage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/DashboardPage.jsx) and [index.css](file:///e:/TRIKAL/astrology-frontend/src/index.css). The large Kundali chart and planet details sidebar are now collapsed by default on mobile under a premium gold "Show Kundali Chart & Positions" toggle button, letting users read interpretations instantly without scrolling past heavy SVG graphics.
+
 ================================================================================
 SUMMARY OF CHANGES - JUNE 14, 2026 (Trikal Darshi Feature Expansion)
 ================================================================================

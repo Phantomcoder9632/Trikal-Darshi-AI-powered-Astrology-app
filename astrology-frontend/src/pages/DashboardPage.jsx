@@ -56,6 +56,12 @@ export default function DashboardPage() {
     localStorage.getItem('app-theme') || 'theme-vedic-gold'
   );
 
+  // Reset mobile sidebar toggle on tab change
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  useEffect(() => {
+    setShowMobileSidebar(false);
+  }, [activeTab]);
+
   const handleThemeChange = (newTheme) => {
     setCurrentTheme(newTheme);
     localStorage.setItem('app-theme', newTheme);
@@ -439,6 +445,21 @@ export default function DashboardPage() {
           />
         </div>
 
+        {/* Mobile Toggle Button for Sidebar */}
+        {[1, 4, 5, 6, 7, 9, 10, 'education'].includes(activeTab) && (
+          <div className="md:hidden no-print mb-2 mt-1">
+            <button
+              onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+              className="w-full py-3 px-4 bg-primary-container/10 border border-primary-container/30 hover:bg-primary-container/20 rounded-xl text-primary font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                {showMobileSidebar ? 'visibility_off' : 'grid_view'}
+              </span>
+              {showMobileSidebar ? 'Hide Kundali Chart & Positions' : 'Show Kundali Chart & Positions'}
+            </button>
+          </div>
+        )}
+
         {/* Two-column grid */}
         <div className="dashboard-grid mt-4">
 
@@ -446,7 +467,7 @@ export default function DashboardPage() {
           <aside
             className={`dashboard-sidebar flex flex-col gap-4 ${
               [1, 4, 5, 6, 7, 9, 10, 'education'].includes(activeTab)
-                ? 'sidebar-visible'
+                ? (showMobileSidebar ? 'sidebar-visible' : 'sidebar-visible-desktop-only')
                 : 'sidebar-hidden'
             }`}
           >

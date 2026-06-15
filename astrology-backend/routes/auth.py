@@ -11,6 +11,7 @@ from pydantic import BaseModel, EmailStr
 from google.oauth2 import id_token
 from google.auth.transport import requests
 import jwt
+import httpx
 
 from db.database import get_db
 
@@ -166,7 +167,9 @@ async def get_optional_current_user(
 @router.post("/auth/google", response_model=LoginResponse)
 async def google_login(payload: GoogleLoginPayload, conn = Depends(get_db)):
     """
-    Verify Google ID token, upsert user record, and return local session token.
+    Verify Google token (ID token or access token) and upsert user, returning a local session token.
+    Supports both the credential (ID token) flow and the implicit access-token flow
+    (used by useGoogleLogin on mobile to avoid the GSI One Tap redirect freeze).
     """
     if not GOOGLE_CLIENT_ID:
         logger.error("GOOGLE_CLIENT_ID env variable is not set")
@@ -175,20 +178,49 @@ async def google_login(payload: GoogleLoginPayload, conn = Depends(get_db)):
             detail="Google Client ID is not configured on the server."
         )
 
+    google_id = email = name = picture = None
+
+    # ── Strategy 1: Try verifying as a JWT ID token ──────────────────────────
     try:
-        # Verify the ID token against Google OAuth endpoints
         idinfo = id_token.verify_oauth2_token(
             payload.token,
             requests.Request(),
             GOOGLE_CLIENT_ID
         )
-
-        # Extract user profile parameters
         google_id = idinfo["sub"]
-        email = idinfo["email"]
-        name = idinfo.get("name", "")
-        picture = idinfo.get("picture", "")
+        email     = idinfo["email"]
+        name      = idinfo.get("name", "")
+        picture   = idinfo.get("picture", "")
+        logger.info(f"Verified Google ID token for: {email}")
+    except Exception as id_token_err:
+        logger.info(f"Not a valid ID token ({type(id_token_err).__name__}), trying as access token…")
 
+    # ── Strategy 2: Try verifying as an OAuth access token via userinfo ───────
+    if email is None:
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.get(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    headers={"Authorization": f"Bearer {payload.token}"},
+                )
+            if resp.status_code != 200:
+                raise ValueError(f"Google userinfo returned {resp.status_code}: {resp.text}")
+            info = resp.json()
+            google_id = info.get("sub")
+            email     = info.get("email")
+            name      = info.get("name", "")
+            picture   = info.get("picture", "")
+            if not email:
+                raise ValueError("Google userinfo response missing email")
+            logger.info(f"Verified Google access token for: {email}")
+        except Exception as access_err:
+            logger.warning(f"Google access token verification also failed: {type(access_err).__name__}: {access_err}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Google token verification failed: {str(access_err)}"
+            )
+
+    try:
         # Check if user already exists
         row = await conn.fetchrow(
             "SELECT id, name, picture FROM users WHERE email = $1",
@@ -197,7 +229,6 @@ async def google_login(payload: GoogleLoginPayload, conn = Depends(get_db)):
 
         if row:
             user_id = row["id"]
-            # If name or picture changed on Google, update it
             if row["name"] != name or row["picture"] != picture:
                 await conn.execute(
                     "UPDATE users SET name = $1, picture = $2, google_id = $3 WHERE id = $4",
@@ -205,7 +236,6 @@ async def google_login(payload: GoogleLoginPayload, conn = Depends(get_db)):
                 )
                 logger.info(f"Updated user profile for: {email}")
         else:
-            # Create a brand new user record
             user_id = uuid.uuid4()
             await conn.execute(
                 """
@@ -216,7 +246,6 @@ async def google_login(payload: GoogleLoginPayload, conn = Depends(get_db)):
             )
             logger.info(f"Created new user record for: {email}")
 
-        # Generate local session access token
         access_token = create_access_token(user_id, email)
 
         return {
@@ -230,12 +259,6 @@ async def google_login(payload: GoogleLoginPayload, conn = Depends(get_db)):
             }
         }
 
-    except ValueError as e:
-        logger.warning(f"Google ID token verification failed (ValueError): {type(e).__name__}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Google token verification failed: {str(e)}"
-        )
     except Exception as e:
         logger.error(f"Unexpected authentication failure: {type(e).__name__}: {e}")
         raise HTTPException(

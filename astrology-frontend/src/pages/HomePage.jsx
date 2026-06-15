@@ -235,12 +235,25 @@ export default function HomePage() {
       setGoogleLoading(true);
       setAuthError('');
       try {
-        // Send the access token to backend — it verifies via Google userinfo endpoint
+        // Step 1: Verify the access token by fetching Google user info on the frontend
+        const googleRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        if (!googleRes.ok) {
+          throw new Error('Could not verify your Google account. Please try again.');
+        }
+        // Step 2: Send to backend for account creation / login
         const profile = await login(tokenResponse.access_token);
         if (profile) await handleAuthSuccess();
       } catch (err) {
         console.error('Google login error:', err);
-        setAuthError(err.response?.data?.detail || err.message || 'Google Sign-in failed. Please try again.');
+        // Never expose raw token content in the error message
+        const rawDetail = err.response?.data?.detail || err.message || '';
+        const isTokenError = rawDetail.toLowerCase().includes('token') || rawDetail.toLowerCase().includes('segment');
+        const friendlyMsg = isTokenError
+          ? 'Google Sign-in is temporarily unavailable. Please try again in a moment or use email/password.'
+          : (rawDetail || 'Google Sign-in failed. Please try again.');
+        setAuthError(friendlyMsg);
       } finally {
         setGoogleLoading(false);
       }

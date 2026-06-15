@@ -23,6 +23,10 @@ SUMMARY OF CHANGES - JUNE 15, 2026
    - Card Sequence: Swapped three-column grid layouts for Remedy Cards in [RemedyCards.jsx](file:///e:/TRIKAL/astrology-frontend/src/components/RemedyCards.jsx) into a single vertical full-width stack (`flex flex-col gap-6`).
    - Clean LaTeX & Markdown: Integrated `cleanLaTeX` formatting helpers in [formatters.jsx](file:///e:/TRIKAL/astrology-frontend/src/components/formatters.jsx) to automatically clean raw math calculations and clean markdown characters (`**`) from interpretations and remedies.
 
+6. Database Connection Pool and Timeout Optimization
+   - Configuration: Reduced the Aiven cloud primary PostgreSQL pool size from `min_size=2, max_size=10` to `min_size=1, max_size=3` inside [database.py](file:///e:/TRIKAL/astrology-backend/db/database.py). Changed the local secondary pool size to `min_size=1, max_size=5`. This prevents database connection slot exhaustion when multiple server workers and local processes run simultaneously.
+   - Resilience: Configured a `timeout=5.0` parameter on all connection acquisition operations in [database.py](file:///e:/TRIKAL/astrology-backend/db/database.py). This ensures that when the database is congested or busy, requests fail-fast instead of hanging the entire backend server indefinitely.
+
 ================================================================================
 SUMMARY OF CHANGES - JUNE 14, 2026 (Trikal Darshi Feature Expansion)
 ================================================================================

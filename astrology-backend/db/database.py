@@ -69,14 +69,14 @@ class DualConnectionAcquirer:
         
         if self.primary_pool:
             try:
-                self.primary_ctx = self.primary_pool.acquire(*self.args, **self.kwargs)
+                self.primary_ctx = self.primary_pool.acquire(*self.args, timeout=5.0, **self.kwargs)
                 conn1 = await self.primary_ctx.__aenter__()
             except Exception as e:
                 logger.error(f"Failed to acquire connection from primary pool: {e}")
                 
         if self.secondary_pool:
             try:
-                self.secondary_ctx = self.secondary_pool.acquire(*self.args, **self.kwargs)
+                self.secondary_ctx = self.secondary_pool.acquire(*self.args, timeout=5.0, **self.kwargs)
                 conn2 = await self.secondary_ctx.__aenter__()
             except Exception as e:
                 logger.error(f"Failed to acquire connection from secondary pool: {e}")
@@ -129,12 +129,12 @@ async def get_db_pool() -> DualPool:
                 logger.info("Initializing primary database pool...")
                 primary_pool = await asyncpg.create_pool(
                     dsn=DATABASE_URL,
-                    min_size=2,
-                    max_size=10,
+                    min_size=1,
+                    max_size=3,
                     command_timeout=60.0
                 )
                 # Test connection
-                async with primary_pool.acquire() as conn:
+                async with primary_pool.acquire(timeout=5.0) as conn:
                     await conn.execute("SELECT 1")
                 logger.info("Successfully connected to primary database.")
             except Exception as e:
@@ -147,12 +147,12 @@ async def get_db_pool() -> DualPool:
                 logger.info("Initializing secondary database pool...")
                 secondary_pool = await asyncpg.create_pool(
                     dsn=LOCAL_DATABASE_URL,
-                    min_size=2,
-                    max_size=10,
+                    min_size=1,
+                    max_size=5,
                     command_timeout=60.0
                 )
                 # Test connection
-                async with secondary_pool.acquire() as conn:
+                async with secondary_pool.acquire(timeout=5.0) as conn:
                     await conn.execute("SELECT 1")
                 logger.info("Successfully connected to secondary database.")
             except Exception as e:
@@ -243,7 +243,7 @@ async def initialize_schema(pool: DualPool) -> None:
             return
         try:
             logger.info(f"Checking database schema for {name} database...")
-            async with p.acquire() as conn:
+            async with p.acquire(timeout=5.0) as conn:
                 # 1. Ensure uuid-ossp extension exists
                 try:
                     await conn.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')

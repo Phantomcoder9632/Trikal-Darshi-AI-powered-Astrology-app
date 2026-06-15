@@ -1554,10 +1554,28 @@ body {
 
 .lp-hero-cta-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 12px;
   align-items: center;
+  width: 100%;
+}
+
+.lp-cta-primary, .lp-cta-ghost {
+  width: 100%;
+  max-width: 280px;
   justify-content: center;
+  text-align: center;
+}
+
+@media (min-width: 480px) {
+  .lp-hero-cta-row {
+    flex-direction: row;
+    justify-content: center;
+  }
+  .lp-cta-primary, .lp-cta-ghost {
+    width: auto;
+    max-width: none;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -1628,17 +1646,12 @@ body {
 
 /* Stats row */
 .lp-hero-stats {
-  display: flex;
-  align-items: center;
-  gap: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 8px;
   padding-top: 24px;
   border-top: 1px solid rgba(124, 88, 0, 0.15);
   width: 100%;
-  justify-content: center;
-}
-
-@media (min-width: 1024px) {
-  .lp-hero-stats { justify-content: flex-start; }
 }
 
 .lp-stat {
@@ -1646,11 +1659,34 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 0 20px;
+  padding: 0;
 }
 
-@media (min-width: 480px) {
-  .lp-stat { padding: 0 28px; }
+.lp-stat-sep {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .lp-hero-stats {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 0;
+  }
+  .lp-stat {
+    padding: 0 20px;
+  }
+  .lp-stat-sep {
+    display: block;
+    width: 1px;
+    height: 36px;
+    background: rgba(124, 88, 0, 0.15);
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lp-hero-stats { justify-content: flex-start; }
 }
 
 .lp-stat-num {
@@ -1668,13 +1704,6 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   white-space: nowrap;
-}
-
-.lp-stat-sep {
-  width: 1px;
-  height: 36px;
-  background: rgba(124, 88, 0, 0.15);
-  flex-shrink: 0;
 }
 
 /* Right login column */

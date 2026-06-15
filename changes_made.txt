@@ -1,4 +1,29 @@
 ================================================================================
+SUMMARY OF CHANGES - JUNE 15, 2026
+================================================================================
+
+1. Saved Blueprint Switching & Navigation Fix (Dashboard Page)
+   - Bug Fix: Changed the key and link parameters in the "Saved Blueprints" drawer list inside [DashboardPage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/DashboardPage.jsx) from `chart.id` to `chart.chart_id` to align with the database schema keys. This prevents the router from navigating to `/dashboard/undefined` and hanging.
+   - Transition Reset: Added state resets (`setInterpretations({})`, `setTabLoading({})`, `setTabError({})`) immediately at the start of the `fetchChart` `useEffect` when `chartId` changes to ensure clean transition without state leaks from previous blueprints.
+   - Default Tab: Configured the dashboard to open directly on the **Basics** tab by default by setting the initial state of `activeTab` to `'basics'`. Aligned `activeCategory` state initializer in `TabNavigation.jsx` to return `'basics'` by default if the active tab is `'basics'`, matching the visual tab selector on load.
+
+2. Decoupled Headers & Animating Content Layout
+   - Restructure: Split [TabNavigation.jsx](file:///e:/TRIKAL/astrology-frontend/src/components/TabNavigation.jsx) into `TabNavigation` (header selection tabs) and `TabContentCard` (content panels).
+   - Layout: Rendered `TabNavigation` full-width directly under the main container in [DashboardPage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/DashboardPage.jsx) so it remains steady. The animating grid sits below it, housing the sliding sidebar and the `TabContentCard`. This stops the tab header buttons from shrinking/expanding during sidebar transitions.
+
+3. Sliding Sidebar Animation
+   - CSS Transitions: Configured hardware-accelerated transitions (`transform`, `width`, `margin`, `opacity`, and layout collapse) in [index.css](file:///e:/TRIKAL/astrology-frontend/src/index.css) to support sliding the sidebar off-screen left (`transform: translateX(-110%)`) and collapsing it smoothly when switching between **Chart Description** and other tabs.
+   - Negative Margin Gap Offsets: Implemented negative margin transitions to dynamically offset flexbox grid gaps when the sidebar collapses, letting the main text content panel automatically expand to fill the full width.
+
+4. Toggleable Birth Form (Home Page)
+   - Conditional Render: Added a `showBirthForm` state in [HomePage.jsx](file:///e:/TRIKAL/astrology-frontend/src/pages/HomePage.jsx). If a user has saved blueprints, the birth form is hidden by default.
+   - UI Controls: Introduced an **Add New Member** button to reveal the birth details form, and a **Cancel** button above the form to collapse/hide it, preventing clutter on the home page. If no blueprints are saved, the form displays by default.
+
+5. Remedy Stacking & Global Formatting Cleansing
+   - Card Sequence: Swapped three-column grid layouts for Remedy Cards in [RemedyCards.jsx](file:///e:/TRIKAL/astrology-frontend/src/components/RemedyCards.jsx) into a single vertical full-width stack (`flex flex-col gap-6`).
+   - Clean LaTeX & Markdown: Integrated `cleanLaTeX` formatting helpers in [formatters.jsx](file:///e:/TRIKAL/astrology-frontend/src/components/formatters.jsx) to automatically clean raw math calculations and clean markdown characters (`**`) from interpretations and remedies.
+
+================================================================================
 SUMMARY OF CHANGES - JUNE 14, 2026 (Trikal Darshi Feature Expansion)
 ================================================================================
 

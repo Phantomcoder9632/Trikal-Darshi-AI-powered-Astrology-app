@@ -375,7 +375,41 @@ body {
   width: 100%;
 }
 
+/* Dashboard Sidebar sliding transitions */
+.dashboard-sidebar {
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              margin 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.45s ease;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.dashboard-sidebar.sidebar-hidden {
+  transform: translateX(-110%);
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-sidebar.sidebar-hidden {
+    margin-bottom: -20px !important;
+  }
+}
+
 @media (min-width: 1024px) {
+  .dashboard-sidebar.sidebar-hidden {
+    margin-right: -24px !important;
+  }
   .dashboard-grid {
     flex-direction: row;
     align-items: flex-start;

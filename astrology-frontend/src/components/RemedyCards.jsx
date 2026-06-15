@@ -1,45 +1,143 @@
 import React from 'react';
+import { formatInterpretationText, parseInlineMarkdown, cleanLaTeX } from './formatters';
 
 /**
  * Robust string slicer to extract TRACK 1, TRACK 2, and TRACK 3 blocks from a text string.
+ * Handles both markdown table structures and plaintext formats.
  */
 function parseRemedyTracks(remedyText) {
   if (!remedyText || typeof remedyText !== 'string') {
-    return { track1: '', track2: '', track3: '' };
+    return { track1: '', track2: '', track3: '', outro: '' };
   }
 
-  const t1Idx = remedyText.search(/TRACK\s*1/i);
-  const t2Idx = remedyText.search(/TRACK\s*2/i);
-  const t3Idx = remedyText.search(/TRACK\s*3/i);
+  const cleaned = cleanLaTeX(remedyText);
+  const lines = cleaned.split('\n');
+  const tableLines = lines.filter(l => l.trim().startsWith('|'));
 
-  let track1 = '';
-  let track2 = '';
-  let track3 = '';
+  if (tableLines.length >= 3) {
+    // ── TABLE-BASED PARSING ──
+    let track1Rows = [];
+    let track2Rows = [];
+    let track3Rows = [];
+    let currentTrack = 1;
 
-  if (t1Idx !== -1) {
-    const end = t2Idx !== -1 ? t2Idx : (t3Idx !== -1 ? t3Idx : remedyText.length);
-    track1 = remedyText.substring(t1Idx, end).trim();
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine.startsWith('|')) {
+        continue;
+      }
+
+      const cells = trimmedLine.split('|').map(c => c.trim());
+      if (trimmedLine.startsWith('|')) cells.shift();
+      if (trimmedLine.endsWith('|')) cells.pop();
+
+      // Skip separator
+      if (cells.every(cell => /^[-:\s]+$/.test(cell))) {
+        continue;
+      }
+
+      // Skip header
+      if (cells[0] && cells[0].toLowerCase().includes('track') && cells[1] && cells[1].toLowerCase().includes('remedy')) {
+        continue;
+      }
+
+      // Determine track
+      const firstCol = (cells[0] || '').toLowerCase();
+      if (firstCol.includes('1') || firstCol.includes('vedic')) {
+        currentTrack = 1;
+      } else if (firstCol.includes('2') || firstCol.includes('lal')) {
+        currentTrack = 2;
+      } else if (firstCol.includes('3') || firstCol.includes('numerology')) {
+        currentTrack = 3;
+      }
+
+      // Format row
+      let rowText = '';
+      if (cells[1]) rowText += `REMEDY: ${cells[1]}\n`;
+      if (cells[2]) rowText += `PLANET: ${cells[2]}\n`;
+      if (cells[3]) rowText += `TARGET: ${cells[3]}\n`;
+      if (cells[4]) {
+        const cleanDetails = cells[4].replace(/<br\s*\/?>/gi, '\n');
+        rowText += `${cleanDetails}\n`;
+      }
+      rowText += `\n`;
+
+      if (currentTrack === 1) track1Rows.push(rowText);
+      else if (currentTrack === 2) track2Rows.push(rowText);
+      else if (currentTrack === 3) track3Rows.push(rowText);
+    }
+
+    // Extract outro
+    let lastTableIdx = -1;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i].trim().startsWith('|')) {
+        lastTableIdx = i;
+        break;
+      }
+    }
+
+    let outroLines = [];
+    if (lastTableIdx !== -1 && lastTableIdx < lines.length - 1) {
+      outroLines = lines.slice(lastTableIdx + 1);
+    }
+
+    return {
+      track1: track1Rows.join('\n').trim(),
+      track2: track2Rows.join('\n').trim(),
+      track3: track3Rows.join('\n').trim(),
+      outro: outroLines.join('\n').trim()
+    };
   } else {
-    track1 = remedyText.trim();
+    // ── TEXT-BASED PARSING (FALLBACK) ──
+    const findIndex = (regexes) => {
+      for (const r of regexes) {
+        const idx = cleaned.search(r);
+        if (idx !== -1) return idx;
+      }
+      return -1;
+    };
+
+    const t1Idx = findIndex([/TRACK\s*1/i, /1\.\s*Vedic/i, /Vedic\s*Jyotish\s*Upayas/i]);
+    const t2Idx = findIndex([/TRACK\s*2/i, /2\.\s*Lal/i, /Lal\s*Kitab\s*Farman/i, /Lal\s*Kitab\s*Farmaan/i]);
+    const t3Idx = findIndex([/TRACK\s*3/i, /3\.\s*Numerology/i, /Numerology\s*Corrections/i]);
+
+    let track1 = '';
+    let track2 = '';
+    let track3 = '';
+
+    if (t1Idx !== -1) {
+      const end = t2Idx !== -1 ? t2Idx : (t3Idx !== -1 ? t3Idx : cleaned.length);
+      track1 = cleaned.substring(t1Idx, end).trim();
+    } else {
+      track1 = cleaned.trim();
+    }
+
+    if (t2Idx !== -1) {
+      const end = t3Idx !== -1 ? t3Idx : cleaned.length;
+      track2 = cleaned.substring(t2Idx, end).trim();
+    }
+
+    if (t3Idx !== -1) {
+      track3 = cleaned.substring(t3Idx).trim();
+    }
+
+    const cleanTrack = (t, prefixRegs) => {
+      let cleanedTrackVal = t;
+      for (const r of prefixRegs) {
+        cleanedTrackVal = cleanedTrackVal.replace(r, '');
+      }
+      return cleanedTrackVal.trim();
+    };
+
+    return {
+      track1: cleanTrack(track1, [/^TRACK\s*1\s*—?\s*(VEDIC\s*JYOTISH\s*UPAYAS)?/i, /^1\.\s*Vedic\s*Jyotish\s*Upayas/i]),
+      track2: cleanTrack(track2, [/^TRACK\s*2\s*—?\s*(LAL\s*KITAB\s*FARMAAN)?/i, /^2\.\s*Lal\s*Kitab\s*Farman/i]),
+      track3: cleanTrack(track3, [/^TRACK\s*3\s*—?\s*(ANKJYOTISH\s*CORRECTIONS)?/i, /^3\.\s*Numerology\s*Corrections/i]),
+      outro: ''
+    };
   }
-
-  if (t2Idx !== -1) {
-    const end = t3Idx !== -1 ? t3Idx : remedyText.length;
-    track2 = remedyText.substring(t2Idx, end).trim();
-  }
-
-  if (t3Idx !== -1) {
-    track3 = remedyText.substring(t3Idx).trim();
-  }
-
-  const cleanTrack = (t, prefixReg) => t.replace(prefixReg, '').trim();
-
-  return {
-    track1: cleanTrack(track1, /^TRACK\s*1\s*—?\s*(VEDIC\s*JYOTISH\s*UPAYAS)?/i),
-    track2: cleanTrack(track2, /^TRACK\s*2\s*—?\s*(LAL\s*KITAB\s*FARMAAN)?/i),
-    track3: cleanTrack(track3, /^TRACK\s*3\s*—?\s*(ANKJYOTISH\s*CORRECTIONS)?/i)
-  };
 }
+
 
 /**
  * Format remedy text with uniform bullet/label handling.
@@ -67,7 +165,7 @@ function formatRemedyText(text, accentClass = 'remedy-label-gold') {
       return (
         <div key={i} className="remedy-para">
           <span className={`remedy-label ${accentClass}`}>{labelMatch[1]}:</span>
-          {labelMatch[2] && <span>{labelMatch[2]}</span>}
+          {labelMatch[2] && <span>{parseInlineMarkdown(labelMatch[2])}</span>}
         </div>
       );
     }
@@ -76,7 +174,7 @@ function formatRemedyText(text, accentClass = 'remedy-label-gold') {
     const bulletMatch = trimmed.match(/^[-•*▸►✦◆]\s+(.+)$/);
     if (bulletMatch) {
       return (
-        <div key={i} className="remedy-bullet">{bulletMatch[1]}</div>
+        <div key={i} className="remedy-bullet">{parseInlineMarkdown(bulletMatch[1])}</div>
       );
     }
 
@@ -86,21 +184,21 @@ function formatRemedyText(text, accentClass = 'remedy-label-gold') {
       return (
         <div key={i} className="remedy-bullet">
           <strong className="text-primary-container font-bold mr-1">{numMatch[1]}.</strong>
-          {numMatch[2]}
+          {parseInlineMarkdown(numMatch[2])}
         </div>
       );
     }
 
     // Standard paragraph
     return (
-      <p key={i} className="remedy-para">{trimmed}</p>
+      <p key={i} className="remedy-para">{parseInlineMarkdown(trimmed)}</p>
     );
   });
 }
 
 
 export default function RemedyCards({ remedyText }) {
-  const { track1, track2, track3 } = parseRemedyTracks(remedyText);
+  const { track1, track2, track3, outro } = parseRemedyTracks(remedyText);
 
   const TRACKS = [
     {
@@ -148,7 +246,7 @@ export default function RemedyCards({ remedyText }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+      <div className="flex flex-col gap-6 w-full">
         {TRACKS.map((track) => {
           if (!track.content) return null;
           return (
@@ -177,6 +275,12 @@ export default function RemedyCards({ remedyText }) {
           );
         })}
       </div>
+
+      {outro && (
+        <div className="mt-8 pt-6 border-t border-outline-variant/15 text-left page-break-inside-avoid">
+          {formatInterpretationText(outro)}
+        </div>
+      )}
     </div>
   );
 }

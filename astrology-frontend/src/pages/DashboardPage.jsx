@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import ChartSidebar, { TAB_CHART_CONFIG } from '../components/ChartSidebar';
 import PlanetTable from '../components/PlanetTable';
 import CosmicSummary from '../components/CosmicSummary';
-import TabNavigation from '../components/TabNavigation';
+import TabNavigation, { TabContentCard } from '../components/TabNavigation';
 import RemedyCards from '../components/RemedyCards';
 import ProfileCard from '../components/ProfileCard';
 
@@ -27,7 +27,7 @@ export default function DashboardPage() {
   const [chartError, setChartError] = useState('');
 
   // Tab state
-  const [activeTab, setActiveTab] = useState(1);
+  const [activeTab, setActiveTab] = useState('basics');
   const [interpretations, setInterpretations] = useState({});
   const [tabLoading, setTabLoading] = useState({});
   const [tabError, setTabError] = useState({});
@@ -142,6 +142,9 @@ export default function DashboardPage() {
       try {
         setLoadingChart(true);
         setChartError('');
+        setInterpretations({});
+        setTabLoading({});
+        setTabError({});
         const data = await getChart(chartId);
         setChartData(data);
         
@@ -424,12 +427,29 @@ export default function DashboardPage() {
       {/* ── Main Content ──────────────────────────────────────────────────── */}
       <main className="flex-1 w-full max-w-[1650px] mx-auto px-4 sm:px-8 md:px-10 py-5 flex flex-col">
 
+        {/* ── Tab Navigation Headers (Steady & Full Width) ── */}
+        <div className="animate-up delay-2">
+          <TabNavigation
+            chartId={chartId}
+            activeTab={activeTab}
+            onTabChange={(tabId) => setActiveTab(tabId)}
+            interpretations={interpretations}
+            tabLoadingState={tabLoading}
+            chartData={chartData}
+          />
+        </div>
+
         {/* Two-column grid */}
-        <div className="dashboard-grid">
+        <div className="dashboard-grid mt-4">
 
           {/* ── Left sidebar ────────────────────────────────────────────── */}
-          <aside className="dashboard-sidebar flex flex-col gap-4">
-
+          <aside
+            className={`dashboard-sidebar flex flex-col gap-4 ${
+              [1, 4, 5, 6, 7, 9, 10, 'education'].includes(activeTab)
+                ? 'sidebar-visible'
+                : 'sidebar-hidden'
+            }`}
+          >
             {/* Profile / Name card */}
             <ProfileCard chartData={chartData} onEdit={handleOpenEdit} />
 
@@ -445,18 +465,16 @@ export default function DashboardPage() {
             <div className="dashboard-card overflow-hidden animate-up delay-3" style={{ padding: 0 }}>
               <PlanetTable planets={tablePlanets} />
             </div>
-
           </aside>
 
           {/* ── Right content ────────────────────────────────────────────── */}
           <div className="dashboard-content flex flex-col gap-4">
 
-            {/* Tab navigation + interpretation */}
+            {/* Tab Content Card */}
             <div className="animate-up delay-4 flex flex-col gap-4">
-              <TabNavigation
+              <TabContentCard
                 chartId={chartId}
                 activeTab={activeTab}
-                onTabChange={(tabId) => setActiveTab(tabId)}
                 interpretations={interpretations}
                 tabLoadingState={tabLoading}
                 chartData={chartData}
@@ -615,12 +633,12 @@ export default function DashboardPage() {
               {savedCharts.length > 0 ? (
                 savedCharts.map((chart) => (
                   <button
-                    key={chart.id}
+                    key={chart.chart_id}
                     onClick={() => {
                       setShowDrawer(false);
-                      navigate(`/dashboard/${chart.id}`);
+                      navigate(`/dashboard/${chart.chart_id}`);
                     }}
-                    className={`w-full text-left p-3 rounded-lg border text-xs flex items-center justify-between transition-all cursor-pointer ${chart.id === chartId
+                    className={`w-full text-left p-3 rounded-lg border text-xs flex items-center justify-between transition-all cursor-pointer ${chart.chart_id === chartId
                         ? 'bg-primary/10 border-primary/30 text-primary font-bold'
                         : 'bg-surface-container-lowest border-outline-variant/15 hover:bg-outline-variant/10 text-on-surface'
                       }`}

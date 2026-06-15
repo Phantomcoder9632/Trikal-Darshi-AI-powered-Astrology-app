@@ -1,5 +1,6 @@
 import React from 'react';
 import RemedyCards from './RemedyCards';
+import { formatInterpretationText, parseInlineMarkdown } from './formatters';
 
 const TABS = [
   { id: 1,  label: 'Lagna & Soul Blueprint',        icon: 'wb_sunny'      },
@@ -34,198 +35,6 @@ const REPORT_ANALYSIS_SUBTABS = [
   TABS.find(t => t.id === 'vedic_report')
 ];
 
-function parseInlineMarkdown(str) {
-  if (!str) return '';
-  // Match bold (**text**) and italics (*text*)
-  const tokens = str.split(/(\*\*.*?\*\*|\*.*?\*)/g);
-  return tokens.map((token, i) => {
-    if (token.startsWith('**') && token.endsWith('**')) {
-      const content = token.slice(2, -2);
-      return <strong key={i} className="prose-bold">{content}</strong>;
-    }
-    if (token.startsWith('*') && token.endsWith('*')) {
-      const content = token.slice(1, -1);
-      return <em key={i} className="prose-italic italic">{content}</em>;
-    }
-    return token;
-  });
-}
-
-function formatInterpretationText(text) {
-  if (!text) return null;
-
-  const normalizedText = text.replace(/<br\s*\/?>/gi, '\n');
-  const lines = normalizedText.split('\n');
-  const elements = [];
-  
-  let i = 0;
-  while (i < lines.length) {
-    const rawLine = lines[i];
-    const trimmed = rawLine.trim();
-
-    // 1. Detect if it's a table row (starts with |)
-    if (trimmed.startsWith('|')) {
-      const tableLines = [];
-      while (i < lines.length && lines[i].trim().startsWith('|')) {
-        tableLines.push(lines[i].trim());
-        i++;
-      }
-
-      if (tableLines.length > 0) {
-        // Parse the table rows
-        const rows = tableLines.map(line => {
-          const cells = line.split('|').map(c => c.trim());
-          if (cells[0] === '') cells.shift();
-          if (cells[cells.length - 1] === '') cells.pop();
-          return cells;
-        });
-
-        // Filter out the separator row (starts with dashes like |---|)
-        const hasSeparator = rows[1] && rows[1].every(cell => /^[-:\s]+$/.test(cell));
-        const headerRow = rows[0];
-        const dataRows = hasSeparator ? rows.slice(2) : rows.slice(1);
-
-        elements.push(
-          <div key={`table-${i}`} className="prose-table-wrapper">
-            <table className="prose-table">
-              <thead>
-                <tr>
-                  {headerRow.map((cell, idx) => (
-                    <th key={idx}>{parseInlineMarkdown(cell)}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {dataRows.map((row, rowIdx) => (
-                  <tr key={rowIdx}>
-                    {row.map((cell, cellIdx) => (
-                      <td key={cellIdx}>{parseInlineMarkdown(cell)}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      }
-      continue;
-    }
-
-    // 2. Otherwise parse as standard line types
-    i++;
-    if (!trimmed) continue;
-
-    // Horizontal rules
-    if (/^[-*─━]{3,}$/.test(trimmed)) {
-      elements.push(<hr key={i} className="prose-divider" />);
-      continue;
-    }
-
-    // Markdown headers ## / ### / ####
-    const mdHeaderMatch = trimmed.match(/^(#{2,4})\s+(.+)$/);
-    if (mdHeaderMatch) {
-      elements.push(
-        <span key={i} className="prose-section-header">
-          {parseInlineMarkdown(mdHeaderMatch[2])}
-        </span>
-      );
-      continue;
-    }
-
-    // Section-letter headers: "A) TITLE"
-    const sectionLetterMatch = trimmed.match(/^([A-Z])\)\s+(.+)$/);
-    if (sectionLetterMatch) {
-      elements.push(
-        <span key={i} className="prose-section-header">
-          {sectionLetterMatch[1]}) {parseInlineMarkdown(sectionLetterMatch[2])}
-        </span>
-      );
-      continue;
-    }
-
-    // ALL-CAPS header ending with colon
-    const allCapsHeaderMatch = trimmed.match(/^([A-Z][A-Z0-9\s&()\-–—]+):\s*$/);
-    if (allCapsHeaderMatch) {
-      elements.push(
-        <span key={i} className="prose-section-header">
-          {allCapsHeaderMatch[1]}
-        </span>
-      );
-      continue;
-    }
-
-    // Blockquotes: curly/smart quotes or > prefix
-    if (
-      (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-      (trimmed.startsWith('\u201c') && trimmed.endsWith('\u201d')) ||
-      trimmed.startsWith('>')
-    ) {
-      const quoteText = trimmed.startsWith('>') ? trimmed.slice(1).trim() : trimmed;
-      elements.push(
-        <blockquote key={i} className="prose-blockquote">
-          {parseInlineMarkdown(quoteText)}
-        </blockquote>
-      );
-      continue;
-    }
-
-    // Sub-bullet: indented with bullet
-    const subBulletMatch = rawLine.match(/^\s{2,}[-•*▸►]\s+(.+)$/);
-    if (subBulletMatch) {
-      elements.push(
-        <div key={i} className="prose-sub-bullet">
-          <span>{parseInlineMarkdown(subBulletMatch[1])}</span>
-        </div>
-      );
-      continue;
-    }
-
-    // Top-level bullet
-    const bulletMatch = trimmed.match(/^[-•*▸►✦◆]\s+(.+)$/);
-    if (bulletMatch) {
-      elements.push(
-        <div key={i} className="prose-bullet-item">
-          <span>{parseInlineMarkdown(bulletMatch[1])}</span>
-        </div>
-      );
-      continue;
-    }
-
-    // Numbered list
-    const numberedMatch = trimmed.match(/^(\d{1,3})[.)]\s+(.+)$/);
-    if (numberedMatch) {
-      elements.push(
-        <div key={i} className="prose-numbered-item">
-          <span className="prose-num">{numberedMatch[1]}.</span>
-          <span>{parseInlineMarkdown(numberedMatch[2])}</span>
-        </div>
-      );
-      continue;
-    }
-
-    // KEY: Value lines
-    const keyValueMatch = trimmed.match(/^([A-Z][A-Z0-9\s&()\-–—/,]+):\s*(.+)$/);
-    if (keyValueMatch && keyValueMatch[1].length <= 50) {
-      elements.push(
-        <p key={i} className="prose-para">
-          <span className="prose-key">{keyValueMatch[1]}:</span>
-          {parseInlineMarkdown(keyValueMatch[2])}
-        </p>
-      );
-      continue;
-    }
-
-    // Standard paragraph
-    elements.push(
-      <p key={i} className="prose-para">
-        {parseInlineMarkdown(rawLine)}
-      </p>
-    );
-  }
-
-  return elements;
-}
-
 export default function TabNavigation({
   chartId, activeTab, onTabChange,
   interpretations, tabLoadingState = {},
@@ -238,7 +47,7 @@ export default function TabNavigation({
     if ([2, 3, 8, 'vedic_report'].includes(activeTab)) {
       return 'report_analysis';
     }
-    return 'chart_description';
+    return 'basics';
   });
 
   React.useEffect(() => {
@@ -350,7 +159,7 @@ export default function TabNavigation({
             })}
           </nav>
           
-          {activeCategory === 'report_analysis' && (
+          {activeTab === 'vedic_report' && (
             <button
               onClick={handleDownloadReport}
               className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-on-primary border border-primary/20 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer self-start md:self-auto shrink-0"
@@ -362,7 +171,26 @@ export default function TabNavigation({
           )}
         </div>
       )}
+    </div>
+  );
+}
 
+export function TabContentCard({
+  chartId,
+  activeTab,
+  interpretations,
+  tabLoadingState = {},
+  chartData,
+  onGenerateMissingTabs
+}) {
+  const currentTab = [
+    ...CHART_DESCRIPTION_SUBTABS,
+    ...REPORT_ANALYSIS_SUBTABS,
+    { id: 'basics', label: 'Basics', icon: 'grid_view' }
+  ].find((t) => t.id === activeTab) || CHART_DESCRIPTION_SUBTABS[0];
+
+  return (
+    <>
       {/* ── Content Card (Dashboard Panel View) ── */}
       <div
         key={activeTab}
@@ -782,10 +610,27 @@ export default function TabNavigation({
 
       {/* ── Print-only Container ── */}
       <div className="hidden print:block space-y-8 p-4">
-        <div className="text-center space-y-2 mb-8">
-          <h1 className="text-2xl font-headline-md text-primary uppercase tracking-wider">Trikal Darshi</h1>
-          <h2 className="text-sm font-semibold text-outline uppercase tracking-widest">Cosmic Blueprint Analysis</h2>
-          <div className="h-px bg-outline-variant/35 my-4" />
+        <div className="border border-outline-variant/35 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-primary tracking-widest uppercase">✦ VEDIC COSMIC REPORT ✦</span>
+            <h3 className="font-headline-md text-primary text-lg md:text-xl font-bold uppercase tracking-wider">
+              Trikal Darshi Blueprint
+            </h3>
+            {chartData && (
+              <p className="text-xs text-outline mt-1 font-medium">
+                Name: <span className="text-on-surface font-semibold">{chartData.full_name}</span> · 
+                DOB: <span className="text-on-surface font-semibold">{chartData.date_of_birth}</span> · 
+                TOB: <span className="text-on-surface font-semibold">{chartData.time_of_birth?.slice(0, 5)}</span> · 
+                Place: <span className="text-on-surface font-semibold">{chartData.city_of_birth}</span>
+              </p>
+            )}
+          </div>
+          {chartData && (
+            <div className="flex flex-col items-start md:items-end text-xs text-outline font-medium">
+              <span>Ayanamsha: <span className="text-on-surface font-semibold">LAHIRI</span></span>
+              <span>Generated: <span className="text-on-surface font-semibold">{new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span></span>
+            </div>
+          )}
         </div>
 
         {[
@@ -799,7 +644,7 @@ export default function TabNavigation({
           { id: 10, label: 'Gochar Current Transits' },
           { id: 2, label: 'Lal Kitab Analysis' },
           { id: 3, label: 'Numerology Matrix' },
-          { id: 8, label: 'Remedies Tripath System' }
+          { id: 8, label: 'Remedies Tripath System', isRemedies: true }
         ].map((tab) => {
           const content = interpretations[tab.id];
           if (!content) return null;
@@ -809,12 +654,16 @@ export default function TabNavigation({
                 {tab.label}
               </h3>
               <div className="prose-interpretation text-xs leading-relaxed">
-                {formatInterpretationText(content)}
+                {tab.isRemedies ? (
+                  <RemedyCards remedyText={content} />
+                ) : (
+                  formatInterpretationText(content)
+                )}
               </div>
             </div>
           );
         })}
       </div>
-    </div>
+    </>
   );
 }

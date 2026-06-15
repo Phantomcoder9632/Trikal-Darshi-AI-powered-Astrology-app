@@ -146,6 +146,7 @@ export default function HomePage() {
   const [userCharts, setUserCharts] = useState([]);
   const [loadingCharts, setLoadingCharts] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [showBirthForm, setShowBirthForm] = useState(false);
 
   const handleAuthSuccess = async () => {
     try {
@@ -799,14 +800,41 @@ export default function HomePage() {
                           </div>
                         ))}
                       </div>
-                      <div className="lp-divider-row" style={{ margin: '24px 0' }}>
-                        <span className="lp-divider-line" />
-                        <span className="lp-divider-text">or create a new one</span>
-                        <span className="lp-divider-line" />
-                      </div>
+                      
+                      {!showBirthForm && (
+                        <div className="flex justify-center mt-6">
+                          <button
+                            type="button"
+                            onClick={() => setShowBirthForm(true)}
+                            className="blueprint-button shimmer-button max-w-xs w-full flex items-center justify-center gap-2"
+                          >
+                            <span className="material-symbols-outlined">add_circle</span>
+                            Add New Member
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
-                  {renderBirthForm()}
+                  
+                  {/* Render the birth form if we don't have saved charts, OR if showBirthForm is true */}
+                  {(userCharts.length === 0 || showBirthForm) && (
+                    <div className="mt-8 animate-fade-in">
+                      {userCharts.length > 0 && (
+                        <div className="flex justify-between items-center mb-6 border-b border-outline-variant/15 pb-3">
+                          <h3 className="text-xs uppercase font-bold tracking-widest text-primary">New Cosmic Member</h3>
+                          <button
+                            type="button"
+                            onClick={() => setShowBirthForm(false)}
+                            className="text-xs text-outline hover:text-primary flex items-center gap-1 font-semibold cursor-pointer bg-transparent border-none"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">cancel</span>
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                      {renderBirthForm()}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -6,6 +6,7 @@ import './styles/theme.css';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import { useAuth } from './context/AuthContext';
+import AskAI from './components/AskAI';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -24,6 +25,8 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
+  const { isAuthenticated } = useAuth();
+
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('app-theme') || 'theme-vedic-gold';
     document.body.className = savedTheme;
@@ -43,6 +46,7 @@ export default function App() {
           }
         />
       </Routes>
+      {isAuthenticated && <AskAI />}
     </Router>
   );
 }

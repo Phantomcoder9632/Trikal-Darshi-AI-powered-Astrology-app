@@ -1,4 +1,16 @@
 ================================================================================
+SUMMARY OF CHANGES - JUNE 18, 2026
+================================================================================
+
+1. Ask AI Chatbot Integration (Frontend)
+   - Created: [AskAI.jsx](file:///e:/TRIKAL/astrology-frontend/src/components/AskAI.jsx) React component, implementing a premium floating toggle button in the bottom-right corner with a slide-out right drawer panel for chatting with the AI.
+   - Attention-Grabber: Configured a 30-second interval trigger that flashes an "Ask your query! 🔮" tooltip above the floating button for 6 seconds, with a gentle breathing/pulsing animation to grab the user's attention.
+   - Mock Interactions: Built client-side chat thread interactions with message bubble formatting (bolding and bullet lists parsing), simulated typing states ("Channeling celestial matrices..."), and quick suggestion query buttons.
+   - Context-Aware Mocking: Programmed the mock responder to extract user name, birth city, date, and dasha details from `chartData` when active on the dashboard.
+   - Styles and Themes: Appended custom chatbot CSS styling rules in [index.css](file:///e:/TRIKAL/astrology-frontend/src/index.css), complete with custom keyframe transitions, slide drawer spacing, scrollbar tweaks, and color overrides that adapt automatically to Vedic Gold, Midnight Cosmic, Nebula Indigo, and Solar Flare themes.
+   - Conditionally Rendered: Integrated the chatbot component globally in [App.jsx](file:///e:/TRIKAL/astrology-frontend/src/App.jsx) wrapped inside a check for the user's authentication state (`{isAuthenticated && <AskAI />}`), preventing the toggle button from showing on the landing page for unauthenticated guests.
+
+================================================================================
 SUMMARY OF CHANGES - JUNE 15, 2026
 ================================================================================
 

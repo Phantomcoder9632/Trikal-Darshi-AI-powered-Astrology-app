@@ -148,6 +148,24 @@ Directory: astrology-backend/routes/
       Returns total_tabs (11), completed_tabs list, pending_tabs list, percent (0-100), 
       and a boolean is_complete.
 
+* chat.py  [Added June 19, 2026]
+  - Purpose: Powers the AskAI conversational chatbot with per-chart persistent history.
+  - Models:
+    - `ChatMessage`: Pydantic model for a single chat turn (sender, text).
+    - `ChatRequest`: Request body for POST /chat (message, chart_id, history, user_msg_id, ai_msg_id).
+  - Stage Constants:
+    - `STAGE_NO_CHART`: User has no chart on file yet.
+    - `STAGE_CHART_ONLY`: Chart exists but interpretations have not been generated.
+    - `STAGE_FULL`: All interpretations are stored and available for injection.
+  - Functions:
+    - `chat_endpoint(request)`: `POST /chat`. Fetches the chart row and all interpretation rows
+      for the given chart_id, determines the appropriate stage, builds the history list, and
+      streams the AI response. Once the stream completes, persists both the user message and
+      the full AI reply into the `chat_messages` table using the provided user_msg_id and
+      ai_msg_id for safe deduplication.
+    - `get_chat_history(chart_id)`: `GET /chat/history/{chart_id}`. Returns all stored chat
+      messages for a chart ordered by creation time, formatted as {id, sender, text, time}.
+
 =========================================
 Directory: astrology-backend/services/
 =========================================
@@ -318,6 +336,15 @@ Table 4: `api_usage`
     - `called_at` (TIMESTAMP)
     - `success` (BOOLEAN)
 
+Table 5: `chat_messages`  [Added June 19, 2026]
+  - Purpose: Stores persistent per-chart chatbot conversation history.
+  - Columns:
+    - `id` (TEXT, Primary Key) -- client-generated UUID string for deduplication
+    - `chart_id` (UUID, Foreign Key referencing charts.id ON DELETE CASCADE)
+    - `sender` (TEXT) -- 'user' or 'ai'
+    - `text` (TEXT)  -- the full message body
+    - `created_at` (TIMESTAMP DEFAULT NOW())
+
 --------------------------------------------------------------------------------
 5. FRONTEND DIRECTORY STRUCTURE AND COMPONENT BREAKDOWN
 --------------------------------------------------------------------------------
@@ -327,8 +354,14 @@ Table 4: `api_usage`
   - Functions:
     - `generateChart(payload)`: `POST /chart/generate`
     - `getChart(chartId)`: `GET /chart/{chartId}`
-    - `getInterpretation(chartId, tabNumber)`: `POST /interpret/{chartId}/{tabNumber}` (handles streaming response)
+    - `getInterpretation(chartId, tabNumber, language, onChunk)`: `POST /interpret/{chartId}/{tabNumber}` (handles streaming response)
     - `getGenerationProgress(chartId)`: `GET /progress/{chartId}`
+    - `getUserCharts()`: `GET /chart` — fetches all charts belonging to the current user
+    - `updateChart(chartId, formData)`: `PUT /chart/{chartId}` — updates birth details and recalculates chart
+    - `loginWithEmail(email, password)`: `POST /auth/login`
+    - `registerWithEmail(email, password, name)`: `POST /auth/register`
+    - `streamChatResponse(message, chartId, history, userMsgId, aiMsgId, onChunk)`: `POST /chat` — streams AI chat response, passes message IDs for DB persistence
+    - `getChatHistory(chartId)`: `GET /chat/history/{chartId}` — loads stored conversation messages for a chart from the database
 
 * src/pages/HomePage.jsx
   - Purpose: Landing page and birth profile submission form.
@@ -373,3 +406,18 @@ Table 4: `api_usage`
 
 * src/components/CosmicSummary.jsx
   - Purpose: Renders quick summary info (Lagna sign, Moon nakshatra, current Dasha).
+
+* src/components/AskAI.jsx  [Added June 18-19, 2026]
+  - Purpose: Floating AI chat assistant widget embedded globally in the authenticated app.
+  - Behavior:
+    - Renders as a floating button in the bottom-right corner of every authenticated page.
+    - Opens a premium slide-out drawer panel for conversational astrology queries.
+    - Detects the active chart from the URL path (`/dashboard/:chartId`) to provide chart-specific context.
+    - On opening, loads the persistent chat history from the backend (`GET /chat/history/{chartId}`).
+    - Sends user messages via `POST /chat` (streaming), passing unique user_msg_id and ai_msg_id
+      so the backend can persist both sides of the conversation to the `chat_messages` table.
+    - Displays a 30-second periodic attention-grabbing tooltip animation on the toggle button.
+    - Supports three user lifecycle stages: no chart, chart only, and full interpretations available.
+    - Guest users (no chart) use browser sessionStorage for temporary message persistence.
+    - Parses and renders markdown-style formatting (bold, bullets, numbered lists, headers).
+    - Includes four pre-built quick-prompt buttons for common queries.

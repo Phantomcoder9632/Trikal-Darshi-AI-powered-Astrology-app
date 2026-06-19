@@ -1,4 +1,35 @@
 ================================================================================
+SUMMARY OF CHANGES - JUNE 19, 2026
+================================================================================
+
+1. AskAI Chatbot — Persistent Database-Backed Chat History (Per-Chart Profile)
+   - Bug Root Cause: Chat history was previously stored only in browser sessionStorage,
+     which meant switching between chart profiles did not properly load or isolate
+     per-profile conversation history.
+   - New Table: Added `chat_messages` table to `db/schema.sql` with columns:
+     id (TEXT, client-generated), chart_id (UUID FK), sender (TEXT), text (TEXT), created_at (TIMESTAMP).
+   - Auto-Migration: Updated EXPECTED_SCHEMA in `db/database.py` so the `chat_messages`
+     table is automatically created/verified on backend startup without manual migration.
+   - New Backend Routes (routes/chat.py):
+     * `POST /chat`: Now accumulates the full streamed AI response into a buffer and, upon
+       completion, inserts both the user message and the AI reply into the `chat_messages`
+       table using client-supplied `user_msg_id` and `ai_msg_id` for deduplication.
+     * `GET /chat/history/{chart_id}`: New endpoint — returns all stored messages for a
+       given chart profile, ordered chronologically, formatted as {id, sender, text, time}.
+   - Frontend API (src/services/api.js):
+     * `streamChatResponse`: Updated signature to accept `userMsgId` and `aiMsgId` parameters
+       which are forwarded to the backend for DB persistence.
+     * `getChatHistory(chartId)`: New function — calls `GET /chat/history/{chartId}` to
+       retrieve the saved chat history for any given chart profile.
+   - Frontend Component (src/components/AskAI.jsx):
+     * Replaced sessionStorage-based history loading with an async call to `getChatHistory(chartId)`.
+     * When a chart profile is switched or the chatbot drawer is opened, the component now
+       fetches the correct, isolated history for the active chart from the database.
+     * Guest users (no chart) continue to use sessionStorage for temporary message persistence.
+     * Generates unique user_msg_id and ai_msg_id before each message send so the backend can
+       insert both sides of the conversation atomically.
+
+================================================================================
 SUMMARY OF CHANGES - JUNE 18, 2026
 ================================================================================
 

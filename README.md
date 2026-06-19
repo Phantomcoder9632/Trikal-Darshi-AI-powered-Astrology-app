@@ -86,6 +86,7 @@ Enter your exact birth details. Watch as the cosmos reveals itself — from your
 
 Here are the latest architectural and visual updates implemented for maximum reliability and Vedic consistency:
 
+* **Persistent AI Chatbot with Per-Profile History**: Integrated the AskAI floating chat assistant that stores each conversation turn (user + AI response) in a dedicated `chat_messages` PostgreSQL table. Switching between chart profiles automatically saves the current conversation and loads the correct history for the newly selected profile — fully isolated per chart.
 * **Database Schema Self-Healing & Automated Migration**: Added startup database schema verification (`db/database.py`) that checks tables, columns, constraints, and extensions (`uuid-ossp`) on startup, running automated schema creation and migrative alters to prevent database drift.
 * **Hugging Face Spaces Deployment Compatibility**: Integrated root GET `/` health-check endpoints and standardized on port `7860` as the default fallback port for deployment compatibility with Hugging Face Spaces.
 * **LangChain Integration & Modernized Dependency Upgrades**: Updated vector database and sentence embedding utilities to run `langchain_chroma` and `langchain_huggingface` directly, with robust fallbacks to `langchain_community`.
@@ -487,6 +488,9 @@ Trikal-Darshi-AI-powered-Astrology-app/
 │   ├── routes/
 │   │   ├── chart.py             # /chart/generate, /chart/{id}, /chart/gochar
 │   │   ├── interpret.py         # /interpret/{chart_id}/{tab_number}
+│   │   ├── chat.py              # /chat (streaming AI), /chat/history/{chart_id}
+│   │   ├── progress.py          # /progress/{chart_id} background gen status
+│   │   ├── auth.py              # /auth/register, /auth/login
 │   │   └── geocode.py           # City → coordinates
 │   │
 │   ├── services/
@@ -506,7 +510,8 @@ Trikal-Darshi-AI-powered-Astrology-app/
 │   │   └── vectorstore.py       # ChromaDB vector store manager
 │   │
 │   ├── db/
-│   │   └── schema.sql           # PostgreSQL schema (charts + interpretations)
+│   │   ├── database.py          # DualPool, self-healing schema init
+│   │   └── schema.sql           # PostgreSQL schema (users, charts, interpretations, chat_messages, api_usage)
 │   │
 │   ├── books/                   # Classical shastra PDFs for RAG
 │   └── ephe/                    # Swiss Ephemeris data files (.se1)
@@ -525,6 +530,7 @@ Trikal-Darshi-AI-powered-Astrology-app/
         │   └── DashboardPage.jsx # 11-tab dashboard with chart sidebar
         │
         ├── components/
+        │   ├── AskAI.jsx         # Floating AI chatbot with per-profile DB history
         │   ├── ChartSidebar.jsx  # Kundali chart + divisional chart toggler
         │   ├── DivisionalChart.jsx # SVG chart renderer + "best used for" badge
         │   ├── KundaliChart.jsx  # North Indian Kundali SVG renderer
@@ -536,7 +542,7 @@ Trikal-Darshi-AI-powered-Astrology-app/
         │   └── LoadingSpinner.jsx
         │
         └── services/
-            └── api.js            # Axios API client
+            └── api.js            # Axios API client + getChatHistory + streamChatResponse
 ```
 
 ---
@@ -643,9 +649,21 @@ CREATE TABLE interpretations (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     chart_id     UUID REFERENCES charts(id) ON DELETE CASCADE,
     tab_number   INTEGER NOT NULL,        -- 1-11
+    tab_name     TEXT NOT NULL,
     content      TEXT NOT NULL,           -- Full AI interpretation
-    created_at   TIMESTAMP DEFAULT NOW(),
-    UNIQUE(chart_id, tab_number)          -- One per chart per tab
+    model_used   TEXT NOT NULL,
+    language     TEXT NOT NULL DEFAULT 'english',
+    generated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(chart_id, tab_number, language)
+);
+
+-- Persistent AskAI chatbot conversation history (per chart profile)
+CREATE TABLE chat_messages (
+    id         TEXT PRIMARY KEY,          -- Client-generated UUID for deduplication
+    chart_id   UUID REFERENCES charts(id) ON DELETE CASCADE,
+    sender     TEXT NOT NULL,             -- 'user' or 'ai'
+    text       TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 ```
 

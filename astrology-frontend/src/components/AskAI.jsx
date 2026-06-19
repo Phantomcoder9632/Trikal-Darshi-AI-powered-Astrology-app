@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { getChart } from '../services/api';
+import { getChart, streamChatResponse, getChatHistory } from '../services/api';
 
 const QUICK_PROMPTS = [
-  { text: '✨ Tell me about my current Dasha period', tag: 'dasha' },
-  { text: '💼 How is my career path looking?', tag: 'career' },
-  { text: '❤️ What does my chart say about relationships?', tag: 'relationship' },
-  { text: '🌿 Recommend some personalized remedies', tag: 'remedies' }
+  { text: '🌟 Will I get a good job soon?', tag: 'career' },
+  { text: '❤️ When will I find my life partner?', tag: 'relationship' },
+  { text: '💰 How does my financial future look?', tag: 'money' },
+  { text: '🌿 What should I do to improve my life right now?', tag: 'remedies' }
 ];
 
 export default function AskAI() {
@@ -27,6 +27,7 @@ export default function AskAI() {
   // Fetch chart details if chartId changes, to customize responses
   useEffect(() => {
     if (chartId) {
+      setChartData(null); // Clear stale chart data immediately on ID change
       getChart(chartId)
         .then((data) => {
           setChartData(data);
@@ -66,28 +67,83 @@ export default function AskAI() {
   // Initialize greeting message when chat opens or chart changes
   useEffect(() => {
     if (isOpen) {
-      const seekerName = chartData?.full_name || 'Seeker';
-      const welcomeMsg = chartData
-        ? `Greetings, ${seekerName}. I am your Trikal AI Guide. I have aligned with your birth chart details (born in ${chartData.city_of_birth || 'your birth city'} on ${chartData.date_of_birth || 'your birth date'}). Ask me about your planets, career, relationships, current dashas, or Lal Kitab remedies!`
-        : `Greetings, Seeker. I am your Trikal AI Guide. Generate your Cosmic Blueprint or log in to ask details about your charts. For now, you can ask general questions about Vedic Astrology, Lal Kitab, or Numerology!`;
+      const initChat = async () => {
+        let welcomeMsg;
 
-      setMessages([
-        {
+        if (chartId) {
+          if (chartData && chartData.chart_id === chartId) {
+            const city = chartData.city_of_birth || 'your hometown';
+            const dob  = chartData.date_of_birth
+              ? new Date(chartData.date_of_birth).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+              : null;
+            const seekerName = chartData.full_name ? chartData.full_name.split(' ')[0] : null;
+
+            welcomeMsg = seekerName
+              ? `Hey ${seekerName}! 😊 I'm your Trikal AI Guide — think of me as that wise friend who's read your whole life story and is here to help you understand it.\n\nI can see you were born${dob ? ` on ${dob}` : ''} in ${city}. Ask me anything — career, love, money, family, or just what's coming up in your life. I'll explain everything in simple, everyday words — no confusing astrology jargon, I promise! 🌟`
+              : `Hey! 😊 I'm your Trikal AI Guide. I can see your birth chart is loaded up. Ask me anything about your life — career, love, money, what's coming up — and I'll explain it all in simple, easy-to-understand language. No confusing terms, just real talk! 🌟`;
+          } else {
+            welcomeMsg = `Hey! 😊 I'm loading your birth chart details... Give me just a moment! In the meantime, feel free to ask me any general question about astrology and I'll be happy to help.`;
+          }
+        } else {
+          welcomeMsg = `Hey there! 😊 Welcome to Trikal Darshi — I'm your AI Guide!\n\nI'm here to help you understand what the stars say about your life — your career, love life, finances, and more. And don't worry, I'll explain everything in simple everyday language, no complicated astrology words!\n\nTo get started, go ahead and enter your birth details (date, time, and city) so I can give you a personalized reading. Or feel free to ask me any general question right now! 🌟`;
+        }
+
+        const welcomeObj = {
           id: 'welcome',
           sender: 'ai',
           text: welcomeMsg,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        if (chartId) {
+          if (chartData && chartData.chart_id === chartId) {
+            const currentParamsKey = `askai-params-${chartId}`;
+            const savedParams = sessionStorage.getItem(currentParamsKey);
+            const currentParamsVal = `${chartData.full_name || ''}|${chartData.date_of_birth || ''}|${chartData.time_of_birth || ''}|${chartData.city_of_birth || ''}`;
+
+            if (savedParams && savedParams !== currentParamsVal) {
+              sessionStorage.removeItem(currentParamsKey);
+              sessionStorage.setItem(currentParamsKey, currentParamsVal);
+              setMessages([welcomeObj]);
+              return;
+            } else {
+              sessionStorage.setItem(currentParamsKey, currentParamsVal);
+            }
+          }
+
+          const history = await getChatHistory(chartId);
+          if (history && history.length > 0) {
+             setMessages([welcomeObj, ...history]);
+             return;
+          }
+        } else {
+          const saved = sessionStorage.getItem('askai-msgs-guest');
+          if (saved) {
+            setMessages(JSON.parse(saved));
+            return;
+          }
         }
-      ]);
+
+        setMessages([welcomeObj]);
+      };
+
+      initChat();
     }
-  }, [isOpen, chartData]);
+  }, [isOpen, chartData, chartId]);
+
+  // Save to sessionStorage only for guests
+  useEffect(() => {
+    if (messages.length > 0 && !chartId) {
+      sessionStorage.setItem(`askai-msgs-guest`, JSON.stringify(messages));
+    }
+  }, [messages, chartId]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = async (text) => {
     if (!text.trim()) return;
 
     // Add user message
@@ -97,59 +153,52 @@ export default function AskAI() {
       text: text,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
+    
+    // Prepare history for API (excluding the welcome message)
+    const history = messages
+      .filter(m => m.id !== 'welcome')
+      .map(m => ({ sender: m.sender, text: m.text }));
+
     setMessages((prev) => [...prev, userMsg]);
     setInputVal('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    const userMsgId = userMsg.id;
+    const aiMsgId = `ai-${Date.now()}`;
+    const aiMsg = {
+      id: aiMsgId,
+      sender: 'ai',
+      text: '',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    
+    // Add placeholder AI message
+    setMessages((prev) => [...prev, aiMsg]);
+
+    try {
+      await streamChatResponse(text, chartId, history, userMsgId, aiMsgId, (chunk) => {
+        setIsTyping(false);
+        setMessages((prev) => 
+          prev.map(msg => 
+            msg.id === aiMsgId 
+              ? { ...msg, text: msg.text + chunk }
+              : msg
+          )
+        );
+      });
+    } catch (err) {
       setIsTyping(false);
-      const aiResponseText = generateMockResponse(text, chartData);
-      const aiMsg = {
-        id: `ai-${Date.now()}`,
-        sender: 'ai',
-        text: aiResponseText,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages((prev) => [...prev, aiMsg]);
-    }, 1800);
+      setMessages((prev) => 
+        prev.map(msg => 
+          msg.id === aiMsgId 
+            ? { ...msg, text: msg.text || "⚠️ My cosmic connection was interrupted. Please try asking again." }
+            : msg
+        )
+      );
+    }
   };
 
-  const generateMockResponse = (text, data) => {
-    const cleanText = text.toLowerCase();
-    const seekerName = data?.full_name || 'Seeker';
-
-    if (cleanText.includes('dasha') || cleanText.includes('period') || cleanText.includes('mahadasha') || cleanText.includes('antardasha')) {
-      if (data?.dasha) {
-        return `✦ **Planetary Alignment Period** ✦\n\nSeeker ${seekerName}, your matrix shows you are currently traversing the **${data.dasha.mahadasha || 'N/A'} Mahadasha** and **${data.dasha.antardasha || 'N/A'} Antardasha**.\n\n* **Mahadasha Lord Influence:** This planet acts as your prime motivator and governor of life currents right now, steering your focus toward its house placement.\n* **Antardasha Alignment:** The sub-period lord acts as the executor of day-to-day events.\n\n*Cosmic Advice:* Focus on spiritual grounding to align with this energy.`;
-      }
-      return `✦ **Dasha Cycles** ✦\n\nYour dasha cycle dictates the planetary ruler of your current life era. Generate your birth chart blueprint so I can extract your exact Mahadasha and Antardasha details!`;
-    }
-
-    if (cleanText.includes('career') || cleanText.includes('job') || cleanText.includes('work') || cleanText.includes('profession') || cleanText.includes('d10')) {
-      const ascSign = data?.ascendant?.sign || 'your ascendant sign';
-      return `✦ **Professional Blueprint (D10 / Dashamsha)** ✦\n\nLooking into your vocational matrix:\n\n* **Primary Driver:** Your career is governed by the 10th house. With a ${ascSign} baseline, your professional drive is anchored in self-expression and discipline.\n* **Divisional D10 Alignment:** Your D10 Dashamsha indicates that your Saturn placement plays a critical role in structuring your professional growth.\n\n*Recommendation:* Avoid impulsive career shifts during retrograde transits. Cultivate patience and structure.`;
-    }
-
-    if (cleanText.includes('marriage') || cleanText.includes('spouse') || cleanText.includes('love') || cleanText.includes('relationship') || cleanText.includes('partner') || cleanText.includes('d9')) {
-      return `✦ **Relational Alignment (D9 / Navamsha)** ✦\n\nSeeker, relationships in your chart are governed by the 7th house and the D9 Navamsha chart:\n\n* **D9 Navamsha Focus:** The Navamsha represents the inner blueprint of your soul's partnerships and second half of life.\n* **Relational Lord:** Venus controls aesthetic harmony, while Jupiter brings wisdom and commitment.\n\n*Cosmic Advice:* Look to align with a partner who respects your spiritual and emotional independence. Check your D9 Venus positioning to identify compatibility indicators.`;
-    }
-
-    if (cleanText.includes('remedy') || cleanText.includes('remedies') || cleanText.includes('lal kitab') || cleanText.includes('mantra') || cleanText.includes('gemstone')) {
-      return `✦ **Remedy Tripath System** ✦\n\nTo balance the planetary afflictions in your chart, here are the recommendations:\n\n1. **Vedic Mantra:** Recite the Gayatri Mantra or Mahamrityunjaya Mantra daily to boost solar vitality and ward off negativity.\n2. **Lal Kitab Farmaan:** Serve and feed stray dogs (governed by Rahu/Ketu) or offer water to the Sun in a copper vessel in the morning.\n3. **Practical Action:** Keep a silver square piece in your wallet to stabilize lunar energies and emotional clarity.\n\n*Note:* Remedies work through consistent intent and vibration.`;
-    }
-
-    if (cleanText.includes('wealth') || cleanText.includes('money') || cleanText.includes('finance') || cleanText.includes('d2')) {
-      return `✦ **Financial Abundance & Assets** ✦\n\nYour wealth indicators are governed by the 2nd house (accumulated wealth) and 11th house (gains/income):\n\n* **2nd House Focus:** Controls your family wealth, speech, and resources.\n* **11th House Gains:** Controls how easily you monetize your efforts.\n\n*Cosmic Tip:* Strengthen your Mercury or Jupiter depending on their dignity in your chart to clear blocks in cash flow.`;
-    }
-
-    if (cleanText.includes('hello') || cleanText.includes('hi') || cleanText.includes('hey') || cleanText.includes('greetings')) {
-      return `Hello ${seekerName}! I am here to help you decipher your planetary alignments. What specific area of your life or chart shall we investigate?`;
-    }
-
-    // Default response
-    return `✦ **Trikal AI Insights** ✦\n\nThank you for sharing your query. In Vedic Astrology, every planet represents an aspect of consciousness:\n\n* **Ascendant (Lagna):** Represents your physical self and approach to life.\n* **Moon:** Governs your mental peace, emotions, and receptivity.\n* **Sun:** Controls your soul, authority, and health.\n\nAsk me more specifically about **career**, **relationships**, **remedies**, or **current dashas** for tailored interpretations.`;
-  };
+  // generateMockResponse is no longer used since we fetch real responses
 
   return (
     <div className="ask-ai-widget no-print">

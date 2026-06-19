@@ -69,6 +69,7 @@ from routes.interpret import router as interpret_router
 from routes.geocode import router as geocode_router
 from routes.progress import router as progress_router
 from routes.auth import router as auth_router
+from routes.chat import router as chat_router
 
 # ── API Router Registration ────────────────────────────────────────────────
 app.include_router(auth_router)
@@ -76,6 +77,7 @@ app.include_router(geocode_router)
 app.include_router(chart_router, prefix="/chart")
 app.include_router(interpret_router)
 app.include_router(progress_router)
+app.include_router(chat_router)
 
 
 

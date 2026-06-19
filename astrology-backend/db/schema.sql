@@ -40,6 +40,14 @@ CREATE TABLE IF NOT EXISTS interpretations (
   UNIQUE(chart_id, tab_number, language)
 );
 
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id TEXT PRIMARY KEY,
+  chart_id UUID REFERENCES charts(id) ON DELETE CASCADE,
+  sender TEXT NOT NULL,
+  text TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS api_usage (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   service TEXT NOT NULL,

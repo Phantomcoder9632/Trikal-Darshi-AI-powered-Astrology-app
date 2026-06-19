@@ -238,3 +238,75 @@ export async function registerWithEmail(email, password, name) {
   return response.data;
 }
 
+/**
+ * Stream real-time AI response for AskAI Chatbot.
+ * POST /chat
+ * @param {string} message - User query
+ * @param {string|null} chartId - Optional chart ID for personalized context
+ * @param {Array} history - Array of {sender, text} objects for conversation history
+ * @param {string} userMsgId - Unique ID for user message
+ * @param {string} aiMsgId - Unique ID for AI message
+ * @param {Function} onChunk - Callback for streaming chunks
+ */
+export async function streamChatResponse(message, chartId, history, userMsgId, aiMsgId, onChunk) {
+  try {
+    const token = localStorage.getItem('token');
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const payload = {
+      message,
+      chart_id: chartId || null,
+      history: history || [],
+      user_msg_id: userMsgId || null,
+      ai_msg_id: aiMsgId || null
+    };
+
+    const response = await fetch(`${BASE_URL}/chat`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let done = false;
+
+    while (!done) {
+      const { value, done: readerDone } = await reader.read();
+      done = readerDone;
+      if (value) {
+        const chunk = decoder.decode(value, { stream: !done });
+        if (onChunk) {
+          onChunk(chunk);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error streaming chat response:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Fetch chat history for a specific chart.
+ * GET /chat/history/{chartId}
+ * @param {string} chartId 
+ */
+export async function getChatHistory(chartId) {
+  try {
+    const response = await apiClient.get(`/chat/history/${chartId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching chat history:', error.response?.data || error.message);
+    return [];
+  }
+}

@@ -199,12 +199,18 @@ def _is_rate_limit(exc: Exception) -> bool:
 # Inner streaming helpers
 # ---------------------------------------------------------------------------
 
-def _stream_primary(messages: list) -> Any:
+def _stream_primary(messages: list, chat_mode: bool = False) -> Any:
     """
     Open a streaming chat completion directly on Gemini (AI Studio).
     """
     load_dotenv(override=True)
     api_key = os.getenv("GEMINI_API_KEY", PRIMARY_API_KEY)
+    if chat_mode:
+        chat_api_key = os.getenv("GEMINI_CHAT_API_KEY")
+        if chat_api_key and not chat_api_key.startswith("your_"):
+            api_key = chat_api_key
+            logger.info("[pipeline] Using dedicated GEMINI_CHAT_API_KEY")
+            
     model   = os.getenv("GEMINI_MODEL", PRIMARY_MODEL)
 
     if not api_key or api_key.startswith("your_"):
@@ -424,3 +430,191 @@ async def stream_with_rag(
     else:
         err_details = "; ".join(fallback_errs)
         yield f"\n\n⚠️ **AI Generation Failed** — All models are unavailable. Details: {err_details}"
+
+# ---------------------------------------------------------------------------
+# Chat Streaming Function
+# ---------------------------------------------------------------------------
+
+# Stage constants (must match routes/chat.py)
+_STAGE_NO_CHART   = "no_chart"
+_STAGE_CHART_ONLY = "chart_only"
+_STAGE_FULL       = "full"
+
+# ---------------------------------------------------------------------------
+# System prompt — warm, plain-language "caring friend" persona
+# ---------------------------------------------------------------------------
+_CHAT_SYSTEM_PROMPT = """\
+You are a warm, empathetic, and supportive life guide inside the Trikal Darshi astrology app.
+Your name is "Trikal AI Guide". Think of yourself as a caring, wise older friend — not a professor,
+not a formal astrologer, just someone who genuinely wants to help the user understand their life.
+
+YOUR LANGUAGE RULES (VERY IMPORTANT):
+1. ALWAYS use simple, everyday words that anyone can understand. Never use jargon without explaining it.
+2. If you MUST use an astrological term (like "Mahadasha", "Lagna", "Saturn"), explain it immediately
+   in plain words right after using it — like this: "Your Mahadasha (think of it as the big life chapter
+   you're currently in) is ruled by Jupiter, which means..."
+3. Talk about real-life things: career, love, family, money, health, stress, happiness — not planets
+   and houses in isolation.
+4. Be warm and encouraging. Even when sharing a difficult prediction, frame it with hope.
+5. Keep answers concise and conversational. No long walls of text. Use short paragraphs.
+6. End EVERY response with one simple, friendly tip or action the user can take right now.
+7. Never say "According to your chart, the 7th Lord Venus is in the 11th house conjunct Mercury."
+   Instead say "When it comes to love and finding a partner, your stars suggest you're most likely to
+   meet someone special through your social circle or friends — so staying connected and social is
+   really good for your love life!"
+
+TONE EXAMPLES:
+- Instead of: "Rahu in 10th causes delays due to karmic debt" → say: "Your career might feel like
+  it's moving slower than you'd like — like you're working twice as hard for the same results others
+  get easily. But here's the beautiful part: the stars say that struggle is building something
+  incredibly solid for you. You're on the scenic route to success, and the view at the top will
+  be worth it."
+- Instead of: "Moon debilitated in Scorpio" → say: "You might feel emotions quite deeply and
+  sometimes feel overwhelmed by your own feelings. That's not a weakness — it's what makes you
+  so empathetic and understanding towards others."
+
+IMPORTANT: You are NOT making up readings. You are explaining the official readings already
+generated for this user (provided below). Your job is to translate them into human language
+and help the user apply the insights to their real life.
+"""
+
+async def stream_chat_response(
+    message: str,
+    history: list,
+    chart_data: dict | None = None,
+    interpretations: list | None = None,
+    stage: str = _STAGE_NO_CHART
+) -> AsyncGenerator[str, None]:
+    """
+    Main Chat RAG + LLM streaming pipeline.
+    Handles three stages:
+      - no_chart:   new user, nothing in DB — general welcoming mode
+      - chart_only: chart submitted but no interpretations generated yet
+      - full:       pre-generated interpretations available — use them as primary context
+    """
+    load_dotenv(override=True)
+    interpretations = interpretations or []
+
+    # ── 1. Build the context block ──────────────────────────────────────────
+
+    context_parts = []
+
+    # Basic personal info header
+    if chart_data:
+        full_name = chart_data.get("full_name") or "Seeker"
+        dob       = chart_data.get("date_of_birth") or "Unknown"
+        city      = chart_data.get("city_of_birth") or "Unknown"
+        cur_city  = chart_data.get("current_city") or city
+        dasha     = chart_data.get("dasha") or {}
+        md        = dasha.get("mahadasha") or "Unknown"
+        ad        = dasha.get("antardasha") or "Unknown"
+        lagna     = (chart_data.get("ascendant") or {}).get("sign") or "Unknown"
+
+        context_parts.append(
+            f"USER'S BASIC INFO:\n"
+            f"  Name: {full_name}\n"
+            f"  Born: {dob} in {city}\n"
+            f"  Currently lives in: {cur_city}\n"
+            f"  Their Lagna (rising sign / overall personality sign): {lagna}\n"
+            f"  Current life chapter (Mahadasha): {md}\n"
+            f"  Current sub-chapter (Antardasha): {ad}"
+        )
+    else:
+        full_name = "Seeker"
+        lagna     = "Unknown"
+        md        = "Unknown"
+
+    # ── 2. Inject pre-generated interpretations (Stage FULL) ───────────────
+    if stage == _STAGE_FULL and interpretations:
+        interp_block = "OFFICIAL READINGS ALREADY GENERATED FOR THIS USER:\n"
+        interp_block += "(These are the full AI-generated readings. Use them as your primary source.)\n\n"
+        for interp in interpretations:
+            tab_name = interp.get("tab_name", f"Section {interp.get('tab_number', '?')}")
+            content  = interp.get("content", "").strip()
+            if content:
+                interp_block += f"[{tab_name.upper()}]\n{content}\n\n"
+        context_parts.append(interp_block.strip())
+        logger.info(f"[pipeline] Injected {len(interpretations)} interpretation(s) into chat prompt")
+
+    elif stage == _STAGE_CHART_ONLY and chart_data:
+        context_parts.append(
+            "NOTE: The user's detailed readings are still being generated. "
+            "You have access to their basic birth chart positions below, but NOT the full predictions yet. "
+            "Be helpful based on what you have, and let them know their detailed readings will be ready soon."
+        )
+
+    elif stage == _STAGE_NO_CHART:
+        context_parts.append(
+            "NOTE: This user has not submitted their birth details yet. "
+            "Be warm and welcoming. Guide them to enter their birth date, time, and city so you can "
+            "give them a personalized reading. Answer general astrology questions kindly in the meantime."
+        )
+
+    # ── 3. RAG — fetch relevant dos/don'ts and remedies from vector store ──
+    rag_context = ""
+    try:
+        from rag.retriever import _get_vs, format_rag_context
+        vs = _get_vs()
+        search_query = f"{lagna} lagna {md} mahadasha {message}"
+        docs = vs.similarity_search(search_query, k=3)
+        if docs:
+            rag_context = format_rag_context(docs)
+            logger.info(f"[pipeline] RAG returned {len(docs)} doc(s) for chat")
+    except Exception as e:
+        logger.warning(f"[pipeline] RAG for chat failed: {e}")
+
+    if rag_context:
+        context_parts.append(
+            f"RELEVANT ASTROLOGICAL KNOWLEDGE (dos, don'ts, remedies from our books):\n{rag_context}"
+        )
+
+    # ── 4. Assemble full system prompt ─────────────────────────────────────
+    system_prompt = _CHAT_SYSTEM_PROMPT.strip()
+
+    if context_parts:
+        system_prompt += "\n\n" + "\n\n".join(context_parts)
+
+    # ── 5. Build message list with conversation history ────────────────────
+    llm_messages = [{"role": "system", "content": system_prompt}]
+    for msg in history:
+        role = "user" if msg.get("sender") == "user" else "assistant"
+        llm_messages.append({"role": role, "content": msg.get("text", "")})
+    llm_messages.append({"role": "user", "content": message})
+
+    # ── 6. Try primary (dedicated chat key) then fallbacks ────────────────
+    try:
+        stream = _stream_primary(llm_messages, chat_mode=True)
+        yielded_any = False
+        for token in _yield_tokens(stream):
+            yielded_any = True
+            yield token
+        if yielded_any:
+            return
+    except Exception as primary_err:
+        if _is_rate_limit(primary_err):
+            logger.warning(f"[pipeline] PRIMARY chat rate-limited ({primary_err}). Switching to FALLBACK…")
+        else:
+            logger.error(f"[pipeline] PRIMARY chat stream failed: {primary_err}. Trying FALLBACK…")
+
+    env_model = os.getenv("OPENROUTER_MODEL")
+    fallback_models = []
+    if env_model and env_model.strip():
+        fallback_models.append(env_model.strip())
+    for default_m in FALLBACK_MODELS:
+        if default_m not in fallback_models:
+            fallback_models.append(default_m)
+
+    fallback_errs = []
+    for fb_model in fallback_models:
+        try:
+            stream = _stream_fallback(llm_messages, fb_model)
+            yielded_any = False
+            for token in _yield_tokens(stream):
+                yielded_any = True
+                yield token
+            if yielded_any:
+                return
+        except Exception as fallback_err:
+            fallback_errs.append(f"{fb_model}: {fallback_err}")
+
+    yield f"\n\n⚠️ **Chat Failed** — Models are unavailable: {'; '.join(fallback_errs)}"

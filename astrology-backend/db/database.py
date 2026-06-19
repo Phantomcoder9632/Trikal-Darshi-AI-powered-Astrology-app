@@ -229,6 +229,13 @@ async def initialize_schema(pool: DualPool) -> None:
             "language": "TEXT NOT NULL DEFAULT 'english'",
             "generated_at": "TIMESTAMP DEFAULT NOW()"
         },
+        "chat_messages": {
+            "id": "TEXT PRIMARY KEY",
+            "chart_id": "UUID REFERENCES charts(id) ON DELETE CASCADE",
+            "sender": "TEXT NOT NULL",
+            "text": "TEXT NOT NULL",
+            "created_at": "TIMESTAMP DEFAULT NOW()"
+        },
         "api_usage": {
             "id": "UUID PRIMARY KEY DEFAULT uuid_generate_v4()",
             "service": "TEXT NOT NULL",

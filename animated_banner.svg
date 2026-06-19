@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3072 924" width="100%">
+  <style>
+    @keyframes pulse {
+      0% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.008); filter: brightness(1.03); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+    .banner {
+      animation: pulse 8s ease-in-out infinite;
+      transform-origin: center;
+    }
+  </style>
+  <image href="./trikal_darshi_banner_with_footer.png" width="3072" height="924" class="banner" />
+</svg>

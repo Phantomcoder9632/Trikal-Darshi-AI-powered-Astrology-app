@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 749 567" width="100%">
+  <style>
+    @keyframes float {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-15px) rotate(1.5deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+    .logo {
+      animation: float 6s ease-in-out infinite;
+      transform-origin: center;
+    }
+  </style>
+  <image href="./Trikal_Darshi_logo.png" width="749" height="567" class="logo" />
+</svg>

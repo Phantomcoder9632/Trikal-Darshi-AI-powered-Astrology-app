@@ -1,7 +1,16 @@
 <div align="center">
 
+<!-- Animated Logo -->
+<a href="https://huggingface.co/spaces/BrocoAI/trikal-darshi-api" target="_blank">
+  <img src="./animated_logo.svg" width="160" alt="Trikal Darshi Logo" />
+</a>
+
+<br/>
+
 <!-- Animated Banner -->
-<img src="https://capsule-render.vercel.app/api?type=venom&color=0:0d0221,50:1a0533,100:2d1b69&height=300&section=header&text=TRIKAL%20DARSHI&fontSize=72&fontAlignY=45&fontColor=d4af37&stroke=c9952a&strokeWidth=2&animation=fadeIn&desc=ॐ%20%20AI-Powered%20Vedic%20Astrology%20%20ॐ&descSize=22&descAlignY=65&descColor=c9b4e8" width="100%" />
+<img src="./animated_banner.svg" width="100%" alt="Trikal Darshi Banner" />
+
+<br/>
 
 <!-- Typing animation -->
 <img src="https://readme-typing-svg.demolab.com?font=Cinzel+Decorative&weight=700&size=20&pause=1200&color=D4AF37&background=00000000&center=true&vCenter=true&multiline=false&repeat=true&width=700&height=50&lines=🔮+Your+Cosmic+Blueprint+Awaits...;🪐+10+Divisional+Charts+%7C+AI+Interpreted;⭐+Ancient+Vedic+%2B+Lal+Kitab+%2B+Numerology;🌌+See+Your+Past%2C+Present+%26+Future" alt="Typing Animation" />

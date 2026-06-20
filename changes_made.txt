@@ -1,4 +1,18 @@
 ================================================================================
+SUMMARY OF CHANGES - JUNE 20, 2026
+================================================================================
+
+1. Basics Tab Layout & Dual Chart Display (TabNavigation.jsx)
+   - Refactored the Basics tab content layout to show the Lagna & Chandra Kundali charts first at the very top.
+   - Displayed both Lagna (D1) and Chandra Kundali charts side-by-side inside a full-width container card to cover the remaining space on the left and right sides.
+   - Configured each chart with a maximum width of 460px to render them at a larger, more prominent scale.
+   - Positioned the 6 birth metrics cards underneath the charts in a clean, responsive grid layout (grid-cols-1 md:grid-cols-2 lg:grid-cols-3).
+
+2. Ask AI Chatbot Visibility (App.jsx, DashboardPage.jsx)
+   - Removed the global AskAI component import and rendering from App.jsx.
+   - Imported and rendered `<AskAI />` directly inside DashboardPage.jsx so the chatbot launcher floating action button only shows up after entering the dashboard window.
+
+================================================================================
 SUMMARY OF CHANGES - JUNE 19, 2026
 ================================================================================
 

@@ -10,6 +10,7 @@ import CosmicSummary from '../components/CosmicSummary';
 import TabNavigation, { TabContentCard } from '../components/TabNavigation';
 import RemedyCards from '../components/RemedyCards';
 import ProfileCard from '../components/ProfileCard';
+import AskAI from '../components/AskAI';
 
 // Helper: get 1-2 capital initials from a full name
 function getInitials(name) {
@@ -932,6 +933,8 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Ask AI Chatbot */}
+      <AskAI />
     </div>
   );
 }

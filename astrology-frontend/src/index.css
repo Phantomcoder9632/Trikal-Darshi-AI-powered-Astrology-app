@@ -2968,8 +2968,9 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  cursor: default;
+  cursor: pointer;
   user-select: none;
+  overflow: visible !important;
 }
 
 .header-avatar-initials {

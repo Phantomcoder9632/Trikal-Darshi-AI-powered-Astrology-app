@@ -1,6 +1,31 @@
 import React from 'react';
 import RemedyCards from './RemedyCards';
 import { formatInterpretationText, parseInlineMarkdown } from './formatters';
+import DivisionalChart from './DivisionalChart';
+
+function BasicsChartCard({ chartData }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-[1000px] justify-items-center mx-auto">
+      {/* Lagna (D1) Chart */}
+      <div className="w-full max-w-[460px] flex flex-col items-center">
+        <DivisionalChart
+          chartType="D1"
+          chartData={null}
+          natalData={chartData}
+        />
+      </div>
+      
+      {/* Chandra Chart */}
+      <div className="w-full max-w-[460px] flex flex-col items-center">
+        <DivisionalChart
+          chartType="chandra"
+          chartData={chartData?.chandra_kundali}
+          natalData={chartData}
+        />
+      </div>
+    </div>
+  );
+}
 
 const TABS = [
   { id: 1,  label: 'Lagna & Soul Blueprint',        icon: 'wb_sunny'      },
@@ -229,211 +254,225 @@ export function TabContentCard({
         <div className="prose-interpretation min-h-[200px]">
           {activeTab === 'basics' ? (
             chartData ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Card 1: Birth Identity */}
-                <div className="bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm space-y-4">
-                  <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3">
+              <div className="flex flex-col gap-6">
+                {/* Top Section: Large Kundali Chart */}
+                <div className="w-full bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm flex flex-col gap-4 items-center">
+                  <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3 w-full">
                     <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[20px]">badge</span>
+                      <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
                     </div>
-                    <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider">Birth Identity</h5>
+                    <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider flex-1">Lagna & Chandra Kundali</h5>
                   </div>
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Full Name</span>
-                      <span className="text-on-surface font-semibold">{chartData.full_name || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Date of Birth</span>
-                      <span className="text-on-surface font-semibold">{chartData.date_of_birth || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Time of Birth</span>
-                      <span className="text-on-surface font-semibold">{chartData.time_of_birth ? chartData.time_of_birth.slice(0, 5) : 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Place of Birth</span>
-                      <span className="text-on-surface font-semibold">{chartData.city_of_birth || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Current City</span>
-                      <span className="text-on-surface font-semibold">{chartData.current_city || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Time Confidence</span>
-                      <span className="text-on-surface font-semibold capitalize">{chartData.birth_time_confidence || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Ayanamsha</span>
-                      <span className="text-on-surface font-semibold">LAHIRI</span>
-                    </div>
-                  </div>
+                  <BasicsChartCard chartData={chartData} />
                 </div>
 
-                {/* Card 2: Lagna & Moon */}
-                <div className="bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm space-y-4">
-                  <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3">
-                    <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[20px]">brightness_3</span>
+                {/* Bottom Section: 6 Birth Metrics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Card 1: Birth Identity */}
+                  <div className="bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[20px]">badge</span>
+                      </div>
+                      <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider">Birth Identity</h5>
                     </div>
-                    <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider">Lagna & Moon</h5>
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Full Name</span>
+                        <span className="text-on-surface font-semibold">{chartData.full_name || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Date of Birth</span>
+                        <span className="text-on-surface font-semibold">{chartData.date_of_birth || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Time of Birth</span>
+                        <span className="text-on-surface font-semibold">{chartData.time_of_birth ? chartData.time_of_birth.slice(0, 5) : 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Place of Birth</span>
+                        <span className="text-on-surface font-semibold">{chartData.city_of_birth || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Current City</span>
+                        <span className="text-on-surface font-semibold">{chartData.current_city || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Time Confidence</span>
+                        <span className="text-on-surface font-semibold capitalize">{chartData.birth_time_confidence || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Ayanamsha</span>
+                        <span className="text-on-surface font-semibold">LAHIRI</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Lagna (Ascendant)</span>
-                      <span className="text-on-surface font-semibold">
-                        {chartData.ascendant?.sign || 'N/A'} ({chartData.ascendant?.degree ? `${Number(chartData.ascendant.degree).toFixed(2)}°` : 'N/A'})
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Lagna Nakshatra</span>
-                      <span className="text-on-surface font-semibold">{chartData.ascendant?.nakshatra || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Moon Sign (Rashi)</span>
-                      <span className="text-on-surface font-semibold">
-                        {chartData.planets?.find(p => p.name === 'Moon')?.sign || chartData.nakshatra?.sign || 'N/A'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Moon Nakshatra</span>
-                      <span className="text-on-surface font-semibold">{chartData.nakshatra?.nakshatra || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Nakshatra Pada</span>
-                      <span className="text-on-surface font-semibold">
-                        {chartData.nakshatra?.nakshatra_pada || chartData.nakshatra?.nakshatra_pad || 'N/A'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Nakshatra Lord</span>
-                      <span className="text-on-surface font-semibold">
-                        {chartData.nakshatra?.nakshatra_lord || chartData.nakshatra?.nakshatraLord || 'N/A'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Card 3: Vedic Panchang */}
-                <div className="bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm space-y-4">
-                  <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3">
-                    <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[20px]">calendar_today</span>
+                  {/* Card 2: Lagna & Moon */}
+                  <div className="bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[20px]">brightness_3</span>
+                      </div>
+                      <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider">Lagna & Moon</h5>
                     </div>
-                    <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider">Vedic Panchang</h5>
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Lagna (Ascendant)</span>
+                        <span className="text-on-surface font-semibold">
+                          {chartData.ascendant?.sign || 'N/A'} ({chartData.ascendant?.degree ? `${Number(chartData.ascendant.degree).toFixed(2)}°` : 'N/A'})
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Lagna Nakshatra</span>
+                        <span className="text-on-surface font-semibold">{chartData.ascendant?.nakshatra || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Moon Sign (Rashi)</span>
+                        <span className="text-on-surface font-semibold">
+                          {chartData.planets?.find(p => p.name === 'Moon')?.sign || chartData.nakshatra?.sign || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Moon Nakshatra</span>
+                        <span className="text-on-surface font-semibold">{chartData.nakshatra?.nakshatra || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Nakshatra Pada</span>
+                        <span className="text-on-surface font-semibold">
+                          {chartData.nakshatra?.nakshatra_pada || chartData.nakshatra?.nakshatra_pad || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Nakshatra Lord</span>
+                        <span className="text-on-surface font-semibold">
+                          {chartData.nakshatra?.nakshatra_lord || chartData.nakshatra?.nakshatraLord || 'N/A'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Tithi (Lunar Day)</span>
-                      <span className="text-on-surface font-semibold">{chartData.astro_details?.tithi || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Karana (Half Tithi)</span>
-                      <span className="text-on-surface font-semibold">{chartData.astro_details?.karan || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Yoga (Sun/Moon angle)</span>
-                      <span className="text-on-surface font-semibold">{chartData.astro_details?.yog || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Nakshatra (Moon Mansion)</span>
-                      <span className="text-on-surface font-semibold">{chartData.astro_details?.nakshatra || chartData.nakshatra?.nakshatra || 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Card 4: Avakhada Chakra */}
-                <div className="bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm space-y-4">
-                  <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3">
-                    <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[20px]">grain</span>
+                  {/* Card 3: Vedic Panchang */}
+                  <div className="bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[20px]">calendar_today</span>
+                      </div>
+                      <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider">Vedic Panchang</h5>
                     </div>
-                    <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider">Avakhada Chakra</h5>
-                  </div>
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Varna (Temperament)</span>
-                      <span className="text-on-surface font-semibold">{chartData.astro_details?.varna || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Vashya (Dominance)</span>
-                      <span className="text-on-surface font-semibold">{chartData.astro_details?.vashya || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Yoni (Animal Symbol)</span>
-                      <span className="text-on-surface font-semibold">{chartData.astro_details?.yoni || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Gana (Disposition)</span>
-                      <span className="text-on-surface font-semibold">{chartData.astro_details?.gan || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Nadi (Health Type)</span>
-                      <span className="text-on-surface font-semibold">{chartData.astro_details?.nadi || 'N/A'}</span>
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Tithi (Lunar Day)</span>
+                        <span className="text-on-surface font-semibold">{chartData.astro_details?.tithi || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Karana (Half Tithi)</span>
+                        <span className="text-on-surface font-semibold">{chartData.astro_details?.karan || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Yoga (Sun/Moon angle)</span>
+                        <span className="text-on-surface font-semibold">{chartData.astro_details?.yog || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Nakshatra (Moon Mansion)</span>
+                        <span className="text-on-surface font-semibold">{chartData.astro_details?.nakshatra || chartData.nakshatra?.nakshatra || 'N/A'}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Card 5: Current Dasha */}
-                <div className="bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm space-y-4">
-                  <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3">
-                    <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[20px]">hourglass_empty</span>
+                  {/* Card 4: Avakhada Chakra */}
+                  <div className="bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[20px]">grain</span>
+                      </div>
+                      <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider">Avakhada Chakra</h5>
                     </div>
-                    <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider">Current Dasha</h5>
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Varna (Temperament)</span>
+                        <span className="text-on-surface font-semibold">{chartData.astro_details?.varna || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Vashya (Dominance)</span>
+                        <span className="text-on-surface font-semibold">{chartData.astro_details?.vashya || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Yoni (Animal Symbol)</span>
+                        <span className="text-on-surface font-semibold">{chartData.astro_details?.yoni || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Gana (Disposition)</span>
+                        <span className="text-on-surface font-semibold">{chartData.astro_details?.gan || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Nadi (Health Type)</span>
+                        <span className="text-on-surface font-semibold">{chartData.astro_details?.nadi || 'N/A'}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Mahadasha Lord</span>
-                      <span className="text-on-surface font-semibold text-primary">{chartData.dasha?.mahadasha || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Antardasha Lord</span>
-                      <span className="text-on-surface font-semibold text-primary">{chartData.dasha?.antardasha || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Dasha Start Date</span>
-                      <span className="text-on-surface font-semibold">{chartData.dasha?.mahadasha_start || chartData.dasha?.start_date || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-outline font-medium">Dasha End Date</span>
-                      <span className="text-on-surface font-semibold">{chartData.dasha?.mahadasha_end || chartData.dasha?.end_date || 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Card 6: Dosha Summary */}
-                <div className="bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm space-y-4">
-                  <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3">
-                    <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[20px]">warning</span>
+                  {/* Card 5: Current Dasha */}
+                  <div className="bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[20px]">hourglass_empty</span>
+                      </div>
+                      <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider">Current Dasha</h5>
                     </div>
-                    <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider">Dosha Summary</h5>
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Mahadasha Lord</span>
+                        <span className="text-on-surface font-semibold text-primary">{chartData.dasha?.mahadasha || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Antardasha Lord</span>
+                        <span className="text-on-surface font-semibold text-primary">{chartData.dasha?.antardasha || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Dasha Start Date</span>
+                        <span className="text-on-surface font-semibold">{chartData.dasha?.mahadasha_start || chartData.dasha?.start_date || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-outline font-medium">Dasha End Date</span>
+                        <span className="text-on-surface font-semibold">{chartData.dasha?.mahadasha_end || chartData.dasha?.end_date || 'N/A'}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-outline font-medium">Kalsarp Dosha</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${chartData.kalsarp?.present ? 'bg-error/10 text-error border border-error/25' : 'bg-green-500/10 text-green-600 border border-green-500/25'}`}>
-                        {chartData.kalsarp?.present ? 'Active' : 'Absent'}
-                      </span>
+
+                  {/* Card 6: Dosha Summary */}
+                  <div className="bg-surface-container-low border border-outline-variant/35 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center gap-3 border-b border-outline-variant/15 pb-3">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[20px]">warning</span>
+                      </div>
+                      <h5 className="font-headline-md text-primary text-xs font-bold uppercase tracking-wider">Dosha Summary</h5>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-outline font-medium">Mangal Dosha</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${chartData.mangal_dosha?.present ? 'bg-error/10 text-error border border-error/25' : 'bg-green-500/10 text-green-600 border border-green-500/25'}`}>
-                        {chartData.mangal_dosha?.present ? 'Active' : 'Absent'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-outline font-medium">Pitru Dosha</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${chartData.pitru_dosha?.present ? 'bg-error/10 text-error border border-error/25' : 'bg-green-500/10 text-green-600 border border-green-500/25'}`}>
-                        {chartData.pitru_dosha?.present ? 'Active' : 'Absent'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-outline font-medium">Gand Mool</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${chartData.nakshatra?.gand_mool?.present ? 'bg-error/10 text-error border border-error/25' : 'bg-green-500/10 text-green-600 border border-green-500/25'}`}>
-                        {chartData.nakshatra?.gand_mool?.present ? 'Active' : 'Absent'}
-                      </span>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-outline font-medium">Kalsarp Dosha</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${chartData.kalsarp?.present ? 'bg-error/10 text-error border border-error/25' : 'bg-green-500/10 text-green-600 border border-green-500/25'}`}>
+                          {chartData.kalsarp?.present ? 'Active' : 'Absent'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-outline font-medium">Mangal Dosha</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${chartData.mangal_dosha?.present ? 'bg-error/10 text-error border border-error/25' : 'bg-green-500/10 text-green-600 border border-green-500/25'}`}>
+                          {chartData.mangal_dosha?.present ? 'Active' : 'Absent'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-outline font-medium">Pitru Dosha</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${chartData.pitru_dosha?.present ? 'bg-error/10 text-error border border-error/25' : 'bg-green-500/10 text-green-600 border border-green-500/25'}`}>
+                          {chartData.pitru_dosha?.present ? 'Active' : 'Absent'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-outline font-medium">Gand Mool</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${chartData.nakshatra?.gand_mool?.present ? 'bg-error/10 text-error border border-error/25' : 'bg-green-500/10 text-green-600 border border-green-500/25'}`}>
+                          {chartData.nakshatra?.gand_mool?.present ? 'Active' : 'Absent'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

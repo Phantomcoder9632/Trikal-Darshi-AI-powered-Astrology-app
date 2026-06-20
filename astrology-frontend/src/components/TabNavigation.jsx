@@ -3,23 +3,77 @@ import RemedyCards from './RemedyCards';
 import { formatInterpretationText, parseInlineMarkdown } from './formatters';
 import DivisionalChart from './DivisionalChart';
 
+const CHART_TYPES = [
+  { id: 'D1', label: 'D1 — Lagna (Rashi)', key: null },
+  { id: 'D9', label: 'D9 — Navamsha', key: 'navamsha' },
+  { id: 'D10', label: 'D10 — Dashamsha', key: 'dashamsha' },
+  { id: 'D4', label: 'D4 — Chaturthamsa', key: 'chaturthamsa' },
+  { id: 'D7', label: 'D7 — Saptamsha', key: 'saptamsha' },
+  { id: 'D30', label: 'D30 — Trimsamsa', key: 'trimsamsa' },
+  { id: 'chandra', label: 'Chandra Kundali', key: 'chandra_kundali' },
+  { id: 'surya', label: 'Surya Kundali', key: 'surya_kundali' },
+  { id: 'gochar', label: 'Gochar (Transits)', key: 'gochar' }
+];
+
 function BasicsChartCard({ chartData }) {
+  const [leftChart, setLeftChart] = React.useState('D1');
+  const [rightChart, setRightChart] = React.useState('chandra');
+
+  const getResolvedData = (chartId) => {
+    const config = CHART_TYPES.find(c => c.id === chartId);
+    return config?.key ? chartData?.[config.key] : null;
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-[1000px] justify-items-center mx-auto">
-      {/* Lagna (D1) Chart */}
-      <div className="w-full max-w-[460px] flex flex-col items-center">
+      {/* Left Slot: Customizable Chart */}
+      <div className="w-full max-w-[460px] flex flex-col items-center gap-4">
+        <div className="relative w-full max-w-[280px]">
+          <select
+            value={leftChart}
+            onChange={(e) => setLeftChart(e.target.value)}
+            className="w-full appearance-none bg-surface-container-lowest border border-outline-variant/35 hover:border-primary/50 text-on-surface hover:text-primary rounded-xl pl-4 pr-10 py-2.5 text-xs font-bold uppercase tracking-wider focus:outline-none focus:border-primary transition-all shadow-xs cursor-pointer"
+          >
+            {CHART_TYPES.map(c => (
+              <option key={c.id} value={c.id} className="bg-surface text-on-surface py-2">
+                {c.label}
+              </option>
+            ))}
+          </select>
+          <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-primary pointer-events-none text-[16px] font-bold">
+            unfold_more
+          </span>
+        </div>
+
         <DivisionalChart
-          chartType="D1"
-          chartData={null}
+          chartType={leftChart}
+          chartData={getResolvedData(leftChart)}
           natalData={chartData}
         />
       </div>
-      
-      {/* Chandra Chart */}
-      <div className="w-full max-w-[460px] flex flex-col items-center">
+
+      {/* Right Slot: Customizable Chart */}
+      <div className="w-full max-w-[460px] flex flex-col items-center gap-4">
+        <div className="relative w-full max-w-[280px]">
+          <select
+            value={rightChart}
+            onChange={(e) => setRightChart(e.target.value)}
+            className="w-full appearance-none bg-surface-container-lowest border border-outline-variant/35 hover:border-primary/50 text-on-surface hover:text-primary rounded-xl pl-4 pr-10 py-2.5 text-xs font-bold uppercase tracking-wider focus:outline-none focus:border-primary transition-all shadow-xs cursor-pointer"
+          >
+            {CHART_TYPES.map(c => (
+              <option key={c.id} value={c.id} className="bg-surface text-on-surface py-2">
+                {c.label}
+              </option>
+            ))}
+          </select>
+          <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-primary pointer-events-none text-[16px] font-bold">
+            unfold_more
+          </span>
+        </div>
+
         <DivisionalChart
-          chartType="chandra"
-          chartData={chartData?.chandra_kundali}
+          chartType={rightChart}
+          chartData={getResolvedData(rightChart)}
           natalData={chartData}
         />
       </div>

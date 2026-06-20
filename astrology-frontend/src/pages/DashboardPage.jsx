@@ -5,11 +5,9 @@ import { useAuth } from '../context/AuthContext';
 
 // Child Components
 import ChartSidebar, { TAB_CHART_CONFIG } from '../components/ChartSidebar';
-import PlanetTable from '../components/PlanetTable';
 import CosmicSummary from '../components/CosmicSummary';
 import TabNavigation, { TabContentCard } from '../components/TabNavigation';
 import RemedyCards from '../components/RemedyCards';
-import ProfileCard from '../components/ProfileCard';
 import AskAI from '../components/AskAI';
 
 // Helper: get 1-2 capital initials from a full name
@@ -472,9 +470,6 @@ export default function DashboardPage() {
                 : 'sidebar-hidden'
             }`}
           >
-            {/* Profile / Name card */}
-            <ProfileCard chartData={chartData} onEdit={handleOpenEdit} />
-
             {/* Chart viewer */}
             <ChartSidebar
               activeTab={activeTab}
@@ -482,11 +477,6 @@ export default function DashboardPage() {
               activeChartIdx={activeChartIdx}
               setActiveChartIdx={setActiveChartIdx}
             />
-
-            {/* Planet positions table */}
-            <div className="dashboard-card overflow-hidden animate-up delay-3" style={{ padding: 0 }}>
-              <PlanetTable planets={tablePlanets} />
-            </div>
           </aside>
 
           {/* ── Right content ────────────────────────────────────────────── */}

@@ -521,9 +521,7 @@ export default function HomePage() {
         <div className="lp-navbar-inner">
           <div className="lp-navbar-logo">
             <div className="lp-navbar-emblem">
-              <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#c9952a', fontVariationSettings: "'FILL' 1" }}>
-                wb_sunny
-              </span>
+              <img src="/Trikal_Darshi_logo.png" alt="Trikal Darshi Logo" className="lp-navbar-logo-img" />
             </div>
             <span className="lp-navbar-brand">Trikal Darshi</span>
           </div>
@@ -685,6 +683,13 @@ export default function HomePage() {
           <div className="lp-scroll-mouse">
             <span className="lp-scroll-dot" />
           </div>
+        </div>
+      </section>
+
+      {/* ── Cosmic Project Banner ── */}
+      <section className="cosmic-banner-section px-4">
+        <div className="cosmic-banner-container animate-up">
+          <img src="/trikal_darshi_banner_with_footer.png" alt="Trikal Darshi Banner" className="cosmic-banner-img" />
         </div>
       </section>
 
@@ -892,7 +897,7 @@ export default function HomePage() {
             {/* Brand */}
             <div className="lp-footer-brand">
               <div className="lp-footer-emblem">
-                <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#c9952a', fontVariationSettings: "'FILL' 1" }}>wb_sunny</span>
+                <img src="/Trikal_Darshi_logo.png" alt="Trikal Darshi Logo" className="lp-navbar-logo-img" />
               </div>
               <span className="lp-footer-name">Trikal Darshi</span>
             </div>

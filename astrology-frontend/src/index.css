@@ -4363,4 +4363,89 @@ body.theme-solar .ask-ai-input {
 }
 
 
+/* Trikal Darshi Logo & Banner Animations */
+.lp-navbar-logo-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  animation: cosmic-rotate 20s linear infinite;
+  display: block;
+}
 
+.dashboard-logo-img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  animation: cosmic-pulse 4s ease-in-out infinite;
+  display: block;
+}
+
+@keyframes cosmic-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes cosmic-pulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(201, 149, 42, 0.4)); }
+  50% { transform: scale(1.12); filter: drop-shadow(0 0 8px rgba(201, 149, 42, 0.8)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(201, 149, 42, 0.4)); }
+}
+
+.lp-navbar-logo:hover .lp-navbar-logo-img {
+  animation: cosmic-spin-fast 0.8s ease-out;
+}
+
+@keyframes cosmic-spin-fast {
+  0% { transform: scale(1) rotate(0deg); }
+  100% { transform: scale(1.2) rotate(360deg); }
+}
+
+/* Floating Banner in Wisdom/Welcome Section */
+.cosmic-banner-section {
+  width: 100%;
+  padding: 40px 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(180deg, transparent, rgba(201, 149, 42, 0.03), transparent);
+}
+
+.cosmic-banner-container {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6), inset 0 0 1px 1px rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(201, 149, 42, 0.15);
+  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.cosmic-banner-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(201, 149, 42, 0.1) 0%, transparent 50%, rgba(137, 0, 255, 0.05) 100%);
+  pointer-events: none;
+  mix-blend-mode: color-dodge;
+  opacity: 0.8;
+  transition: opacity 0.5s ease;
+}
+
+.cosmic-banner-container:hover {
+  border-color: rgba(201, 149, 42, 0.4);
+  box-shadow: 0 20px 55px rgba(201, 149, 42, 0.15), 0 15px 45px rgba(0, 0, 0, 0.6);
+  transform: translateY(-2px);
+}
+
+.cosmic-banner-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 8s cubic-bezier(0.25, 0.8, 0.25, 1), filter 2s ease;
+}
+
+.cosmic-banner-container:hover .cosmic-banner-img {
+  transform: scale(1.025);
+  filter: brightness(1.05) contrast(1.02);
+}

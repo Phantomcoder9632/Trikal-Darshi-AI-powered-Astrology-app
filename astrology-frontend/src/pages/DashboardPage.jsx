@@ -339,10 +339,15 @@ export default function DashboardPage() {
           <button
             id="logoHomeBtn"
             onClick={() => navigate('/')}
-            className="font-wordmark text-[18px] sm:text-[20px] tracking-[0.15em] text-primary hover:opacity-80 transition-opacity cursor-pointer bg-transparent border-none p-0"
+            className="flex items-center gap-2 bg-transparent border-none p-0 cursor-pointer hover:opacity-90 transition-opacity"
             aria-label="Go to home page"
           >
-            TRIKAL DARSHI
+            <div className="lp-navbar-emblem flex items-center justify-center" style={{ width: 28, height: 28, borderRadius: 6, background: 'rgba(201, 149, 42, 0.12)', border: '1px solid rgba(201, 149, 42, 0.3)' }}>
+              <img src="/Trikal_Darshi_logo.png" alt="" className="dashboard-logo-img" />
+            </div>
+            <span className="font-wordmark text-[18px] sm:text-[20px] tracking-[0.15em] text-primary">
+              TRIKAL DARSHI
+            </span>
           </button>
 
           {/* Right side */}

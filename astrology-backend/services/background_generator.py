@@ -76,6 +76,7 @@ async def _generate_single_tab(
     chart_data: dict,
     full_name: str,
     tab_number: int,
+    language: str = "english",
 ) -> bool:
     """
     Generate the interpretation for a single tab, save to DB + Redis.
@@ -96,14 +97,15 @@ async def _generate_single_tab(
             async with pool.acquire() as check_conn:
                 existing_record = await check_conn.fetchval(
                     "SELECT 1 FROM interpretations "
-                    "WHERE chart_id = $1 AND tab_number = $2 AND language = 'english' AND LENGTH(TRIM(content)) >= $3",
+                    "WHERE chart_id = $1 AND tab_number = $2 AND language = $3 AND LENGTH(TRIM(content)) >= $4",
                     chart_id,
                     tab_number,
+                    language,
                     _MIN_CONTENT_LENGTH,
                 )
                 if existing_record:
                     logger.info(
-                        f"[bg_gen] Tab {tab_number} (English) already in DB for chart "
+                        f"[bg_gen] Tab {tab_number} ({language}) already in DB for chart "
                         f"{chart_id_str} — skipping."
                     )
                     return True
@@ -123,12 +125,14 @@ async def _generate_single_tab(
 
         # ── c. Run RAG + LLM — in a thread so we never block the event loop ──
         accumulated_text = ""
+        model_used = "background/gemini-2.5-flash"
         try:
-            accumulated_text = await asyncio.to_thread(
+            accumulated_text, model_used = await asyncio.to_thread(
                 _sync_collect_tab_text,
                 tab_number,
                 tab_prompt,
                 chart_data,
+                language,
             )
         except Exception as stream_err:
             logger.error(
@@ -165,6 +169,7 @@ async def _generate_single_tab(
                     ON CONFLICT (chart_id, tab_number, language)
                     DO UPDATE SET
                         content      = EXCLUDED.content,
+                        model_used   = EXCLUDED.model_used,
                         generated_at = NOW()
                     """,
                     new_id,
@@ -172,8 +177,8 @@ async def _generate_single_tab(
                     tab_number,
                     tab_name,
                     accumulated_text,
-                    "background/gemini-2.5-flash",
-                    "english"
+                    model_used,
+                    language
                 )
             logger.info(
                 f"[bg_gen] Tab {tab_number} saved to PostgreSQL "
@@ -187,9 +192,9 @@ async def _generate_single_tab(
 
         # ── f. Cache in Redis ────────────────────────────────────────────────
         try:
-            await cache_interpretation(chart_id_str, tab_number, accumulated_text)
+            await cache_interpretation(chart_id_str, tab_number, accumulated_text, language=language)
             logger.info(
-                f"[bg_gen] Tab {tab_number} cached in Redis for chart {chart_id_str}"
+                f"[bg_gen] Tab {tab_number} cached in Redis for chart {chart_id_str} (lang: {language})"
             )
         except Exception as cache_err:
             logger.warning(
@@ -197,12 +202,12 @@ async def _generate_single_tab(
             )
 
         logger.info(
-            f"[bg_gen] ✓ Tab {tab_number} ({tab_name}) complete for chart {chart_id_str}"
+            f"[bg_gen] ✓ Tab {tab_number} ({tab_name}) [{language}] complete for chart {chart_id_str}"
         )
         return True
 
 
-def _sync_collect_tab_text(tab_number: int, tab_prompt: str, chart_data: dict = None) -> str:
+def _sync_collect_tab_text(tab_number: int, tab_prompt: str, chart_data: dict = None, language: str = "english") -> tuple[str, str]:
     """
     Fully synchronous function that:
       1. Retrieves enhanced RAG context (k=5 chunks, 4000 char cap)
@@ -241,6 +246,17 @@ def _sync_collect_tab_text(tab_number: int, tab_prompt: str, chart_data: dict = 
     except Exception as rag_err:
         logger.warning(f"[bg_gen] RAG retrieval failed for Tab {tab_number}: {rag_err}. Proceeding without context.")
 
+    # Append language directive for non-English
+    if language and language.lower() != "english":
+        lang_name = language.capitalize()
+        tab_prompt = tab_prompt + (
+            f"\n\nCRITICAL INSTRUCTION: Generate your ENTIRE response in {lang_name}. "
+            f"Retain classical Vedic terminology (like Lagna, Mahadasha, Sade Sati, "
+            f"Mangal Dosha, Kundali, Nakshatra, Dasha, Antardasha, Graha) in their "
+            f"original phonetic Sanskrit/English forms — do NOT translate these terms. "
+            f"All explanatory, conversational, and analytical text MUST be in {lang_name}."
+        )
+
     rag_block = (
         f"REFERENCE TEXTS FROM CLASSICAL SHASTRA:\n{rag_context}"
         if rag_context.strip()
@@ -261,7 +277,7 @@ def _sync_collect_tab_text(tab_number: int, tab_prompt: str, chart_data: dict = 
             text += token
         if text:
             logger.info(f"[bg_gen] Tab {tab_number} primary model succeeded ({len(text)} chars)")
-            return text
+            return text, f"primary/{os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')}"
     except Exception as primary_err:
         logger.warning(
             f"[bg_gen] Primary model failed for Tab {tab_number}: {primary_err}. Trying fallbacks..."
@@ -284,12 +300,12 @@ def _sync_collect_tab_text(tab_number: int, tab_prompt: str, chart_data: dict = 
                 text += token
             if text:
                 logger.info(f"[bg_gen] Tab {tab_number} fallback {fb_model} succeeded ({len(text)} chars)")
-                return text
+                return text, f"fallback/{fb_model}"
         except Exception as fb_err:
             logger.warning(f"[bg_gen] Fallback {fb_model} failed for Tab {tab_number}: {fb_err}")
 
     logger.error(f"[bg_gen] All models failed for Tab {tab_number} — returning empty string.")
-    return ""
+    return "", "failed"
 
 
 
@@ -299,6 +315,7 @@ async def pregenerate_all_tabs(
     chart_id: uuid.UUID,
     chart_data: dict,
     full_name: str,
+    language: str = "english",
 ) -> None:
     """
     Fire-and-forget background task: generates all 10 tab interpretations
@@ -343,7 +360,7 @@ async def pregenerate_all_tabs(
         return
 
     logger.info(
-        f"[bg_gen] Starting pre-generation for all 10 tabs — chart {chart_id_str}"
+        f"[bg_gen] Starting pre-generation for all 11 tabs — chart {chart_id_str} (lang: {language})"
     )
 
     try:
@@ -356,6 +373,7 @@ async def pregenerate_all_tabs(
                 chart_data=chart_data,
                 full_name=full_name,
                 tab_number=tab_num,
+                language=language,
             )
             for tab_num in range(1, 12)
         ]

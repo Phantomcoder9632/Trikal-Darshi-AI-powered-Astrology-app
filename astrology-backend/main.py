@@ -141,4 +141,4 @@ if __name__ == "__main__":
     
     logger.info(f"Starting server on {host}:{port}")
     # Trigger restart to reload new Google Client ID from .env
-    uvicorn.run("main:app", host=host, port=port, reload=True)
+    uvicorn.run("main:app", host=host, port=port, reload=True, reload_dirs=["routes", "services", "rag", "db"])

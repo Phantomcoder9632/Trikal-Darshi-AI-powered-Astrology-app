@@ -17,6 +17,11 @@ Augmented Generation (RAG) pipeline over classical Jyotish scriptures, and uses
 an LLM (Gemini with OpenRouter fallbacks) to pre-generate or stream detailed,
 multi-tab interpretations in a non-blocking background architecture.
 
+The frontend is a premium responsive interface featuring dynamic banner cropping
+using `clip-path` in CSS, passive scroll-based banner parallax shifting, glassmorphic
+login/register forms, and a completely responsive mobile and tablet design with a
+streamlined logged-in flow.
+
 High-Level Architecture Flow:
 [User Input] -> [FastAPI Backend] -> [Geocoding via OpenStreetMap]
                                   -> [astrologyapi.com / Swiss Ephemeris Fallback]
@@ -364,11 +369,15 @@ Table 5: `chat_messages`  [Added June 19, 2026]
     - `getChatHistory(chartId)`: `GET /chat/history/{chartId}` — loads stored conversation messages for a chart from the database
 
 * src/pages/HomePage.jsx
-  - Purpose: Landing page and birth profile submission form.
+  - Purpose: Landing page, authentication forms, and birth profile submission form.
   - State:
     - `formData`: stores name, DOB, TOB, cities, confidence levels.
     - `loading`, `error`: controls form submission indicators.
-  - Actions: Submits birth profile data to `generateChart` and redirects to `/dashboard/:chartId` on success.
+  - Actions: 
+    - Unauthenticated (Guest): Renders a gold-glassmorphic login/registration card, the cosmic banner, hero grids, features list, and testimonials.
+    - Authenticated (Logged-In): Bypasses the banner, hero sections, features, and testimonials completely. Renders a new compact Welcome Bar (`.lp-logged-welcome`) with a personalized greeting, and redirects focus straight to saved chart blueprints and birth form inputs.
+    - Submits birth profile data to `generateChart` and redirects to `/dashboard/:chartId` on success.
+  - Fixes: Resolved a duplicate stale JSX parsing bug at the end of the file that caused HMR compile failures.
 
 * src/pages/DashboardPage.jsx
   - Purpose: Unified user dashboard presenting chart calculations, Kundalis, tables, and interpretation tabs.
@@ -421,3 +430,13 @@ Table 5: `chat_messages`  [Added June 19, 2026]
     - Guest users (no chart) use browser sessionStorage for temporary message persistence.
     - Parses and renders markdown-style formatting (bold, bullets, numbered lists, headers).
     - Includes four pre-built quick-prompt buttons for common queries.
+
+* src/index.css
+  - Purpose: Core styling architecture, design system tokens, themes, layouts, animations, and responsive media queries.
+  - Highlights:
+    - Defines color themes (Vedic Gold, Midnight Cosmic, Nebula Indigo, Solar Flare) with background gradients, yantra opacity settings, and color variables.
+    - Implements premium glassmorphism (`backdrop-filter: blur(32px) saturate(2.0) brightness(1.04)`) and shimmering keyframe animations.
+    - Sets up the background StarCanvas and animates 80 larger golden sparkles.
+    - Manages the cosmic banner layout with `clip-path` cropping and scroll-driven parallax translations.
+    - Enforces full mobile and tablet responsive layouts using media queries under 640px and 1024px to balance typography, paddings, form flows, inputs, and touch targets across screen sizes.
+

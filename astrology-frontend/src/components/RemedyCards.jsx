@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { formatInterpretationText, parseInlineMarkdown, cleanLaTeX } from './formatters';
 
 /**
@@ -198,6 +199,7 @@ function formatRemedyText(text, accentClass = 'remedy-label-gold') {
 
 
 export default function RemedyCards({ remedyText }) {
+  const { t } = useTranslation();
   const { track1, track2, track3, outro } = parseRemedyTracks(remedyText);
 
   const TRACKS = [
@@ -207,7 +209,7 @@ export default function RemedyCards({ remedyText }) {
       borderColor: 'border-t-primary',
       icon: 'spa',
       iconColor: 'text-primary',
-      title: 'Vedic Jyotish Upayas',
+      title: t('dashboard_components.remedies_panel.vedic'),
       titleColor: 'text-primary',
       accentClass: 'remedy-label-gold',
     },
@@ -217,7 +219,7 @@ export default function RemedyCards({ remedyText }) {
       borderColor: 'border-t-error',
       icon: 'whatshot',
       iconColor: 'text-error',
-      title: 'Lal Kitab Farmaan',
+      title: t('dashboard_components.remedies_panel.lalkitab'),
       titleColor: 'text-error',
       accentClass: 'remedy-label-red',
     },
@@ -227,7 +229,7 @@ export default function RemedyCards({ remedyText }) {
       borderColor: 'border-t-[#5d5c73]',
       icon: 'all_inclusive',
       iconColor: 'text-[#5d5c73]',
-      title: 'Ankjyotish Corrections',
+      title: t('dashboard_components.remedies_panel.numerology'),
       titleColor: 'text-[#5d5c73]',
       accentClass: 'remedy-label-slate',
     }
@@ -238,11 +240,11 @@ export default function RemedyCards({ remedyText }) {
       <div className="text-center mb-6">
         <h3 className="font-headline-md text-base md:text-lg font-bold text-primary tracking-widest uppercase flex items-center justify-center gap-3">
           <span className="w-6 h-[1px] bg-primary/30"></span>
-          Triple-Alignment Remedies
+          {t('dashboard_components.remedies_panel.title')}
           <span className="w-6 h-[1px] bg-primary/30"></span>
         </h3>
         <p className="text-on-surface-variant text-xs font-accent-italic italic mt-2">
-          Prescriptions parsed from your cosmic blueprint records
+          {t('dashboard_components.remedies_panel.sub')}
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import DivisionalChart from './DivisionalChart';
 
 /**
@@ -11,77 +12,56 @@ export const TAB_CHART_CONFIG = {
     charts:  ['D1', 'chandra'],
     labels:  ['Lagna (D1)', 'Chandra'],
     keys:    [null, 'chandra_kundali'],
-    purpose: [
-      'Best for: Core personality, physical body, life path & overall life predictions',
-      'Best for: Mind, emotions, mental tendencies & mother-related matters',
-    ],
+    purposeKeys: ['lagna_d1', 'chandra'],
   },
   2:  {
     charts:  ['D1'],
     labels:  ['Lagna (D1)'],
     keys:    [null],
-    purpose: ['Best for: Lal Kitab remedies & karmic debt analysis'],
+    purposeKeys: ['lal_kitab'],
   },
-  3:  { charts: [], labels: [], keys: [], purpose: [] }, // Numerology — no chart
+  3:  { charts: [], labels: [], keys: [], purposeKeys: [] }, // Numerology — no chart
   4:  {
     charts:  ['D10', 'D1'],
     labels:  ['Dashamsha (D10)', 'Lagna (D1)'],
     keys:    ['dashamsha', null],
-    purpose: [
-      'Best for: Career, profession, public image & ambitions — use D10 for detailed career predictions',
-      'Best for: General life direction & first-house career overview',
-    ],
+    purposeKeys: ['d10', 'd1_career'],
   },
   5:  {
     charts:  ['D4', 'D1'],
     labels:  ['Chaturthamsa (D4)', 'Lagna (D1)'],
     keys:    ['chaturthamsa', null],
-    purpose: [
-      'Best for: Fixed assets, property, vehicles & immovable wealth — use D4 for wealth specifics',
-      'Best for: Overall financial potential from the natal chart perspective',
-    ],
+    purposeKeys: ['d4', 'd1_wealth'],
   },
   6:  {
     charts:  ['D9', 'D7'],
     labels:  ['Navamsha (D9)', 'Saptamsha (D7)'],
     keys:    ['navamsha', 'saptamsha'],
-    purpose: [
-      'Best for: Marriage, spouse qualities, relationship destiny & spiritual evolution',
-      'Best for: Children, progeny potential & relationship with offspring',
-    ],
+    purposeKeys: ['d9', 'd7_relationship'],
   },
   7:  {
     charts:  ['D30', 'surya'],
     labels:  ['Trimsamsa (D30)', 'Surya Kundali'],
     keys:    ['trimsamsa', 'surya_kundali'],
-    purpose: [
-      'Best for: Chronic diseases, misfortunes, accidents & hidden vulnerabilities',
-      'Best for: Overall vitality, father, government relationships & authority figures',
-    ],
+    purposeKeys: ['d30', 'surya'],
   },
   8:  {
     charts:  ['D1'],
     labels:  ['Lagna (D1)'],
     keys:    [null],
-    purpose: ['Best for: Holistic remedies, planetary pacification & karmic balance'],
+    purposeKeys: ['d1_remedies'],
   },
   9:  {
     charts:  ['D7', 'D9'],
     labels:  ['Saptamsha (D7)', 'Navamsha (D9)'],
     keys:    ['saptamsha', 'navamsha'],
-    purpose: [
-      'Best for: Children, progeny timing & parental bonds — D7 is the primary progeny chart',
-      'Best for: Spiritual growth, dharma & marriage context for progeny',
-    ],
+    purposeKeys: ['d7_progeny', 'd9_progeny'],
   },
   10: {
     charts:  ['gochar', 'D1'],
     labels:  ['Gochar (Live)', 'Lagna (D1)'],
     keys:    ['gochar', null],
-    purpose: [
-      'Best for: Current planetary transits, timing of events & live predictions',
-      'Best for: How transits interact with your natal chart placements',
-    ],
+    purposeKeys: ['gochar', 'gochar_natal'],
   },
 };
 

@@ -50,6 +50,7 @@ export async function generateChart(formData) {
       city_of_birth: formData.city_of_birth,
       current_city: formData.current_city,
       birth_time_confidence: formData.birth_time_confidence,
+      language: formData.language || 'english',
     });
     return response.data;
   } catch (error) {
@@ -78,9 +79,9 @@ export async function getChart(chartId) {
  * GET /interpret/{chartId}
  * @param {string} chartId 
  */
-export async function getAllInterpretations(chartId) {
+export async function getAllInterpretations(chartId, language = 'english') {
   try {
-    const response = await apiClient.get(`/interpret/${chartId}`);
+    const response = await apiClient.get(`/interpret/${chartId}`, { params: { language } });
     return response.data;
   } catch (error) {
     console.error('Error fetching all interpretations:', error.response?.data || error.message);
@@ -207,6 +208,7 @@ export async function updateChart(chartId, formData) {
       city_of_birth: formData.city_of_birth,
       current_city: formData.current_city,
       birth_time_confidence: formData.birth_time_confidence,
+      language: formData.language || 'english',
     });
     return response.data;
   } catch (error) {
@@ -233,8 +235,8 @@ export async function loginWithEmail(email, password) {
  * @param {string} password
  * @param {string} name
  */
-export async function registerWithEmail(email, password, name) {
-  const response = await apiClient.post('/auth/register', { email, password, name });
+export async function registerWithEmail(email, password, name, language = 'english') {
+  const response = await apiClient.post('/auth/register', { email, password, name, language });
   return response.data;
 }
 
@@ -248,7 +250,7 @@ export async function registerWithEmail(email, password, name) {
  * @param {string} aiMsgId - Unique ID for AI message
  * @param {Function} onChunk - Callback for streaming chunks
  */
-export async function streamChatResponse(message, chartId, history, userMsgId, aiMsgId, onChunk) {
+export async function streamChatResponse(message, chartId, history, userMsgId, aiMsgId, onChunk, language = 'english') {
   try {
     const token = localStorage.getItem('token');
     const headers = {
@@ -263,7 +265,8 @@ export async function streamChatResponse(message, chartId, history, userMsgId, a
       chart_id: chartId || null,
       history: history || [],
       user_msg_id: userMsgId || null,
-      ai_msg_id: aiMsgId || null
+      ai_msg_id: aiMsgId || null,
+      language: language || 'english'
     };
 
     const response = await fetch(`${BASE_URL}/chat`, {

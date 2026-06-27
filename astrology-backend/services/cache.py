@@ -99,6 +99,6 @@ async def get_cached_interpretation(chart_id: str, tab_number: int, language: st
         logger.error(f"Failed to read interpretation from Redis cache ({language}): {e}")
     return None
 
-# Helper to generate the exact required key format: "chart:{dob}:{tob}:{lat}:{lng}"
-def generate_chart_cache_key(dob: str, tob: str, lat: float, lng: float) -> str:
-    return f"chart:{dob}:{tob}:{lat}:{lng}"
+# Helper to generate the exact required key format: "chart:{dob}:{tob}:{lat}:{lng}:{language}"
+def generate_chart_cache_key(dob: str, tob: str, lat: float, lng: float, language: str = "english") -> str:
+    return f"chart:{dob}:{tob}:{lat}:{lng}:{language}"

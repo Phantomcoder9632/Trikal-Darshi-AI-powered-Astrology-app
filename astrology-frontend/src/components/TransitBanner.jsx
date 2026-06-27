@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const TARGET_DATE = new Date('2027-06-26T23:59:59+05:30');
 
@@ -16,6 +17,7 @@ function calcCountdown() {
 function pad(n) { return String(n).padStart(2, '0'); }
 
 export default function TransitBanner() {
+  const { t } = useTranslation();
   const [timeLeft, setTimeLeft] = useState(calcCountdown);
 
   useEffect(() => {
@@ -34,10 +36,10 @@ export default function TransitBanner() {
           <span className="text-primary-container text-[18px] leading-none">⚡</span>
           <div className="flex flex-col">
             <span className="font-headline-md text-[13px] font-bold text-primary tracking-wider uppercase leading-tight">
-              Jupiter Exaltation Window
+              {t('dashboard_components.transit.title')}
             </span>
             <span className="font-accent-italic italic text-on-surface-variant text-[11px] leading-tight mt-0.5">
-              Strategic wealth allocation window ends in:
+              {t('dashboard_components.transit.ends_in')}
             </span>
           </div>
         </div>

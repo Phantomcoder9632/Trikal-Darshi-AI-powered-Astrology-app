@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getChart, getInterpretation, getGenerationProgress, updateChart, getUserCharts, getAllInterpretations } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
+import i18n, { backendLangToI18n } from '../i18n';
+
 
 // Child Components
 import ChartSidebar, { TAB_CHART_CONFIG } from '../components/ChartSidebar';
@@ -9,6 +12,7 @@ import CosmicSummary from '../components/CosmicSummary';
 import TabNavigation, { TabContentCard } from '../components/TabNavigation';
 import RemedyCards from '../components/RemedyCards';
 import AskAI from '../components/AskAI';
+import LanguageSelect from '../components/LanguageSelect';
 
 // Helper: get 1-2 capital initials from a full name
 function getInitials(name) {
@@ -20,6 +24,7 @@ export default function DashboardPage() {
   const { chartId } = useParams();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
 
   const [chartData, setChartData] = useState(null);
   const [loadingChart, setLoadingChart] = useState(true);
@@ -44,6 +49,7 @@ export default function DashboardPage() {
     birth_time_confidence: 'exact',
     city_of_birth: '',
     current_city: '',
+    language: 'english',
   });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState('');
@@ -76,14 +82,26 @@ export default function DashboardPage() {
       birth_time_confidence: chartData.birth_time_confidence || 'exact',
       city_of_birth: chartData.city_of_birth || '',
       current_city: chartData.current_city || '',
+      language: chartData.language || 'english',
     });
     setEditError('');
     setShowEditModal(true);
   };
 
+  const handleEditCancel = () => {
+    setShowEditModal(false);
+    if (chartData?.language) {
+      i18n.changeLanguage(backendLangToI18n(chartData.language));
+    }
+  };
+
   const handleEditChange = (e) => {
     const { name, value } = e.target;
     setEditFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === 'language') {
+      i18n.changeLanguage(backendLangToI18n(value));
+      localStorage.setItem('trikal_lang_chosen', value);
+    }
   };
 
   const handleEditSubmit = async (e) => {
@@ -99,15 +117,23 @@ export default function DashboardPage() {
     try {
       const updatedData = await updateChart(chartId, editFormData);
 
-      // Update local state
-      setChartData(updatedData);
-
-      // Invalidate existing interpretations so they regenerate for new placements
-      setInterpretations({});
-      setTabError({});
-
-      // Close modal
+      // Close modal first
       setShowEditModal(false);
+
+      // If the chart ID changed (due to language update creating a separate profile card), navigate to it
+      if (updatedData.chart_id && updatedData.chart_id !== chartId) {
+        navigate(`/dashboard/${updatedData.chart_id}`);
+      } else {
+        // Update local state in place
+        setChartData(updatedData);
+        if (updatedData.language) {
+          i18n.changeLanguage(backendLangToI18n(updatedData.language));
+        }
+
+        // Invalidate existing interpretations so they regenerate for new placements
+        setInterpretations({});
+        setTabError({});
+      }
 
       // Scroll back up to reset view
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -138,7 +164,7 @@ export default function DashboardPage() {
     if (user) {
       loadSavedCharts();
     }
-  }, [user]);
+  }, [user, chartId]);
 
   // ── 1. Fetch chart ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -154,7 +180,9 @@ export default function DashboardPage() {
         setChartData(data);
         
         try {
-          const interpretationsData = await getAllInterpretations(chartId);
+          const chartLang = data?.language || 'english';
+          i18n.changeLanguage(backendLangToI18n(chartLang));
+          const interpretationsData = await getAllInterpretations(chartId, chartLang);
           setInterpretations(interpretationsData || {});
         } catch (interpErr) {
           console.warn('Failed to load interpretations on mount:', interpErr);
@@ -188,7 +216,8 @@ export default function DashboardPage() {
       const targetTabNumber = activeTab === 'education' ? 11 : activeTab;
 
       try {
-        await getInterpretation(chartId, targetTabNumber, 'english', (chunk) => {
+        const chartLang = chartData?.language || 'english';
+        await getInterpretation(chartId, targetTabNumber, chartLang, (chunk) => {
           setInterpretations((prev) => ({
             ...prev,
             [activeTab]: (prev[activeTab] || '') + chunk,
@@ -251,7 +280,8 @@ export default function DashboardPage() {
       const targetTabNumber = tabId === 'education' ? 11 : tabId;
 
       try {
-        await getInterpretation(chartId, targetTabNumber, 'english', (chunk) => {
+        const chartLang = chartData?.language || 'english';
+        await getInterpretation(chartId, targetTabNumber, chartLang, (chunk) => {
           setInterpretations((prev) => ({
             ...prev,
             [tabId]: (prev[tabId] || '') + chunk,
@@ -280,7 +310,7 @@ export default function DashboardPage() {
           <span className="absolute inset-0 rounded-full border border-primary/20 animate-ping opacity-50" />
         </div>
         <p className="font-headline-md text-primary text-lg uppercase tracking-widest animate-pulse">
-          Channeling Celestial Blueprints…
+          {t('dashboard.channeling_blueprints')}
         </p>
       </div>
     );
@@ -298,7 +328,7 @@ export default function DashboardPage() {
             warning
           </span>
           <h2 className="font-headline-md text-error text-xl uppercase tracking-wider">
-            ✦ System Warning ✦
+            ✦ {t('dashboard.system_warning')} ✦
           </h2>
           <p className="text-on-surface-variant text-sm leading-relaxed">{chartError}</p>
           <button
@@ -307,7 +337,7 @@ export default function DashboardPage() {
             className="blueprint-button shimmer-button max-w-xs w-full"
           >
             <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-            Return to Birth Chamber
+            {t('dashboard.return_to_birth_chamber')}
           </button>
         </div>
       </div>
@@ -318,8 +348,8 @@ export default function DashboardPage() {
   const dasha = chartData?.dasha || {};
   const currentDashaText =
     dasha.mahadasha && dasha.antardasha
-      ? `${dasha.mahadasha} MD · ${dasha.antardasha} AD`
-      : 'Calculations Active';
+      ? `${t(`dashboard.values.${dasha.mahadasha.toLowerCase()}`, { defaultValue: dasha.mahadasha })} MD · ${t(`dashboard.values.${dasha.antardasha.toLowerCase()}`, { defaultValue: dasha.antardasha })} AD`
+      : t('dashboard.values.active');
 
   // ── Planet table data: follows active chart idx ──────────────────────────
   const tabConfig = TAB_CHART_CONFIG[activeTab] || TAB_CHART_CONFIG[1];
@@ -342,7 +372,7 @@ export default function DashboardPage() {
             className="flex items-center gap-2 bg-transparent border-none p-0 cursor-pointer hover:opacity-90 transition-opacity"
             aria-label="Go to home page"
           >
-            <div className="lp-navbar-emblem flex items-center justify-center" style={{ width: 28, height: 28, borderRadius: 6, background: 'rgba(201, 149, 42, 0.12)', border: '1px solid rgba(201, 149, 42, 0.3)' }}>
+            <div className="dashboard-logo-emblem flex items-center justify-center">
               <img src="/Trikal_Darshi_logo.png" alt="" className="dashboard-logo-img" />
             </div>
             <span className="font-wordmark text-[18px] sm:text-[20px] tracking-[0.15em] text-primary">
@@ -362,7 +392,7 @@ export default function DashboardPage() {
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
                 <span className="font-label-sm text-[9px] text-primary font-bold uppercase tracking-wider whitespace-nowrap">
-                  ✦ Preparing Blueprint — {bgProgress.completed_tabs.length}/{bgProgress.total_tabs} Sections Ready
+                  ✦ {t('dashboard.progress_badge', { count: bgProgress.completed_tabs.length })}
                 </span>
                 {/* Mini progress bar */}
                 <div className="w-16 h-1 rounded-full bg-primary/15 overflow-hidden">
@@ -382,7 +412,7 @@ export default function DashboardPage() {
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
                 <span className="font-label-sm text-[9px] text-green-700 font-bold uppercase tracking-wider whitespace-nowrap">
-                  ✦ All Sections Ready
+                  {t('dashboard.all_sections_ready')}
                 </span>
               </div>
             )}
@@ -576,7 +606,7 @@ export default function DashboardPage() {
               settings_accessibility
             </span>
             <h3 className="text-sm font-headline-md font-bold tracking-wide text-on-surface">
-              Cosmic Profile Menu
+              {t('dashboard.drawer.title')}
             </h3>
           </div>
           <button
@@ -594,7 +624,7 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-xs uppercase font-bold tracking-widest text-primary">
-                Personal Details
+                {t('dashboard.drawer.personal_details')}
               </h4>
               <button
                 onClick={() => {
@@ -604,35 +634,37 @@ export default function DashboardPage() {
                 className="text-xs text-primary hover:underline flex items-center gap-1 font-semibold cursor-pointer bg-transparent border-none"
               >
                 <span className="material-symbols-outlined text-[12px]">edit</span>
-                Edit Birth Details
+                {t('dashboard.drawer.edit_birth_details')}
               </button>
             </div>
             {chartData && (
               <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/20 space-y-3">
                 <div className="grid grid-cols-2 gap-y-3 text-xs">
                   <div>
-                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">Name</span>
+                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">{t('dashboard.drawer.name')}</span>
                     <span className="font-semibold text-on-surface text-sm">{chartData.full_name}</span>
                   </div>
                   <div>
-                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">Confidence</span>
-                    <span className="font-semibold text-on-surface capitalize text-sm">{chartData.birth_time_confidence}</span>
+                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">{t('dashboard.drawer.confidence')}</span>
+                    <span className="font-semibold text-on-surface capitalize text-sm">
+                      {t(`home.form.confidence.${chartData.birth_time_confidence}`, { defaultValue: chartData.birth_time_confidence })}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">Date of Birth</span>
+                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">{t('dashboard.drawer.dob')}</span>
                     <span className="font-semibold text-on-surface text-sm">{chartData.date_of_birth}</span>
                   </div>
                   <div>
-                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">Time of Birth</span>
+                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">{t('dashboard.drawer.tob')}</span>
                     <span className="font-semibold text-on-surface text-sm">{chartData.time_of_birth ? chartData.time_of_birth.slice(0, 5) : ''}</span>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">Place of Birth</span>
+                    <span className="text-outline/80 block uppercase tracking-wider text-[10px]">{t('dashboard.drawer.pob')}</span>
                     <span className="font-semibold text-on-surface text-sm">{chartData.city_of_birth}</span>
                   </div>
                   {chartData.current_city && (
                     <div className="col-span-2">
-                      <span className="text-outline/80 block uppercase tracking-wider text-[10px]">Current City</span>
+                      <span className="text-outline/80 block uppercase tracking-wider text-[10px]">{t('dashboard.drawer.current_city')}</span>
                       <span className="font-semibold text-on-surface text-sm">{chartData.current_city}</span>
                     </div>
                   )}
@@ -644,7 +676,7 @@ export default function DashboardPage() {
           {/* Section 2: Saved Charts */}
           <div className="space-y-4">
             <h4 className="text-xs uppercase font-bold tracking-widest text-primary">
-              Saved Blueprints
+              {t('dashboard.drawer.saved_blueprints')}
             </h4>
             <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
               {savedCharts.length > 0 ? (
@@ -673,7 +705,7 @@ export default function DashboardPage() {
                 ))
               ) : (
                 <div className="text-center py-4 text-xs text-outline/60 italic">
-                  No other blueprints saved.
+                  {t('dashboard.drawer.no_blueprints')}
                 </div>
               )}
             </div>
@@ -682,7 +714,7 @@ export default function DashboardPage() {
           {/* Section 3: Read Another Chart */}
           <div className="space-y-3">
             <h4 className="text-xs uppercase font-bold tracking-widest text-primary">
-              Cosmic Journey
+              {t('dashboard.drawer.cosmic_journey')}
             </h4>
             <button
               onClick={() => {
@@ -692,14 +724,14 @@ export default function DashboardPage() {
               className="w-full py-3 px-4 bg-primary text-on-primary rounded-xl font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer border-none"
             >
               <span className="material-symbols-outlined text-[16px]">add_circle</span>
-              Read Another Chart
+              {t('dashboard.drawer.read_another')}
             </button>
           </div>
 
           {/* Section 4: Themes */}
           <div className="space-y-3">
             <h4 className="text-xs uppercase font-bold tracking-widest text-primary">
-              Cosmic Themes
+              {t('dashboard.drawer.themes')}
             </h4>
             <div className="grid grid-cols-2 gap-2">
               {[
@@ -736,7 +768,7 @@ export default function DashboardPage() {
               className="w-full py-3 px-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-red-500/20 cursor-pointer"
             >
               <span className="material-symbols-outlined text-[16px]">logout</span>
-              Log Out Session
+              {t('dashboard.drawer.logout')}
             </button>
           </div>
 
@@ -749,7 +781,7 @@ export default function DashboardPage() {
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-background/60 backdrop-filter backdrop-blur-md"
-            onClick={() => !editLoading && setShowEditModal(false)}
+            onClick={() => !editLoading && handleEditCancel()}
           />
 
           {/* Modal Container */}
@@ -758,12 +790,12 @@ export default function DashboardPage() {
             {/* Header */}
             <header className="flex items-center justify-between mb-6">
               <div>
-                <span className="text-[10px] font-bold text-primary tracking-widest uppercase">CORRECT CELESTIAL ALIGNMENT</span>
-                <h3 className="font-headline-md text-primary text-xl mt-1">Edit Birth Details</h3>
+                <span className="text-[10px] font-bold text-primary tracking-widest uppercase">{t('dashboard.modal.alignment')}</span>
+                <h3 className="font-headline-md text-primary text-xl mt-1">{t('dashboard.modal.title')}</h3>
               </div>
               <button
                 disabled={editLoading}
-                onClick={() => setShowEditModal(false)}
+                onClick={handleEditCancel}
                 className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-outline-variant/20 text-on-surface-variant transition-colors cursor-pointer bg-transparent border-none"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
@@ -793,10 +825,10 @@ export default function DashboardPage() {
                 </div>
                 <div className="space-y-1">
                   <h4 className="font-headline-md text-primary text-md tracking-wide">
-                    Recalculating Cosmic Matrix…
+                    {t('dashboard.modal.recalculating')}
                   </h4>
                   <p className="text-on-surface-variant text-xs font-accent-italic italic">
-                    Re-aligning houses, planets &amp; divisional tables
+                    {t('dashboard.modal.realigning')}
                   </p>
                 </div>
               </div>
@@ -805,14 +837,14 @@ export default function DashboardPage() {
 
                 {/* Full Name */}
                 <div className="blueprint-form-group">
-                  <label htmlFor="edit_full_name" className="blueprint-label">Full Name *</label>
+                  <label htmlFor="edit_full_name" className="blueprint-label">{t('home.form.fullName')} *</label>
                   <input
                     id="edit_full_name"
                     type="text"
                     name="full_name"
                     value={editFormData.full_name}
                     onChange={handleEditChange}
-                    placeholder="Enter full name"
+                    placeholder={t('home.form.fullName')}
                     autoComplete="name"
                     className="blueprint-input"
                   />
@@ -820,7 +852,7 @@ export default function DashboardPage() {
 
                 {/* Date of Birth */}
                 <div className="blueprint-form-group">
-                  <label htmlFor="edit_date_of_birth" className="blueprint-label">Date of Birth *</label>
+                  <label htmlFor="edit_date_of_birth" className="blueprint-label">{t('home.form.dateOfBirth')} *</label>
                   <input
                     id="edit_date_of_birth"
                     type="date"
@@ -834,7 +866,7 @@ export default function DashboardPage() {
 
                 {/* Time of Birth + Confidence */}
                 <div className="blueprint-form-group">
-                  <label htmlFor="edit_time_of_birth" className="blueprint-label">Time of Birth *</label>
+                  <label htmlFor="edit_time_of_birth" className="blueprint-label">{t('home.form.timeOfBirth')} *</label>
                   <input
                     id="edit_time_of_birth"
                     type="time"
@@ -845,9 +877,9 @@ export default function DashboardPage() {
                   />
                   <div className="blueprint-pill-container">
                     {[
-                      { value: 'exact', label: 'Exact' },
-                      { value: 'approximate', label: 'Approximate' },
-                      { value: 'unknown', label: 'Unknown' },
+                      { value: 'exact', label: t('home.form.confidence.exact') },
+                      { value: 'approximate', label: t('home.form.confidence.approximate') },
+                      { value: 'unknown', label: t('home.form.confidence.unknown') },
                     ].map(({ value, label }) => (
                       <button
                         key={value}
@@ -863,7 +895,7 @@ export default function DashboardPage() {
 
                 {/* City of Birth */}
                 <div className="blueprint-form-group">
-                  <label htmlFor="edit_city_of_birth" className="blueprint-label">City of Birth *</label>
+                  <label htmlFor="edit_city_of_birth" className="blueprint-label">{t('home.form.cityOfBirth')} *</label>
                   <div className="blueprint-input-row">
                     <span className="material-symbols-outlined text-outline text-[18px] shrink-0">
                       location_on
@@ -884,8 +916,8 @@ export default function DashboardPage() {
                 {/* Current City */}
                 <div className="blueprint-form-group">
                   <label htmlFor="edit_current_city" className="blueprint-label">
-                    Current City{' '}
-                    <span className="font-normal normal-case opacity-60">(optional)</span>
+                    {t('home.form.currentCity')}{' '}
+                    <span className="font-normal normal-case opacity-60">{t('home.form.optional')}</span>
                   </label>
                   <div className="blueprint-input-row">
                     <span className="material-symbols-outlined text-outline text-[18px] shrink-0">
@@ -904,21 +936,38 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
+                {/* Chart Language */}
+                <div className="blueprint-form-group">
+                  <label htmlFor="edit_language" className="blueprint-label">
+                    <span className="material-symbols-outlined" style={{ fontSize: 15, verticalAlign: 'middle', marginRight: 4 }}>translate</span>
+                    {t('home.form.language')}
+                  </label>
+                  <LanguageSelect
+                    id="edit_language"
+                    name="language"
+                    value={editFormData.language || 'english'}
+                    onChange={handleEditChange}
+                  />
+                  <p style={{ fontSize: 11, opacity: 0.6, marginTop: 4, marginBottom: 0 }}>
+                    {t('dashboard.modal.lang_warning')}
+                  </p>
+                </div>
+
                 {/* Actions row */}
                 <div className="flex items-center gap-3 mt-4">
                   <button
                     type="button"
-                    onClick={() => setShowEditModal(false)}
+                    onClick={handleEditCancel}
                     className="flex-1 py-3 border border-outline-variant/60 hover:border-outline text-outline hover:bg-outline-variant/10 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer bg-transparent"
                   >
-                    Cancel
+                    {t('dashboard.modal.cancel')}
                   </button>
                   <button
                     type="submit"
                     className="flex-1 blueprint-button shimmer-button mt-0"
                   >
                     <span className="material-symbols-outlined text-[16px]">refresh</span>
-                    Recalculate
+                    {t('dashboard.modal.recalculate')}
                   </button>
                 </div>
 

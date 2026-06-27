@@ -45,4 +45,4 @@ astrology-backend/test_*.py
 
 # Deployment and system plans
 temp_hf_deploy/
-implementation_plan.md
+language_feature_guide.md

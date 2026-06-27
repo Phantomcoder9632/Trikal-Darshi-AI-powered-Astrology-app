@@ -27,6 +27,7 @@ security = HTTPBearer(auto_error=False)
 
 class GoogleLoginPayload(BaseModel):
     token: str
+    language: Optional[str] = "english"
 
 class EmailLoginPayload(BaseModel):
     email: EmailStr
@@ -36,18 +37,37 @@ class EmailRegisterPayload(BaseModel):
     email: EmailStr
     password: str
     name: Optional[str] = None
+    language: Optional[str] = "english"
 
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: EmailStr
     name: Optional[str] = None
     picture: Optional[str] = None
+    preferred_language: Optional[str] = "english"
 
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str
     user: UserResponse
 
+
+def normalize_language(lang: Optional[str]) -> str:
+    """
+    Normalize language input to one of the supported backend values.
+    Accepts full names ('english', 'hindi', 'bengali') or
+    ISO codes ('en', 'hi', 'bn') and returns the full lowercase name.
+    Defaults to 'english' for unknown/None values.
+    """
+    if not lang:
+        return "english"
+    lang = lang.lower().strip()
+    mapping = {
+        "en": "english", "english": "english",
+        "hi": "hindi",   "hindi": "hindi",
+        "bn": "bengali", "bengali": "bengali",
+    }
+    return mapping.get(lang, "english")
 
 def create_access_token(user_id: uuid.UUID, email: str) -> str:
     """
@@ -139,7 +159,7 @@ async def get_optional_current_user(
         
         user_uuid = uuid.UUID(user_id_str)
         row = await conn.fetchrow(
-            "SELECT id, email, name, picture FROM users WHERE id = $1",
+            "SELECT id, email, name, picture, preferred_language FROM users WHERE id = $1",
             user_uuid
         )
         if not row:
@@ -237,16 +257,23 @@ async def google_login(payload: GoogleLoginPayload, conn = Depends(get_db)):
                 logger.info(f"Updated user profile for: {email}")
         else:
             user_id = uuid.uuid4()
+            preferred_lang = normalize_language(payload.language)
             await conn.execute(
                 """
-                INSERT INTO users (id, google_id, email, name, picture)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO users (id, google_id, email, name, picture, preferred_language)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 """,
-                user_id, google_id, email, name, picture
+                user_id, google_id, email, name, picture, preferred_lang
             )
             logger.info(f"Created new user record for: {email}")
 
         access_token = create_access_token(user_id, email)
+
+        # Fetch preferred_language from DB
+        user_row = await conn.fetchrow(
+            "SELECT preferred_language FROM users WHERE id = $1", user_id
+        )
+        preferred_language = (user_row["preferred_language"] if user_row else None) or "english"
 
         return {
             "access_token": access_token,
@@ -255,7 +282,8 @@ async def google_login(payload: GoogleLoginPayload, conn = Depends(get_db)):
                 "id": user_id,
                 "email": email,
                 "name": name,
-                "picture": picture
+                "picture": picture,
+                "preferred_language": preferred_language
             }
         }
 
@@ -332,14 +360,15 @@ async def email_register(payload: EmailRegisterPayload, conn = Depends(get_db)):
     user_id = uuid.uuid4()
     google_id = f"email_{user_id}"
     pwd_hash = hash_password(password)
+    preferred_lang = normalize_language(payload.language)
 
     try:
         await conn.execute(
             """
-            INSERT INTO users (id, google_id, email, name, password_hash)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO users (id, google_id, email, name, password_hash, preferred_language)
+            VALUES ($1, $2, $3, $4, $5, $6)
             """,
-            user_id, google_id, email, name, pwd_hash
+            user_id, google_id, email, name, pwd_hash, preferred_lang
         )
         logger.info(f"Created new email user record for: {email}")
     except Exception as e:
@@ -358,7 +387,8 @@ async def email_register(payload: EmailRegisterPayload, conn = Depends(get_db)):
             "id": user_id,
             "email": email,
             "name": name,
-            "picture": None
+            "picture": None,
+            "preferred_language": preferred_lang
         }
     }
 
@@ -372,7 +402,7 @@ async def email_login(payload: EmailLoginPayload, conn = Depends(get_db)):
     password = payload.password
 
     row = await conn.fetchrow(
-        "SELECT id, email, name, picture, password_hash FROM users WHERE email = $1",
+        "SELECT id, email, name, picture, password_hash, preferred_language FROM users WHERE email = $1",
         email
     )
 
@@ -398,7 +428,8 @@ async def email_login(payload: EmailLoginPayload, conn = Depends(get_db)):
             "id": user_id,
             "email": row["email"],
             "name": row["name"],
-            "picture": row["picture"]
+            "picture": row["picture"],
+            "preferred_language": row["preferred_language"] or "english"
         }
     }
 

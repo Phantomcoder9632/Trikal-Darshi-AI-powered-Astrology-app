@@ -28,6 +28,7 @@ class ChatRequest(BaseModel):
     history: List[ChatMessage] = []
     user_msg_id: Optional[str] = None
     ai_msg_id: Optional[str] = None
+    language: Optional[str] = "english"
 
 @router.post("/chat")
 async def chat_endpoint(request: ChatRequest):
@@ -43,7 +44,7 @@ async def chat_endpoint(request: ChatRequest):
                 # ── 1. Fetch chart row ────────────────────────────────────────
                 chart_row = await conn.fetchrow(
                     """SELECT full_name, date_of_birth, time_of_birth,
-                              city_of_birth, current_city, raw_chart_data
+                              city_of_birth, current_city, birth_time_confidence, raw_chart_data
                        FROM charts WHERE id = $1""",
                     chart_uuid
                 )
@@ -72,14 +73,18 @@ async def chat_endpoint(request: ChatRequest):
                     chart_data["current_city"] = (
                         chart_data.get("current_city") or chart_row["current_city"]
                     )
+                    chart_data["birth_time_confidence"] = (
+                        chart_data.get("birth_time_confidence") or chart_row["birth_time_confidence"] or "exact"
+                    )
 
-                # ── 2. Fetch all saved interpretations ───────────────────────
+                # ── 2. Fetch all saved interpretations (for the chart's language) ──────────
                 interp_rows = await conn.fetch(
                     """SELECT tab_number, tab_name, content
                        FROM interpretations
-                       WHERE chart_id = $1
+                       WHERE chart_id = $1 AND language = $2
                        ORDER BY tab_number ASC""",
-                    chart_uuid
+                    chart_uuid,
+                    request.language or "english"
                 )
 
                 if interp_rows:
@@ -113,7 +118,8 @@ async def chat_endpoint(request: ChatRequest):
                 history=history_dicts,
                 chart_data=chart_data,
                 interpretations=interpretations,
-                stage=stage
+                stage=stage,
+                language=request.language or "english"
             ):
                 full_response += chunk
                 yield chunk

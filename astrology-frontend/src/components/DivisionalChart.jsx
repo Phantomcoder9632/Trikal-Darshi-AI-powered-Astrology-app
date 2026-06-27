@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const ZODIAC_SIGNS = [
   "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
@@ -10,28 +11,29 @@ const SANSKRIT_ABBRS = {
   "Jupiter": "Gu", "Venus": "Sk", "Saturn": "Sa", "Rahu": "Ra", "Ketu": "Ke"
 };
 
-const CHART_TYPE_LABELS = {
-  D1: "D1 — Lagna (Rashi)",
-  D9: "D9 — Navamsha",
-  D10: "D10 — Dashamsha",
-  D4: "D4 — Chaturthamsa",
-  D7: "D7 — Saptamsha",
-  D30: "D30 — Trimsamsa",
-  chandra: "Chandra Kundali",
-  surya: "Surya Kundali",
-  gochar: "Gochar (Transits)",
+// Fallback labels for chart types (used if i18n key missing)
+const CHART_TYPE_LABEL_KEYS = {
+  D1: 'dashboard.charts.D1',
+  D9: 'dashboard.charts.D9',
+  D10: 'dashboard.charts.D10',
+  D4: 'dashboard.charts.D4',
+  D7: 'dashboard.charts.D7',
+  D30: 'dashboard.charts.D30',
+  chandra: 'dashboard.charts.chandra',
+  surya: 'dashboard.charts.surya',
+  gochar: 'dashboard.charts.gochar',
 };
 
-const CHART_PURPOSES = {
-  D1: "Best for overall physical destiny, physical body, general health, life path, and baseline financial potential.",
-  D9: "Best for marriage happiness, relationship dynamics, spouse attributes, inner potential, and soul's dharma.",
-  D10: "Best for career direction, profession, social status, job cycles, and public reputation.",
-  D4: "Best for fixed assets, real estate property, home ownership, conveyances (vehicles), and stability.",
-  D7: "Best for progeny (children), relationship with offspring, legacy, and creative potential.",
-  D30: "Best for physical ailments, chronic illnesses, hidden vulnerabilities, obstacles, and debts.",
-  chandra: "Best for emotional framework, mental health, cognitive perception, and overall mind state.",
-  surya: "Best for professional visibility, ego, authority figures, vitality, and soul purpose.",
-  gochar: "Best for real-time planetary transits and timing daily life events relative to your birth chart.",
+const CHART_PURPOSE_KEYS = {
+  D1: 'dashboard_components.charts.purposes.D1',
+  D9: 'dashboard_components.charts.purposes.D9',
+  D10: 'dashboard_components.charts.purposes.D10',
+  D4: 'dashboard_components.charts.purposes.D4',
+  D7: 'dashboard_components.charts.purposes.D7',
+  D30: 'dashboard_components.charts.purposes.D30',
+  chandra: 'dashboard_components.charts.purposes.chandra',
+  surya: 'dashboard_components.charts.purposes.surya',
+  gochar: 'dashboard_components.charts.purposes.gochar',
 };
 
 // North Indian house layout centers (400×400 SVG)
@@ -86,10 +88,13 @@ function getPlanetStyle(planetName, signNum, isRetrograde) {
  *   compact    {boolean} — If true, renders at reduced size (for sidebyside layout)
  */
 export default React.memo(function DivisionalChart({ chartData, chartType = "D1", natalData = null, compact = false }) {
+  const { t } = useTranslation();
+
   // ── Determine ascendant sign and planets ──────────────────────────────────
   let ascSignNum = 1;
   let planets = [];
-  let chartLabel = CHART_TYPE_LABELS[chartType] || chartType;
+  const chartLabelKey = CHART_TYPE_LABEL_KEYS[chartType];
+  const chartLabel = chartLabelKey ? t(chartLabelKey) : chartType;
 
   if (chartType === "D1" && natalData) {
     // Direct natal chart rendering
@@ -241,12 +246,12 @@ export default React.memo(function DivisionalChart({ chartData, chartType = "D1"
       {/* Legend */}
       <div className="flex gap-3 flex-wrap justify-center w-full px-1" style={{ marginTop: '4px' }}>
         {[
-          { color: '#7c5800', label: 'Exalted'     },
-          { color: '#166534', label: 'Own Sign'    },
-          { color: '#ba1a1a', label: 'Debilitated' },
-          { color: '#5d5c73', label: 'Retro'       },
-        ].map(({ color, label }) => (
-          <span key={label}
+          { color: '#7c5800', labelKey: 'exalted'     },
+          { color: '#166534', labelKey: 'own'    },
+          { color: '#ba1a1a', labelKey: 'debilitated' },
+          { color: '#5d5c73', labelKey: 'retro'       },
+        ].map(({ color, labelKey }) => (
+          <span key={labelKey}
             className="flex items-center gap-1"
             style={{ fontSize: '9px', color, fontWeight: 600 }}
           >
@@ -254,16 +259,19 @@ export default React.memo(function DivisionalChart({ chartData, chartType = "D1"
               className="inline-block rounded-full"
               style={{ width: 6, height: 6, background: color, flexShrink: 0 }}
             />
-            {label}
+            {labelKey === 'retro' ? t('dashboard_components.planet_table.legend.retro') :
+             labelKey === 'exalted' ? t('dashboard_components.planet_table.legend.exalt') :
+             labelKey === 'own' ? t('dashboard_components.planet_table.legend.own') :
+             t('dashboard_components.planet_table.legend.debil')}
           </span>
         ))}
       </div>
 
       {/* Best Used For */}
       <div className="chart-purpose-badge">
-        <span className="purpose-label">Best Used For</span>
+        <span className="purpose-label">{t('dashboard_components.charts.best_used_for')}</span>
         <span className="purpose-text">
-          {CHART_PURPOSES[chartType] || 'Analyzes astrological dimensions for this life area.'}
+          {CHART_PURPOSE_KEYS[chartType] ? t(CHART_PURPOSE_KEYS[chartType]) : 'Analyzes astrological dimensions for this life area.'}
         </span>
       </div>
 

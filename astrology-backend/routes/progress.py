@@ -45,27 +45,29 @@ async def get_generation_progress(
             "is_complete": false
         }
     """
-    # Verify chart exists
-    chart_exists = await conn.fetchval(
-        "SELECT 1 FROM charts WHERE id = $1",
+    # Verify chart exists and fetch its language
+    row = await conn.fetchrow(
+        "SELECT language FROM charts WHERE id = $1",
         chart_id,
     )
-    if not chart_exists:
+    if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Chart with ID {chart_id} not found.",
         )
+    chart_lang = row["language"] or "english"
 
-    # Fetch all tab numbers that have been fully generated
+    # Fetch all tab numbers that have been fully generated for that language
     rows = await conn.fetch(
         """
         SELECT tab_number
         FROM interpretations
-        WHERE chart_id = $1
+        WHERE chart_id = $1 AND language = $2
           AND LENGTH(TRIM(content)) >= 1000
         ORDER BY tab_number ASC
         """,
         chart_id,
+        chart_lang,
     )
 
     completed_tabs = [row["tab_number"] for row in rows]

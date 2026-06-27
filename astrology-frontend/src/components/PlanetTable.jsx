@@ -1,10 +1,5 @@
 import React from 'react';
-
-const SANSKRIT_NAMES = {
-  Sun: 'Surya', Moon: 'Chandra', Mars: 'Mangal',
-  Mercury: 'Budha', Jupiter: 'Guru', Venus: 'Shukra',
-  Saturn: 'Shani', Rahu: 'Rahu', Ketu: 'Ketu',
-};
+import { useTranslation } from 'react-i18next';
 
 const EXALTED_SIGNS = {
   Sun: 'Aries', Moon: 'Taurus', Mars: 'Capricorn',
@@ -24,17 +19,39 @@ const OWN_SIGNS = {
   Venus: ['Taurus', 'Libra'], Saturn: ['Capricorn', 'Aquarius'],
 };
 
-function getDignity(planetName, signName) {
-  if (EXALTED_SIGNS[planetName] === signName)
-    return { text: 'Exalted', dot: '#7c5800', bg: 'rgba(124,88,0,0.08)', border: 'rgba(124,88,0,0.25)', color: '#7c5800' };
-  if (DEBILITATED_SIGNS[planetName] === signName)
-    return { text: 'Debil.',  dot: '#ba1a1a', bg: 'rgba(186,26,26,0.08)', border: 'rgba(186,26,26,0.25)', color: '#ba1a1a' };
-  if (OWN_SIGNS[planetName]?.includes(signName))
-    return { text: 'Own',     dot: '#166534', bg: 'rgba(22,101,52,0.08)',  border: 'rgba(22,101,52,0.25)',  color: '#166534' };
-  return   { text: 'Neutral', dot: '#817563', bg: 'rgba(129,117,99,0.08)', border: 'rgba(211,196,176,0.4)', color: '#817563' };
+function getDignityKey(planetName, signName) {
+  if (EXALTED_SIGNS[planetName] === signName) return 'exalted';
+  if (DEBILITATED_SIGNS[planetName] === signName) return 'debil';
+  if (OWN_SIGNS[planetName]?.includes(signName)) return 'own';
+  return 'neutral';
+}
+
+function getDignityStyle(key) {
+  switch (key) {
+    case 'exalted': return { dot: '#7c5800', bg: 'rgba(124,88,0,0.08)', border: 'rgba(124,88,0,0.25)', color: '#7c5800' };
+    case 'debil':   return { dot: '#ba1a1a', bg: 'rgba(186,26,26,0.08)', border: 'rgba(186,26,26,0.25)', color: '#ba1a1a' };
+    case 'own':     return { dot: '#166534', bg: 'rgba(22,101,52,0.08)',  border: 'rgba(22,101,52,0.25)',  color: '#166534' };
+    default:        return { dot: '#817563', bg: 'rgba(129,117,99,0.08)', border: 'rgba(211,196,176,0.4)', color: '#817563' };
+  }
 }
 
 export default React.memo(function PlanetTable({ planets }) {
+  const { t } = useTranslation();
+
+  // Planet display name — use translation key if available, else fall back to original name
+  function getPlanetLabel(name) {
+    const key = `dashboard.values.${name.toLowerCase()}`;
+    const translated = t(key);
+    return translated !== key ? translated : name;
+  }
+
+  // Sanskrit sub-label (always show short Sanskrit name for authenticity)
+  const SANSKRIT_NAMES = {
+    Sun: 'Surya', Moon: 'Chandra', Mars: 'Mangal',
+    Mercury: 'Budha', Jupiter: 'Guru', Venus: 'Shukra',
+    Saturn: 'Shani', Rahu: 'Rahu', Ketu: 'Ketu',
+  };
+
   if (!Array.isArray(planets) || planets.length === 0) return null;
 
   return (
@@ -42,8 +59,8 @@ export default React.memo(function PlanetTable({ planets }) {
 
       {/* Header bar */}
       <div className="planet-table-header">
-        <span className="planet-table-header-label">Planetary Positions</span>
-        <span className="planet-table-header-label planet-table-header-label-gold">Grahas</span>
+        <span className="planet-table-header-label">{t('dashboard_components.planet_table.title')}</span>
+        <span className="planet-table-header-label planet-table-header-label-gold">{t('dashboard_components.planet_table.grahas')}</span>
       </div>
 
       {/* Table */}
@@ -57,7 +74,12 @@ export default React.memo(function PlanetTable({ planets }) {
           </colgroup>
           <thead>
             <tr>
-              {['Planet', 'Sign / H.', 'Dignity', 'Dir.'].map((h) => (
+              {[
+                t('dashboard_components.planet_table.headers.planet'),
+                t('dashboard_components.planet_table.headers.sign'),
+                t('dashboard_components.planet_table.headers.dignity'),
+                t('dashboard_components.planet_table.headers.dir'),
+              ].map((h) => (
                 <th key={h}>{h}</th>
               ))}
             </tr>
@@ -65,14 +87,16 @@ export default React.memo(function PlanetTable({ planets }) {
           <tbody>
             {planets.map((p) => {
               const isRetro  = p.isRetrograde === true || p.isRetrograde === 'true' || p.isRetrograde === 'YES';
-              const dignity  = getDignity(p.name, p.sign);
+              const dignityKey = getDignityKey(p.name, p.sign);
+              const dignity  = getDignityStyle(dignityKey);
+              const dignityLabel = t(`dashboard_components.planet_table.dignity.${dignityKey}`);
               const sanskrit = SANSKRIT_NAMES[p.name];
 
               return (
                 <tr key={p.name}>
                   {/* Planet name */}
                   <td>
-                    <div className="planet-name">{p.name}</div>
+                    <div className="planet-name">{getPlanetLabel(p.name)}</div>
                     {sanskrit && sanskrit !== p.name && (
                       <div className="planet-sanskrit">{sanskrit}</div>
                     )}
@@ -95,7 +119,7 @@ export default React.memo(function PlanetTable({ planets }) {
                       }}
                     >
                       <span className="dignity-dot" style={{ background: dignity.dot }} />
-                      {dignity.text}
+                      {dignityLabel}
                     </span>
                   </td>
 
@@ -117,14 +141,14 @@ export default React.memo(function PlanetTable({ planets }) {
       {/* Legend footer */}
       <div className="planet-table-legend">
         {[
-          { color: '#7c5800', label: 'Exalt' },
-          { color: '#166534', label: 'Own'   },
-          { color: '#ba1a1a', label: 'Debil' },
-          { color: '#5d5c73', label: '℞ Retro' },
-        ].map(({ color, label }) => (
-          <span key={label} className="planet-table-legend-item" style={{ color }}>
+          { color: '#7c5800', labelKey: 'exalt' },
+          { color: '#166534', labelKey: 'own'   },
+          { color: '#ba1a1a', labelKey: 'debil' },
+          { color: '#5d5c73', labelKey: 'retro' },
+        ].map(({ color, labelKey }) => (
+          <span key={labelKey} className="planet-table-legend-item" style={{ color }}>
             <span className="planet-table-legend-dot" style={{ background: color }} />
-            {label}
+            {t(`dashboard_components.planet_table.legend.${labelKey}`)}
           </span>
         ))}
       </div>

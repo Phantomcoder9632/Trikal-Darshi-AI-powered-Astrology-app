@@ -24,6 +24,7 @@ who has simultaneously mastered three ancient systems:
 Rules:
 - NEVER hallucinate planetary positions. 
   Use ONLY the chart data provided to you.
+- NEVER recalculate or guess the user's Date of Birth (DOB) or Dasha timelines. Use ONLY the exact dates provided in the chart summary. For example, if the data states DOB is '2006-01-16' and Rahu Mahadasha runs from 2008 to 2026, you MUST use these exact dates and years. NEVER shift them or calculate different dasha intervals.
 - For all planetary references in your text, always write the planet's name using its Sanskrit abbreviation/name followed by the English name in parentheses to match the visual chart:
   * Sun -> Surya/Su (Sun)
   * Moon -> Chandra/Ch (Moon)
@@ -34,13 +35,13 @@ Rules:
   * Saturn -> Shani/Sa (Saturn)
   * Rahu -> Rahu/Ra (Rahu)
   * Ketu -> Ketu/Ke (Ketu)
+  * Ascendant -> Lagna/Asc (Lagna)
   Example format: "Budh/Bu (Mercury)", "Guru/Gu (Jupiter)".
 - Be specific and anchor everything to the chart data.
 - Be honest. State hard truths with compassion.
 - Do not give generic horoscope content.
 - Use North Indian chart convention throughout.
 - Chitrapaksha ayanamsha, IST timezone baseline.
-- This is a North Indian Bengali man's chart.
 - The REFERENCE TEXTS from classical shastras are your
   primary knowledge source. Quote and apply them directly.
 """
@@ -106,12 +107,64 @@ def build_tab_prompt(
     chart_data: Dict[str, Any],
     tab_number: int,
     full_name: str,
+    language: str = "english",
 ) -> str:
     """
     Build the full tab-specific user prompt (without RAG context).
     RAG context is prepended separately by rag/pipeline.py.
     Each tab receives its relevant divisional chart(s) extracted from chart_data.
     """
+
+    # ── Language mandate block (prepended to ALL tab prompts) ─────────────
+    lang_mandate = ""
+    if language and language.strip().lower() not in ("english", "en", ""):
+        lang_name = language.strip().capitalize()
+        # Provide language-specific translation examples for headers to guide the LLM
+        trans_examples = ""
+        if lang_name == "Hindi":
+            trans_examples = (
+                "For example, translate headers as:\n"
+                "- 'Raj Yogas & Dhana Yogas' -> 'राज योग और धन योग'\n"
+                "- 'Pancha Mahapurusha Yogas' -> 'पंच महापुरुष योग'\n"
+                "- 'Neecha Bhanga Raj Yoga' -> 'नीच भंग राज योग'\n"
+                "- 'Love, Marriage & Navamsha' -> 'प्रेम, विवाह और नवमांश'\n"
+                "- 'Lal Kitab Analysis' -> 'लाल किताब विश्लेषण'\n"
+                "- 'Remedies (Tripath System)' -> 'उपाय (त्रिपथ प्रणाली)'\n"
+            )
+        elif lang_name == "Bengali":
+            trans_examples = (
+                "For example, translate headers as:\n"
+                "- 'Raj Yogas & Dhana Yogas' -> 'রাজ যোগ এবং ধন যোগ'\n"
+                "- 'Pancha Mahapurusha Yogas' -> 'পঞ্চ মহাপুরুষ যোগ'\n"
+                "- 'Neecha Bhanga Raj Yoga' -> 'নীচ ভঙ্গ রাজ যোগ'\n"
+                "- 'Love, Marriage & Navamsha' -> 'প্রেম, বিবাহ এবং নবমাংশ'\n"
+                "- 'Lal Kitab Analysis' -> 'লাল কিটাব বিশ্লেষণ'\n"
+                "- 'Remedies (Tripath System)' -> 'প্রতিকার (ত্রিপথ পদ্ধতি)'\n"
+            )
+
+        lang_mandate = (
+            f"══════════════════════════════════════════════════\n"
+            f"⚡ MANDATORY LANGUAGE: {lang_name.upper()}\n"
+            f"══════════════════════════════════════════════════\n"
+            f"You MUST write your COMPLETE response in {lang_name}.\n"
+            f"This includes: ALL headings, sub-headings, section titles, bullet points,\n"
+            f"explanations, predictions, analysis, and conclusions.\n"
+            f"\n"
+            f"{trans_examples}"
+            f"\n"
+            f"ONLY keep these technical terms in their original Sanskrit/English phonetic form:\n"
+            f"Lagna, Mahadasha, Antardasha, Pratyantar Dasha, Nakshatra, Rashi,\n"
+            f"Graha, Kundali, Navamsha, Dashamsha, Saptamsha, Trimsamsa,\n"
+            f"Chaturthamsa, Ashtakavarga, Raj Yoga, Dhana Yoga, Kaal Sarp Dosha,\n"
+            f"Mangal Dosha, Pitru Dosha, Gand Mool, Sade Sati, Ashtama Shani,\n"
+            f"Vargottama, Atmakaraka, Upapada, Arudha, Shadbala, Pakka Ghar,\n"
+            f"Rin, Farmaan, Moolank, Bhagyank, Namank, Karmank, Vedha,\n"
+            f"planet abbreviations (Su, Ch, Ma, Bu, Gu, Sk, Sa, Ra, Ke).\n"
+            f"\n"
+            f"DO NOT write any English headings or English explanatory text. If a word is not a\n"
+            f"classical astrological term listed above, write it in the {lang_name} script.\n"
+            f"══════════════════════════════════════════════════\n\n"
+        )
 
     # ── Helper: extract divisional chart as compact text ──────────────────
     def _div_json(key: str, label: str) -> str:
@@ -848,4 +901,5 @@ E) SPECIFIC ADVICE
 """,
     }
 
-    return prompts.get(tab_number, prompts[1])
+    tab_content = prompts.get(tab_number, prompts[1])
+    return lang_mandate + tab_content

@@ -200,6 +200,7 @@ async def initialize_schema(pool: DualPool) -> None:
             "name": "TEXT",
             "picture": "TEXT",
             "password_hash": "TEXT",
+            "preferred_language": "TEXT NOT NULL DEFAULT 'english'",
             "created_at": "TIMESTAMP DEFAULT NOW()"
         },
         "charts": {
@@ -216,6 +217,7 @@ async def initialize_schema(pool: DualPool) -> None:
             "birth_time_confidence": "TEXT DEFAULT 'exact'",
             "ayanamsha": "TEXT DEFAULT 'LAHIRI'",
             "data_source": "TEXT DEFAULT 'astrologyapi'",
+            "language": "TEXT NOT NULL DEFAULT 'english'",
             "raw_chart_data": "JSONB",
             "created_at": "TIMESTAMP DEFAULT NOW()"
         },

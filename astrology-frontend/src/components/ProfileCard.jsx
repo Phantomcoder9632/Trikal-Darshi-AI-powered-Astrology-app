@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 function formatDate(dateStr) {
   if (!dateStr) return 'N/A';
@@ -25,6 +26,8 @@ function getInitials(name) {
 }
 
 export default React.memo(function ProfileCard({ chartData, onEdit }) {
+  const { t } = useTranslation();
+
   if (!chartData) return null;
 
   const {
@@ -57,7 +60,7 @@ export default React.memo(function ProfileCard({ chartData, onEdit }) {
           <h2 className="profile-name" title={full_name || 'Seeker'}>
             {full_name || 'Seeker'}
           </h2>
-          <span className="profile-subtitle">Cosmic Blueprint Holder</span>
+          <span className="profile-subtitle">{t('dashboard_components.profile.subtitle')}</span>
         </div>
       </div>
 
@@ -70,7 +73,7 @@ export default React.memo(function ProfileCard({ chartData, onEdit }) {
         <div className="profile-detail-row">
           <span className="material-symbols-outlined profile-detail-icon">cake</span>
           <div>
-            <span className="profile-detail-label">Date of Birth</span>
+            <span className="profile-detail-label">{t('dashboard.basics.cards.birth_identity.date_of_birth')}</span>
             <span className="profile-detail-value">{formatDate(date_of_birth)}</span>
           </div>
         </div>
@@ -78,7 +81,7 @@ export default React.memo(function ProfileCard({ chartData, onEdit }) {
         <div className="profile-detail-row">
           <span className="material-symbols-outlined profile-detail-icon">schedule</span>
           <div>
-            <span className="profile-detail-label">Birth Time</span>
+            <span className="profile-detail-label">{t('dashboard.basics.cards.birth_identity.time_of_birth')}</span>
             <span className="profile-detail-value">{time_of_birth || 'N/A'}</span>
           </div>
         </div>
@@ -86,7 +89,7 @@ export default React.memo(function ProfileCard({ chartData, onEdit }) {
         <div className="profile-detail-row">
           <span className="material-symbols-outlined profile-detail-icon">location_on</span>
           <div>
-            <span className="profile-detail-label">Birth City</span>
+            <span className="profile-detail-label">{t('dashboard.basics.cards.birth_identity.place_of_birth')}</span>
             <span className="profile-detail-value" title={city_of_birth || ''}>
               {city_of_birth || 'N/A'}
             </span>
@@ -96,7 +99,7 @@ export default React.memo(function ProfileCard({ chartData, onEdit }) {
         <div className="profile-detail-row">
           <span className="material-symbols-outlined profile-detail-icon">wb_sunny</span>
           <div>
-            <span className="profile-detail-label">Lagna (Ascendant)</span>
+            <span className="profile-detail-label">{t('dashboard.basics.cards.lagna_moon.ascendant')}</span>
             <span className="profile-detail-value">
               {ascSign} {ascDeg}
             </span>
@@ -112,7 +115,7 @@ export default React.memo(function ProfileCard({ chartData, onEdit }) {
       <div className="profile-pills-row">
 
         <div className="profile-dasha-pill">
-          <span className="profile-pill-label">Current Dasha</span>
+          <span className="profile-pill-label">{t('dashboard.basics.cards.current_dasha.title')}</span>
           <span className="profile-pill-value">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
             {mahadasha} MD · {antardasha} AD
@@ -136,7 +139,7 @@ export default React.memo(function ProfileCard({ chartData, onEdit }) {
           className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 border border-outline/35 hover:border-primary/60 bg-transparent text-primary hover:bg-primary/5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer"
         >
           <span className="material-symbols-outlined text-[16px]">edit</span>
-          <span>Edit Birth Details</span>
+          <span>{t('dashboard.editChart')}</span>
         </button>
       )}
     </div>

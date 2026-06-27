@@ -1,21 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getChart, streamChatResponse, getChatHistory } from '../services/api';
 
-const QUICK_PROMPTS = [
-  { text: '🌟 Will I get a good job soon?', tag: 'career' },
-  { text: '❤️ When will I find my life partner?', tag: 'relationship' },
-  { text: '💰 How does my financial future look?', tag: 'money' },
-  { text: '🌿 What should I do to improve my life right now?', tag: 'remedies' }
-];
 
 export default function AskAI() {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputVal, setInputVal] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [chartData, setChartData] = useState(null);
+
+  const QUICK_PROMPTS = [
+    { text: `🌟 ${t('dashboard_components.chatbot.quick_prompts.career')}`, tag: 'career' },
+    { text: `❤️ ${t('dashboard_components.chatbot.quick_prompts.relationship')}`, tag: 'relationship' },
+    { text: `💰 ${t('dashboard_components.chatbot.quick_prompts.money')}`, tag: 'money' },
+    { text: `🌿 ${t('dashboard_components.chatbot.quick_prompts.remedies')}`, tag: 'remedies' },
+  ];
 
   const messagesEndRef = useRef(null);
   const location = useLocation();
@@ -72,20 +75,24 @@ export default function AskAI() {
 
         if (chartId) {
           if (chartData && chartData.chart_id === chartId) {
-            const city = chartData.city_of_birth || 'your hometown';
+            const city = chartData.city_of_birth || t('dashboard_components.chatbot.welcome_named_hometown');
             const dob  = chartData.date_of_birth
               ? new Date(chartData.date_of_birth).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
               : null;
             const seekerName = chartData.full_name ? chartData.full_name.split(' ')[0] : null;
 
             welcomeMsg = seekerName
-              ? `Hey ${seekerName}! 😊 I'm your Trikal AI Guide — think of me as that wise friend who's read your whole life story and is here to help you understand it.\n\nI can see you were born${dob ? ` on ${dob}` : ''} in ${city}. Ask me anything — career, love, money, family, or just what's coming up in your life. I'll explain everything in simple, everyday words — no confusing astrology jargon, I promise! 🌟`
-              : `Hey! 😊 I'm your Trikal AI Guide. I can see your birth chart is loaded up. Ask me anything about your life — career, love, money, what's coming up — and I'll explain it all in simple, easy-to-understand language. No confusing terms, just real talk! 🌟`;
+              ? t('dashboard_components.chatbot.welcome_named', {
+                  name: seekerName,
+                  dob: dob ? t('dashboard_components.chatbot.welcome_named_born', { dob }) : '',
+                  city,
+                })
+              : t('dashboard_components.chatbot.welcome_loaded');
           } else {
-            welcomeMsg = `Hey! 😊 I'm loading your birth chart details... Give me just a moment! In the meantime, feel free to ask me any general question about astrology and I'll be happy to help.`;
+            welcomeMsg = t('dashboard_components.chatbot.welcome_loading');
           }
         } else {
-          welcomeMsg = `Hey there! 😊 Welcome to Trikal Darshi — I'm your AI Guide!\n\nI'm here to help you understand what the stars say about your life — your career, love life, finances, and more. And don't worry, I'll explain everything in simple everyday language, no complicated astrology words!\n\nTo get started, go ahead and enter your birth details (date, time, and city) so I can give you a personalized reading. Or feel free to ask me any general question right now! 🌟`;
+          welcomeMsg = t('dashboard_components.chatbot.welcome_guest');
         }
 
         const welcomeObj = {
@@ -176,6 +183,7 @@ export default function AskAI() {
     setMessages((prev) => [...prev, aiMsg]);
 
     try {
+      const chartLang = chartData?.language || 'english';
       await streamChatResponse(text, chartId, history, userMsgId, aiMsgId, (chunk) => {
         setIsTyping(false);
         setMessages((prev) => 
@@ -185,13 +193,13 @@ export default function AskAI() {
               : msg
           )
         );
-      });
+      }, chartLang);
     } catch (err) {
       setIsTyping(false);
       setMessages((prev) => 
         prev.map(msg => 
           msg.id === aiMsgId 
-            ? { ...msg, text: msg.text || "⚠️ My cosmic connection was interrupted. Please try asking again." }
+            ? { ...msg, text: msg.text || t('dashboard_components.chatbot.connection_interrupted') }
             : msg
         )
       );
@@ -207,7 +215,7 @@ export default function AskAI() {
         {showPrompt && !isOpen && (
           <div className="ask-ai-tooltip">
             <div className="ask-ai-tooltip-content">
-              <span>Ask your query! 🔮</span>
+              <span>{t('dashboard_components.chatbot.query_tooltip')}</span>
               <div className="ask-ai-tooltip-arrow" />
             </div>
           </div>
@@ -226,7 +234,7 @@ export default function AskAI() {
           ) : (
             <div className="flex items-center gap-2 px-1">
               <span className="material-symbols-outlined text-[20px] animate-pulse">auto_awesome</span>
-              <span className="font-headline-md tracking-wider text-[11px] uppercase font-bold hidden sm:inline">Ask AI</span>
+              <span className="font-headline-md tracking-wider text-[11px] uppercase font-bold hidden sm:inline">{t('dashboard_components.chatbot.ask_ai')}</span>
             </div>
           )}
         </button>
@@ -241,10 +249,10 @@ export default function AskAI() {
               <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
             </div>
             <div>
-              <h3 className="ask-ai-title">Trikal AI Guide</h3>
+              <h3 className="ask-ai-title">{t('dashboard_components.chatbot.ask_ai_guide')}</h3>
               <div className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-[9px] uppercase font-bold text-outline tracking-wider">Cosmic Alignment Active</span>
+                <span className="text-[9px] uppercase font-bold text-outline tracking-wider">{t('dashboard_components.chatbot.alignment_active')}</span>
               </div>
             </div>
           </div>
@@ -309,7 +317,7 @@ export default function AskAI() {
                     <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce delay-100" />
                     <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce delay-200" />
                     <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce delay-300" />
-                    <span className="text-[10px] text-outline font-semibold ml-2 italic">Channeling celestial matrices...</span>
+                    <span className="text-[10px] text-outline font-semibold ml-2 italic">{t('dashboard_components.chatbot.typing_indicator')}</span>
                   </div>
                 </div>
               </div>
@@ -320,7 +328,7 @@ export default function AskAI() {
 
         {/* Quick Prompts */}
         <div className="ask-ai-quick-prompts">
-          <p className="text-[9px] uppercase tracking-wider font-bold text-outline mb-1.5 px-1">Suggested Inquiries</p>
+          <p className="text-[9px] uppercase tracking-wider font-bold text-outline mb-1.5 px-1">{t('dashboard_components.chatbot.suggested_inquiries')}</p>
           <div className="flex flex-wrap gap-1.5 max-h-[90px] overflow-y-auto pr-1">
             {QUICK_PROMPTS.map((p, idx) => (
               <button
@@ -346,7 +354,7 @@ export default function AskAI() {
             type="text"
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
-            placeholder="Ask AI your cosmic query..."
+            placeholder={t('dashboard_components.chatbot.input_placeholder')}
             className="ask-ai-input"
             maxLength={250}
           />

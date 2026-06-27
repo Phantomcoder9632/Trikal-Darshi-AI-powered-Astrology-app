@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default React.memo(function CosmicSummary({ summaryText, chartData }) {
+  const { t } = useTranslation();
   let textLines = [];
 
   if (summaryText && typeof summaryText === 'string') {
@@ -55,7 +57,7 @@ export default React.memo(function CosmicSummary({ summaryText, chartData }) {
       {/* Header */}
       <h3 className="font-headline-md text-primary text-sm md:text-base font-bold uppercase tracking-widest mb-5 flex items-center gap-2">
         <span className="w-4 h-px bg-primary/30 shrink-0" />
-        Current Manifestation Blueprint
+        {t('dashboard.loading')}
         <span className="w-4 h-px bg-primary/30 shrink-0" />
       </h3>
 

@@ -21,6 +21,19 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Charts"])
 
+def normalize_chart_language(lang: Optional[str]) -> str:
+    """Normalize language input to english/hindi/bengali."""
+    if not lang:
+        return "english"
+    lang = lang.lower().strip()
+    mapping = {
+        "en": "english", "english": "english",
+        "hi": "hindi",   "hindi": "hindi",
+        "bn": "bengali", "bengali": "bengali",
+    }
+    return mapping.get(lang, "english")
+
+
 @router.get("/gochar", response_model=Dict[str, Any])
 async def get_gochar_chart(lat: float = 28.6139, lng: float = 77.2090):
     """
@@ -249,6 +262,7 @@ class ChartGenerateRequest(BaseModel):
     city_of_birth: str
     current_city: str
     birth_time_confidence: str  # exact | approximate | unknown
+    language: Optional[str] = "english"  # Per-chart language preference
 
 @router.post("/generate", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
 async def generate_chart(
@@ -285,9 +299,10 @@ async def generate_chart(
     # ── b. Build cache key: "chart:{dob}:{tob}:{lat}:{lng}" ──────────────────
     dob_str = payload.date_of_birth.strip()
     tob_str = payload.time_of_birth.strip()
+    normalized_lang = normalize_chart_language(payload.language)
     
     # We round lat/lng to 4 decimal places for key consistency
-    cache_key = generate_chart_cache_key(dob_str, tob_str, round(lat, 4), round(lng, 4))
+    cache_key = generate_chart_cache_key(dob_str, tob_str, round(lat, 4), round(lng, 4), normalized_lang)
 
     # ── c. Check Redis Cache for hit ────────────────────────────────────────
     cached_chart = await get_cached_chart(cache_key)
@@ -327,8 +342,10 @@ async def generate_chart(
                                 chart_id=chart_uuid,
                                 chart_data=cached_chart,
                                 full_name=cached_chart.get("full_name", payload.full_name),
+                                language=normalized_lang,
                             )
                             logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for Redis-cached chart {cached_chart_id}")
+                            cached_chart["language"] = normalized_lang
                             return cached_chart
                         else:
                             logger.info(f"Redis cache hit but chart belongs to different user {db_owner}, bypass cache")
@@ -354,6 +371,7 @@ async def generate_chart(
               AND ABS(latitude - $5) < 0.0001 
               AND ABS(longitude - $6) < 0.0001
               AND (user_id IS NULL OR user_id = $7)
+              AND language = $8
             ORDER BY created_at DESC LIMIT 1
             """,
             payload.full_name,
@@ -362,7 +380,8 @@ async def generate_chart(
             payload.birth_time_confidence,
             lat,
             lng,
-            user_uuid
+            user_uuid,
+            normalized_lang
         )
         if row:
             logger.info(f"PostgreSQL chart hit under matching inputs: id={row['id']}")
@@ -380,6 +399,7 @@ async def generate_chart(
             
             # Ensure correct chart_id matching the database UUID is present in chart_id field
             chart_data["chart_id"] = str(row["id"])
+            chart_data["language"] = normalized_lang
             
             # Heal legacy chart if incomplete
             chart_data = await ensure_chart_complete(chart_data, conn, row["id"])
@@ -398,6 +418,7 @@ async def generate_chart(
                 chart_id=row["id"],
                 chart_data=chart_data,
                 full_name=chart_data.get("full_name", payload.full_name),
+                language=normalized_lang,
             )
             logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for existing chart {row['id']}")
             
@@ -437,6 +458,7 @@ async def generate_chart(
     # Add key metadata properties
     new_id = uuid.uuid4()
     chart_data["chart_id"] = str(new_id)
+    chart_data["language"] = normalized_lang
     chart_data["full_name"] = payload.full_name
     chart_data["date_of_birth"] = payload.date_of_birth
     chart_data["time_of_birth"] = payload.time_of_birth
@@ -448,14 +470,15 @@ async def generate_chart(
     created_at = datetime.now()
 
     user_uuid = uuid.UUID(str(current_user["id"])) if current_user else None
+    normalized_lang = normalize_chart_language(payload.language)
     try:
         await conn.execute(
             """
             INSERT INTO charts (
                 id, user_id, full_name, date_of_birth, time_of_birth, city_of_birth, current_city,
                 latitude, longitude, timezone, birth_time_confidence, ayanamsha,
-                data_source, raw_chart_data, created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                data_source, language, raw_chart_data, created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             """,
             new_id,
             user_uuid,
@@ -470,6 +493,7 @@ async def generate_chart(
             payload.birth_time_confidence,
             "LAHIRI",
             chart_data.get("source", "astrologyapi"),
+            normalized_lang,
             json.dumps(chart_data, default=str),
             created_at
         )
@@ -496,10 +520,12 @@ async def generate_chart(
         chart_id=new_id,
         chart_data=chart_data,
         full_name=payload.full_name,
+        language=normalized_lang,
     )
     logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for new chart {new_id}")
 
-    # ── j. Return complete chart JSON with chart_id ──────────────────────────
+    # ── j. Return complete chart JSON with chart_id + language ───────────────
+    chart_data["language"] = normalized_lang
     return chart_data
 
 @router.put("/{chart_id}", response_model=Dict[str, Any])
@@ -518,8 +544,9 @@ async def update_chart(
     logger.info(f"Updating chart {chart_id} for user {current_user['id']}")
 
     # 1. Verify chart exists and is owned by the current user
+    # 1. Verify chart exists and is owned by the current user
     row = await conn.fetchrow(
-        "SELECT user_id, city_of_birth FROM charts WHERE id = $1",
+        "SELECT user_id, city_of_birth, language FROM charts WHERE id = $1",
         chart_id
     )
     if not row:
@@ -552,6 +579,110 @@ async def update_chart(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Geocoding service failed during chart birth place lookup."
         )
+
+    normalized_lang = normalize_chart_language(payload.language)
+    old_lang = row["language"] or "english"
+
+    if normalized_lang != old_lang:
+        # User is changing the language! We should CREATE a new chart record
+        # instead of updating the current one, so both are preserved.
+        new_chart_id = uuid.uuid4()
+        
+        # Calculate new complete chart
+        dob_str = payload.date_of_birth.strip()
+        tob_str = payload.time_of_birth.strip()
+        user_input = {
+            "full_name": payload.full_name,
+            "date_of_birth": dob_str,
+            "time_of_birth": tob_str,
+            "city_of_birth": payload.city_of_birth,
+            "lat": lat,
+            "lng": lng,
+            "birth_time_confidence": payload.birth_time_confidence,
+            "timezone_offset": 5.5
+        }
+        
+        try:
+            chart_data = await get_complete_chart(user_input)
+        except Exception as e:
+            logger.exception("Hybrid calculation engine failed during update-fork.")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Astrological calculation failed: {str(e)}"
+            )
+
+        # Calculate numerology
+        parsed_dob = date.fromisoformat(dob_str)
+        numerology_data = get_numerology(parsed_dob, payload.full_name)
+        chart_data["numerology"] = numerology_data
+
+        # Merge metadata
+        chart_data["chart_id"] = str(new_chart_id)
+        chart_data["full_name"] = payload.full_name
+        chart_data["date_of_birth"] = payload.date_of_birth
+        chart_data["time_of_birth"] = payload.time_of_birth
+        chart_data["city_of_birth"] = payload.city_of_birth
+        chart_data["current_city"] = payload.current_city
+        chart_data["language"] = normalized_lang
+
+        # Save to database as a NEW record
+        parsed_tob = time.fromisoformat(tob_str)
+        created_at = datetime.now()
+        user_uuid = uuid.UUID(str(current_user["id"])) if current_user else None
+
+        try:
+            await conn.execute(
+                """
+                INSERT INTO charts (
+                    id, user_id, full_name, date_of_birth, time_of_birth, city_of_birth, current_city,
+                    latitude, longitude, timezone, birth_time_confidence, ayanamsha,
+                    data_source, language, raw_chart_data, created_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                """,
+                new_chart_id,
+                user_uuid,
+                payload.full_name,
+                parsed_dob,
+                parsed_tob,
+                payload.city_of_birth,
+                payload.current_city,
+                lat,
+                lng,
+                "Asia/Kolkata",
+                payload.birth_time_confidence,
+                "LAHIRI",
+                chart_data.get("source", "astrologyapi"),
+                normalized_lang,
+                json.dumps(chart_data, default=str),
+                created_at
+            )
+        except Exception as e:
+            logger.error(f"Failed to persist new chart during update-fork: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to persist calculations to PostgreSQL."
+            )
+
+        # Cache new chart in Redis
+        cache_key = generate_chart_cache_key(dob_str, tob_str, round(lat, 4), round(lng, 4), normalized_lang)
+        await cache_chart(cache_key, chart_data)
+
+        # Trigger background pre-generation for the new chart
+        background_tasks.add_task(
+            prefetch_rag_contexts,
+            chart_id=new_chart_id,
+            chart_data=chart_data,
+        )
+        background_tasks.add_task(
+            pregenerate_all_tabs,
+            chart_id=new_chart_id,
+            chart_data=chart_data,
+            full_name=payload.full_name,
+            language=normalized_lang,
+        )
+        logger.info(f"[chart] Created separate chart {new_chart_id} for new language {normalized_lang}")
+
+        return chart_data
 
     # 3. Calculate new complete chart
     dob_str = payload.date_of_birth.strip()
@@ -589,7 +720,7 @@ async def update_chart(
     chart_data["city_of_birth"] = payload.city_of_birth
     chart_data["current_city"] = payload.current_city
 
-    # 5. Update PostgreSQL record
+    # 5. Update PostgreSQL record in place
     parsed_tob = time.fromisoformat(tob_str)
     try:
         await conn.execute(
@@ -604,9 +735,10 @@ async def update_chart(
                 longitude = $7,
                 birth_time_confidence = $8,
                 data_source = $9,
-                raw_chart_data = $10,
+                language = $10,
+                raw_chart_data = $11,
                 created_at = NOW()
-            WHERE id = $11
+            WHERE id = $12
             """,
             payload.full_name,
             parsed_dob,
@@ -617,6 +749,7 @@ async def update_chart(
             lng,
             payload.birth_time_confidence,
             chart_data.get("source", "astrologyapi"),
+            normalized_lang,
             json.dumps(chart_data, default=str),
             chart_id
         )
@@ -642,7 +775,7 @@ async def update_chart(
             for lang in ("english", "hindi", "bengali"):
                 await redis_client.delete(f"interpretation:{chart_id_str}:{tab_num}:{lang}")
         
-        cache_key = generate_chart_cache_key(dob_str, tob_str, round(lat, 4), round(lng, 4))
+        cache_key = generate_chart_cache_key(dob_str, tob_str, round(lat, 4), round(lng, 4), normalized_lang)
         await cache_chart(cache_key, chart_data)
         logger.info(f"Invalidated Redis interpretation cache and stored updated chart in Redis")
     except Exception as redis_err:
@@ -659,9 +792,11 @@ async def update_chart(
         chart_id=chart_id,
         chart_data=chart_data,
         full_name=payload.full_name,
+        language=normalized_lang,
     )
     logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for updated chart {chart_id}")
 
+    chart_data["language"] = normalized_lang
     return chart_data
 
 @router.get("/{chart_id}", response_model=Dict[str, Any])
@@ -679,7 +814,8 @@ async def get_chart(
     
     row = await conn.fetchrow(
         """
-        SELECT user_id, full_name, date_of_birth, time_of_birth, city_of_birth, current_city, raw_chart_data 
+        SELECT user_id, full_name, date_of_birth, time_of_birth, city_of_birth, current_city,
+               language, birth_time_confidence, raw_chart_data 
         FROM charts 
         WHERE id = $1
         """,
@@ -708,11 +844,13 @@ async def get_chart(
 
     # Inject database fields if missing from raw_chart_data
     chart_data["chart_id"] = str(chart_id)
+    chart_data["language"] = row["language"] or "english"
     chart_data["full_name"] = chart_data.get("full_name") or row["full_name"]
     chart_data["date_of_birth"] = chart_data.get("date_of_birth") or (str(row["date_of_birth"]) if row["date_of_birth"] else None)
     chart_data["time_of_birth"] = chart_data.get("time_of_birth") or (str(row["time_of_birth"]) if row["time_of_birth"] else None)
     chart_data["city_of_birth"] = chart_data.get("city_of_birth") or row["city_of_birth"]
     chart_data["current_city"] = chart_data.get("current_city") or row["current_city"]
+    chart_data["birth_time_confidence"] = chart_data.get("birth_time_confidence") or row["birth_time_confidence"] or "exact"
 
     # Heal legacy chart if incomplete
     chart_data = await ensure_chart_complete(chart_data, conn, chart_id)
@@ -728,6 +866,7 @@ async def get_chart(
         chart_id=chart_id,
         chart_data=chart_data,
         full_name=chart_data.get("full_name"),
+        language=chart_data.get("language", "english"),
     )
     logger.info(f"[chart] Background pre-generation & RAG prefetch triggered for GET chart {chart_id}")
 
@@ -747,7 +886,8 @@ async def list_user_charts(
         user_uuid = uuid.UUID(str(current_user["id"]))
         rows = await conn.fetch(
             """
-            SELECT id, full_name, date_of_birth, time_of_birth, city_of_birth, current_city, created_at
+            SELECT id, full_name, date_of_birth, time_of_birth, city_of_birth, current_city,
+                   language, created_at
             FROM charts
             WHERE user_id = $1
             ORDER BY created_at DESC
@@ -763,6 +903,7 @@ async def list_user_charts(
                 "time_of_birth": str(r["time_of_birth"]),
                 "city_of_birth": r["city_of_birth"],
                 "current_city": r["current_city"],
+                "language": r["language"] or "english",
                 "created_at": r["created_at"].isoformat() if r["created_at"] else None
             })
         return charts

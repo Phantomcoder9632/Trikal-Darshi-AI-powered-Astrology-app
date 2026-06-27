@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { BASE_URL } from '../services/api';
+import i18n, { backendLangToI18n } from '../i18n';
 
 const AuthContext = createContext(null);
 
@@ -14,16 +15,22 @@ export function AuthProvider({ children }) {
     const savedUser = localStorage.getItem('user');
     const savedToken = localStorage.getItem('token');
     if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
+      const profile = JSON.parse(savedUser);
+      setUser(profile);
       setToken(savedToken);
+      // Restore UI language from saved user preference
+      if (profile?.preferred_language) {
+        i18n.changeLanguage(backendLangToI18n(profile.preferred_language));
+      }
     }
     setLoading(false);
   }, []);
 
-  const login = async (idToken) => {
+  const login = async (idToken, language = 'english') => {
     try {
       const response = await axios.post(`${BASE_URL}/auth/google`, {
         token: idToken,
+        language,
       });
 
       const { access_token, user: profile } = response.data;
@@ -33,6 +40,10 @@ export function AuthProvider({ children }) {
       
       localStorage.setItem('user', JSON.stringify(profile));
       localStorage.setItem('token', access_token);
+
+      // Apply user's preferred language to UI
+      const lang = profile?.preferred_language || language;
+      i18n.changeLanguage(backendLangToI18n(lang));
       
       return profile;
     } catch (error) {
@@ -55,6 +66,11 @@ export function AuthProvider({ children }) {
       
       localStorage.setItem('user', JSON.stringify(profile));
       localStorage.setItem('token', access_token);
+
+      // Apply user's preferred language to UI
+      if (profile?.preferred_language) {
+        i18n.changeLanguage(backendLangToI18n(profile.preferred_language));
+      }
       
       return profile;
     } catch (error) {
@@ -63,12 +79,13 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const handleEmailRegister = async (email, password, name) => {
+  const handleEmailRegister = async (email, password, name, language = 'english') => {
     try {
       const response = await axios.post(`${BASE_URL}/auth/register`, {
         email,
         password,
         name,
+        language,
       });
 
       const { access_token, user: profile } = response.data;
@@ -78,6 +95,9 @@ export function AuthProvider({ children }) {
       
       localStorage.setItem('user', JSON.stringify(profile));
       localStorage.setItem('token', access_token);
+
+      // Apply chosen language to UI
+      i18n.changeLanguage(backendLangToI18n(language));
       
       return profile;
     } catch (error) {
@@ -91,6 +111,8 @@ export function AuthProvider({ children }) {
     setToken(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('trikal_lang_chosen');
+    i18n.changeLanguage('en'); // Reset to English on logout
   };
 
   const value = {

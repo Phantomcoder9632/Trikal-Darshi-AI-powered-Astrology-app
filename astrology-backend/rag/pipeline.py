@@ -51,6 +51,7 @@ FALLBACK_API_KEY   = os.getenv("OPENROUTER_API_KEY", "")
 FALLBACK_MODELS    = [
     "google/gemma-4-31b-it:free",
     "meta-llama/llama-3.3-70b-instruct:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
     "openrouter/free",
 ]
 
@@ -265,6 +266,11 @@ def _stream_fallback(messages: list, model: str) -> Any:
         temperature=0.7,
         max_tokens=4096,
         stream=True,
+        extra_body={
+            "reasoning": {
+                "exclude": True
+            }
+        }
     )
 
 
@@ -324,6 +330,8 @@ async def stream_with_rag(
     tab_number: int,
     full_name: str,
     tab_prompt: str,
+    language: str = "english",
+    model_info: dict = None,
 ):
     """
     Main RAG + LLM streaming pipeline.
@@ -339,6 +347,7 @@ async def stream_with_rag(
         tab_number:  Report tab (1–10).
         full_name:   Subject's full name (for prompt personalisation).
         tab_prompt:  Complete user prompt (without RAG context) to wrap.
+        language:    Target language for the generated content.
 
     Yields:
         str — one streamed token at a time.
@@ -366,8 +375,24 @@ async def stream_with_rag(
     )
     user_prompt = f"{rag_block}\n\n━━━━━━━━━━━━━━━━━━━━━━\n\n{tab_prompt}"
 
+    # Build system prompt — inject language into system role for non-English
+    if language and language.lower() not in ("english", "en", ""):
+        lang_name = language.strip().capitalize()
+        lang_system_suffix = (
+            f"\n\n⚡ CRITICAL OUTPUT LANGUAGE: {lang_name.upper()}\n"
+            f"Your ENTIRE response must be in {lang_name}. "
+            f"All headings, analysis, bullet points, and conclusions must be in {lang_name}. "
+            f"Keep only classical astrological terms (Lagna, Mahadasha, Nakshatra, Dasha, "
+            f"Rashi, Graha, Kundali, Dosha names, Yoga names, planet abbreviations) "
+            f"in their original Sanskrit/English form. "
+            f"Every other word must be in {lang_name}."
+        )
+        active_system_prompt = SYSTEM_PROMPT + lang_system_suffix
+    else:
+        active_system_prompt = SYSTEM_PROMPT
+
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": active_system_prompt},
         {"role": "user",   "content": user_prompt},
     ]
 
@@ -380,6 +405,8 @@ async def stream_with_rag(
             yielded_any = True
             yield token
         if yielded_any:
+            if model_info is not None:
+                model_info["model"] = f"primary/{os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')}"
             return  # primary succeeded — done
     except Exception as primary_err:
         primary_err_msg = str(primary_err)
@@ -413,6 +440,8 @@ async def stream_with_rag(
                 yield token
             if yielded_any:
                 logger.info(f"[pipeline] Fallback model {fb_model} succeeded.")
+                if model_info is not None:
+                    model_info["model"] = f"fallback/{fb_model}"
                 return  # Success!
         except Exception as fallback_err:
             logger.warning(f"[pipeline] Fallback model {fb_model} failed: {fallback_err}")
@@ -484,7 +513,9 @@ async def stream_chat_response(
     history: list,
     chart_data: dict | None = None,
     interpretations: list | None = None,
-    stage: str = _STAGE_NO_CHART
+    stage: str = _STAGE_NO_CHART,
+    language: str = "english",
+    model_info: dict = None,
 ) -> AsyncGenerator[str, None]:
     """
     Main Chat RAG + LLM streaming pipeline.
@@ -575,6 +606,16 @@ async def stream_chat_response(
     if context_parts:
         system_prompt += "\n\n" + "\n\n".join(context_parts)
 
+    # Append language directive for non-English chat
+    if language and language.lower() != "english":
+        lang_name = language.capitalize()
+        system_prompt += (
+            f"\n\nCRITICAL INSTRUCTION: Always respond in {lang_name}. "
+            f"Keep Vedic/astrological terms (Mahadasha, Lagna, Nakshatra, Dasha, "
+            f"Sade Sati, Mangal Dosha, Kundali, Graha) in their original Sanskrit/English form. "
+            f"All other text MUST be in {lang_name}."
+        )
+
     # ── 5. Build message list with conversation history ────────────────────
     llm_messages = [{"role": "system", "content": system_prompt}]
     for msg in history:
@@ -590,6 +631,8 @@ async def stream_chat_response(
             yielded_any = True
             yield token
         if yielded_any:
+            if model_info is not None:
+                model_info["model"] = f"primary/{os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')}"
             return
     except Exception as primary_err:
         if _is_rate_limit(primary_err):
@@ -614,6 +657,8 @@ async def stream_chat_response(
                 yielded_any = True
                 yield token
             if yielded_any:
+                if model_info is not None:
+                    model_info["model"] = f"fallback/{fb_model}"
                 return
         except Exception as fallback_err:
             fallback_errs.append(f"{fb_model}: {fallback_err}")

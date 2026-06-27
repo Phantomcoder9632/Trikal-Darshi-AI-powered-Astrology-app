@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { generateChart, getUserCharts } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { i18nLangToBackend, backendLangToI18n } from '../i18n';
+import LanguageSelect from '../components/LanguageSelect';
 
 const FEATURES = [
   {
@@ -56,7 +59,7 @@ const TESTIMONIALS = [
   },
 ];
 
-// Animated star field canvas
+// Animated golden shimmer star field canvas
 function StarCanvas() {
   const canvasRef = useRef(null);
   useEffect(() => {
@@ -67,23 +70,29 @@ function StarCanvas() {
     let h = canvas.height = canvas.offsetHeight;
     let animId;
 
-    const stars = Array.from({ length: 180 }, () => ({
+    // Mix of tiny stars AND larger golden sparkles
+    const stars = Array.from({ length: 240 }, (_, i) => ({
       x: Math.random() * w,
       y: Math.random() * h,
-      r: Math.random() * 1.2 + 0.2,
+      r: i < 180 ? Math.random() * 1.0 + 0.2 : Math.random() * 2.2 + 1.0, // some bigger sparkles
       a: Math.random(),
-      speed: Math.random() * 0.4 + 0.1,
+      speed: Math.random() * 0.35 + 0.08,
       dir: Math.random() > 0.5 ? 1 : -1,
+      gold: i >= 160, // last 80 are golden sparkles
     }));
 
     function draw() {
       ctx.clearRect(0, 0, w, h);
       stars.forEach(s => {
-        s.a += s.speed * 0.008 * s.dir;
-        if (s.a > 1 || s.a < 0.05) s.dir *= -1;
+        s.a += s.speed * 0.007 * s.dir;
+        if (s.a > 1 || s.a < 0.04) s.dir *= -1;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(160, 105, 20, ${s.a * 0.22})`;
+        if (s.gold) {
+          ctx.fillStyle = `rgba(201, 149, 42, ${s.a * 0.45})`;
+        } else {
+          ctx.fillStyle = `rgba(140, 100, 20, ${s.a * 0.18})`;
+        }
         ctx.fill();
       });
       animId = requestAnimationFrame(draw);
@@ -119,11 +128,41 @@ function YantraSVG({ size = 200, opacity = 0.18 }) {
   );
 }
 
+// Parallax banner hook
+function useBannerParallax() {
+  useEffect(() => {
+    const banner = document.querySelector('.cosmic-banner-img');
+    if (!banner) return;
+
+    let ticking = false;
+    function onScroll() {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const scrollY = window.scrollY;
+          // Subtle parallax: moves at 25% of scroll speed
+          const offset = Math.min(scrollY * 0.25, 40);
+          banner.style.setProperty('--banner-parallax', `${offset}px`);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+}
+
 export default function HomePage() {
   const navigate = useNavigate();
   const formRef = useRef(null);
   const guestLoginRef = useRef(null);
   const { user, login, loginWithEmail, registerWithEmail, logout } = useAuth();
+  const { t, i18n } = useTranslation();
+  const [signupLanguage, setSignupLanguage] = useState('english');
+
+  // Banner parallax on scroll
+  useBannerParallax();
 
   const [authMode, setAuthMode] = useState('login');
   const [authEmail, setAuthEmail] = useState('');
@@ -133,13 +172,20 @@ export default function HomePage() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
-  const [formData, setFormData] = useState({
-    full_name: '',
-    date_of_birth: '',
-    time_of_birth: '',
-    birth_time_confidence: 'exact',
-    city_of_birth: '',
-    current_city: '',
+  const [formData, setFormData] = useState(() => {
+    // Use the language chosen in the welcome modal (or user's saved preference)
+    const savedLang = localStorage.getItem('trikal_lang_chosen')
+      || user?.preferred_language
+      || 'english';
+    return {
+      full_name: '',
+      date_of_birth: '',
+      time_of_birth: '',
+      birth_time_confidence: 'exact',
+      city_of_birth: '',
+      current_city: '',
+      language: savedLang,
+    };
   });
 
   const [loading, setLoading] = useState(false);
@@ -177,6 +223,30 @@ export default function HomePage() {
     loadCharts();
   }, []);
 
+  // Sync user preferred language to UI and form state on mount/change
+  useEffect(() => {
+    if (user?.preferred_language) {
+      const parsedLang = user.preferred_language.toLowerCase().trim();
+      setFormData((prev) => ({
+        ...prev,
+        language: parsedLang
+      }));
+      i18n.changeLanguage(backendLangToI18n(parsedLang));
+      localStorage.setItem('trikal_lang_chosen', parsedLang);
+    }
+  }, [user]);
+
+  // Sync globally selected i18n language into formData.language to catch welcome modal choice
+  useEffect(() => {
+    const activeI18n = i18n.language || 'en';
+    const backendLangMap = { en: 'english', hi: 'hindi', bn: 'bengali' };
+    const resolvedLang = backendLangMap[activeI18n] || 'english';
+    setFormData((prev) => ({
+      ...prev,
+      language: resolvedLang
+    }));
+  }, [i18n.language]);
+
   // Scroll reveal
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -204,12 +274,16 @@ export default function HomePage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === 'language') {
+      i18n.changeLanguage(backendLangToI18n(value));
+      localStorage.setItem('trikal_lang_chosen', value);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.full_name || !formData.date_of_birth || !formData.time_of_birth || !formData.city_of_birth) {
-      setError('Please fill in all required birth parameters marked with *');
+      setError(t('dashboard.modal.fill_required'));
       return;
     }
     setLoading(true);
@@ -277,7 +351,7 @@ export default function HomePage() {
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     if (!authEmail || !authPassword || (authMode === 'register' && !authName)) {
-      setAuthError('Please fill in all required fields.');
+      setAuthError(t('dashboard.modal.fill_required'));
       return;
     }
     setAuthLoading(true);
@@ -286,7 +360,7 @@ export default function HomePage() {
       if (authMode === 'login') {
         await loginWithEmail(authEmail, authPassword);
       } else {
-        await registerWithEmail(authEmail, authPassword, authName);
+        await registerWithEmail(authEmail, authPassword, authName, signupLanguage);
       }
       await handleAuthSuccess();
     } catch (err) {
@@ -308,7 +382,7 @@ export default function HomePage() {
             onClick={() => { setAuthMode(mode); setAuthError(''); }}
             className={`lp-auth-tab ${authMode === mode ? 'active' : ''}`}
           >
-            {mode === 'login' ? 'Sign In' : 'Register'}
+            {mode === 'login' ? t('nav.signIn') : t('nav.signUp')}
           </button>
         ))}
       </div>
@@ -330,22 +404,39 @@ export default function HomePage() {
       ) : (
         <form onSubmit={handleAuthSubmit} className="lp-form">
           {authMode === 'register' && (
-            <div className="lp-field">
-              <label htmlFor="auth_name" className="lp-label">Full Name</label>
-              <input
-                id="auth_name"
-                type="text"
-                value={authName}
-                onChange={(e) => setAuthName(e.target.value)}
-                placeholder="Enter your name"
-                className="lp-input"
-                required
-              />
-            </div>
+            <>
+              <div className="lp-field">
+                <label htmlFor="auth_name" className="lp-label">{t('home.form.fullName')}</label>
+                <input
+                  id="auth_name"
+                  type="text"
+                  value={authName}
+                  onChange={(e) => setAuthName(e.target.value)}
+                  placeholder={t('home.form.fullName')}
+                  className="lp-input"
+                  required
+                />
+              </div>
+              <div className="lp-field">
+                <label htmlFor="signup_language" className="lp-label">
+                  <span className="material-symbols-outlined" style={{ fontSize: 15, verticalAlign: 'middle', marginRight: 4 }}>translate</span>
+                  {t('auth.selectLanguage')}
+                </label>
+                <LanguageSelect
+                  id="signup_language"
+                  value={signupLanguage}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSignupLanguage(val);
+                    i18n.changeLanguage(backendLangToI18n(val));
+                  }}
+                />
+              </div>
+            </>
           )}
 
           <div className="lp-field">
-            <label htmlFor="auth_email" className="lp-label">Email Address</label>
+            <label htmlFor="auth_email" className="lp-label">{t('auth.email')}</label>
             <input
               id="auth_email"
               type="email"
@@ -358,7 +449,7 @@ export default function HomePage() {
           </div>
 
           <div className="lp-field">
-            <label htmlFor="auth_password" className="lp-label">Password</label>
+            <label htmlFor="auth_password" className="lp-label">{t('auth.password')}</label>
             <input
               id="auth_password"
               type="password"
@@ -372,7 +463,7 @@ export default function HomePage() {
 
           <button type="submit" className="lp-submit-btn">
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>vpn_key</span>
-            {authMode === 'login' ? 'Enter the Cosmos' : 'Begin Journey'}
+            {authMode === 'login' ? t('auth.enterCosmos') : t('auth.beginJourney')}
           </button>
 
           <div className="lp-divider-row">
@@ -387,19 +478,19 @@ export default function HomePage() {
               onClick={() => handleGoogleLogin()}
               disabled={googleLoading}
               className="lp-google-btn"
-              aria-label="Sign in with Google"
+              aria-label={t('auth.continueGoogle')}
             >
               {googleLoading ? (
                 <span className="material-symbols-outlined lp-spinner" style={{ fontSize: 18 }}>progress_activity</span>
               ) : (
                 <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
-                  <path d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05"/>
-                  <path d="M9 3.583c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 6.294C4.672 4.167 6.656 3.583 9 3.583z" fill="#EA4335"/>
+                  <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4" />
+                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853" />
+                  <path d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05" />
+                  <path d="M9 3.583c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 6.294C4.672 4.167 6.656 3.583 9 3.583z" fill="#EA4335" />
                 </svg>
               )}
-              <span>Continue with Google</span>
+              <span>{t('auth.continueGoogle')}</span>
             </button>
           </div>
         </form>
@@ -410,21 +501,21 @@ export default function HomePage() {
   const renderBirthForm = () => (
     <form onSubmit={handleSubmit} id="birthForm" className="blueprint-form">
       <div className="blueprint-form-group">
-        <label htmlFor="full_name" className="blueprint-label">Full Name *</label>
+        <label htmlFor="full_name" className="blueprint-label">{t('home.form.fullName')} *</label>
         <input
           id="full_name"
           type="text"
           name="full_name"
           value={formData.full_name}
           onChange={handleChange}
-          placeholder="Enter your full name"
+          placeholder={t('home.form.fullName')}
           autoComplete="name"
           className="blueprint-input"
         />
       </div>
 
       <div className="blueprint-form-group">
-        <label htmlFor="date_of_birth" className="blueprint-label">Date of Birth *</label>
+        <label htmlFor="date_of_birth" className="blueprint-label">{t('home.form.dateOfBirth')} *</label>
         <input
           id="date_of_birth"
           type="date"
@@ -437,7 +528,7 @@ export default function HomePage() {
       </div>
 
       <div className="blueprint-form-group">
-        <label htmlFor="time_of_birth" className="blueprint-label">Time of Birth *</label>
+        <label htmlFor="time_of_birth" className="blueprint-label">{t('home.form.timeOfBirth')} *</label>
         <input
           id="time_of_birth"
           type="time"
@@ -448,9 +539,9 @@ export default function HomePage() {
         />
         <div className="blueprint-pill-container">
           {[
-            { value: 'exact', label: 'Exact' },
-            { value: 'approximate', label: 'Approximate' },
-            { value: 'unknown', label: 'Unknown' },
+            { value: 'exact', label: t('home.form.confidence.exact') },
+            { value: 'approximate', label: t('home.form.confidence.approximate') },
+            { value: 'unknown', label: t('home.form.confidence.unknown') },
           ].map(({ value, label }) => (
             <button
               key={value}
@@ -465,7 +556,7 @@ export default function HomePage() {
       </div>
 
       <div className="blueprint-form-group">
-        <label htmlFor="city_of_birth" className="blueprint-label">City of Birth *</label>
+        <label htmlFor="city_of_birth" className="blueprint-label">{t('home.form.cityOfBirth')} *</label>
         <div className="blueprint-input-row">
           <span className="material-symbols-outlined text-outline text-[20px] shrink-0">location_on</span>
           <input
@@ -483,7 +574,7 @@ export default function HomePage() {
 
       <div className="blueprint-form-group">
         <label htmlFor="current_city" className="blueprint-label">
-          Current City <span style={{ fontWeight: 400, textTransform: 'none', opacity: 0.55 }}>(optional)</span>
+          {t('home.form.currentCity')} <span style={{ fontWeight: 400, textTransform: 'none', opacity: 0.55 }}>{t('home.form.optional')}</span>
         </label>
         <div className="blueprint-input-row">
           <span className="material-symbols-outlined text-outline text-[20px] shrink-0">my_location</span>
@@ -500,6 +591,22 @@ export default function HomePage() {
         </div>
       </div>
 
+      <div className="blueprint-form-group">
+        <label htmlFor="chart_language" className="blueprint-label">
+          <span className="material-symbols-outlined" style={{ fontSize: 15, verticalAlign: 'middle', marginRight: 4 }}>translate</span>
+          {t('home.form.language')}
+        </label>
+        <LanguageSelect
+          id="chart_language"
+          name="language"
+          value={formData.language || 'english'}
+          onChange={handleChange}
+        />
+        <p style={{ fontSize: 11, color: 'var(--color-text-muted, #aaa)', marginTop: 4, marginBottom: 0 }}>
+          {t('home.form.languageNote')}
+        </p>
+      </div>
+
       <div className="lp-form-divider" aria-hidden="true">
         <div className="lp-form-divider-line" />
         <div className="lp-form-divider-diamond" />
@@ -508,7 +615,7 @@ export default function HomePage() {
 
       <button type="submit" id="generateBlueprintBtn" className="blueprint-button shimmer-button">
         <span className="material-symbols-outlined" style={{ fontSize: 18, fontVariationSettings: "'FILL' 1" }}>flare</span>
-        Generate My Cosmic Blueprint
+        {t('home.form.submit')}
       </button>
     </form>
   );
@@ -553,233 +660,226 @@ export default function HomePage() {
         </div>
       </header>
 
+      {/* ── Cosmic Project Banner — GUEST ONLY ── */}
+      {!user && (
+        <section className="cosmic-banner-section">
+          <div className="cosmic-banner-container animate-up">
+            <img src="/trikal_darshi_banner_with_footer.png" alt="Trikal Darshi Banner" className="cosmic-banner-img" />
+          </div>
+        </section>
+      )}
+
       {/* ════════════════════════════════════════════════════════════
-           HERO SECTION
+           HERO SECTION — GUEST ONLY
          ════════════════════════════════════════════════════════════ */}
-      <section className="lp-hero" aria-label="Trikal Darshi hero section">
-        {/* Star canvas */}
-        <StarCanvas />
+      {!user && (
+        <section className="lp-hero" aria-label="Trikal Darshi hero section">
+          {/* Star canvas */}
+          <StarCanvas />
 
-        {/* Radial ambient glows */}
-        <div className="lp-hero-glow lp-glow-1" aria-hidden="true" />
-        <div className="lp-hero-glow lp-glow-2" aria-hidden="true" />
-        <div className="lp-hero-glow lp-glow-3" aria-hidden="true" />
+          {/* Radial ambient glows */}
+          <div className="lp-hero-glow lp-glow-1" aria-hidden="true" />
+          <div className="lp-hero-glow lp-glow-2" aria-hidden="true" />
+          <div className="lp-hero-glow lp-glow-3" aria-hidden="true" />
 
-        {/* Yantra ornament */}
-        <div className="lp-hero-yantra" aria-hidden="true">
-          <YantraSVG size={520} opacity={0.09} />
-        </div>
+          {/* Yantra ornament */}
+          <div className="lp-hero-yantra" aria-hidden="true">
+            <YantraSVG size={520} opacity={0.09} />
+          </div>
 
-        <div className={`lp-hero-inner ${!user ? 'lp-hero-split' : ''}`}>
-          {!user ? (
-            <>
-              {/* Left — Brand */}
-              <div className="lp-hero-left animate-up">
-                {/* Badge */}
-                <div className="lp-hero-eyebrow">
-                  <span className="lp-eyebrow-dot" />
-                  <span>AI-Powered Vedic Astrology</span>
-                </div>
-
-                {/* Wordmark */}
-                <h1 className="lp-wordmark">
-                  <span className="lp-wordmark-line1">Trikal</span>
-                  <span className="lp-wordmark-line2">Darshi</span>
-                </h1>
-
-                <p className="lp-hero-tagline delay-1 animate-up">
-                  Vedic Jyotish · Lal Kitab · Numerology
-                </p>
-
-                <p className="lp-hero-sub delay-2 animate-up">
-                  Unlock the ancient science of Jyotish through AI-powered readings.
-                  Your full Kundali, dashas, and personalised remedies — all in one sacred space.
-                </p>
-
-                {/* Feature pills */}
-                <div className="lp-hero-badges delay-3 animate-up" aria-label="Key features">
-                  {['Divisional Charts', 'AI Streaming', 'Remedy Tripath', '10+ Life Sections'].map((b) => (
-                    <span key={b} className="lp-hero-badge">{b}</span>
-                  ))}
-                </div>
-
-                {/* CTA */}
-                <div className="lp-hero-cta-row delay-4 animate-up">
-                  <button id="heroScrollBtn" onClick={scrollToForm} className="lp-cta-primary" aria-label="Scroll to login">
-                    <span>Begin Your Reading</span>
-                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_downward</span>
-                  </button>
-                  <a href="#features" className="lp-cta-ghost">See Features</a>
-                </div>
-
-                {/* Stats row */}
-                <div className="lp-hero-stats delay-4 animate-up">
-                  {STATS.map((s, i) => (
-                    <React.Fragment key={s.label}>
-                      {i > 0 && <div className="lp-stat-sep" />}
-                      <div className="lp-stat">
-                        <span className="lp-stat-num">{s.num}</span>
-                        <span className="lp-stat-label">{s.label}</span>
-                      </div>
-                    </React.Fragment>
-                  ))}
-                </div>
+          <div className="lp-hero-inner lp-hero-split">
+            {/* Left — Brand */}
+            <div className="lp-hero-left animate-up">
+              {/* Badge */}
+              <div className="lp-hero-eyebrow">
+                <span className="lp-eyebrow-dot" />
+                <span>AI-Powered Vedic Astrology</span>
               </div>
 
-              {/* Right — Login Card */}
-              <div ref={guestLoginRef} className="lp-hero-right animate-up delay-2">
-                <div className="lp-login-card">
-                  {/* Card header */}
-                  <div className="lp-card-header">
-                    <div className="lp-card-emblem">
-                      <span className="material-symbols-outlined" style={{ fontSize: 24, color: '#c9952a', fontVariationSettings: "'FILL' 1" }}>
-                        auto_awesome
-                      </span>
-                    </div>
-                    <div>
-                      <p className="lp-card-kicker">Your Cosmic Journey</p>
-                      <h2 className="lp-card-title">
-                        {authMode === 'login' ? 'Welcome Back' : 'Join Trikal Darshi'}
-                      </h2>
-                    </div>
-                  </div>
-                  {renderAuthForm()}
-                </div>
-              </div>
-            </>
-          ) : (
-            /* Logged in — centered layout */
-            <div className="lp-hero-centered animate-up">
-              <div className="lp-hero-emblem">
-                <span className="material-symbols-outlined lp-emblem-icon" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  auto_awesome
-                </span>
-                <span className="lp-emblem-ring" />
-                <span className="lp-emblem-ring lp-emblem-ring-2" />
-              </div>
-
-              <h1 className="lp-wordmark-centered delay-1 animate-up">Trikal Darshi</h1>
-
-              <p className="lp-hero-tagline delay-2 animate-up" style={{ textAlign: 'center' }}>
+              <p className="lp-hero-tagline delay-1 animate-up">
                 Vedic Jyotish · Lal Kitab · Numerology
               </p>
 
-              <div className="lp-hero-badges delay-3 animate-up" style={{ justifyContent: 'center' }}>
-                {['Divisional Charts', 'AI Streaming', 'Remedy Tripath'].map((b) => (
+              <p className="lp-hero-sub delay-2 animate-up">
+                Unlock the ancient science of Jyotish through AI-powered readings.
+                Your full Kundali, dashas, and personalised remedies — all in one sacred space.
+              </p>
+
+              {/* Feature pills */}
+              <div className="lp-hero-badges delay-3 animate-up" aria-label="Key features">
+                {['Divisional Charts', 'AI Streaming', 'Remedy Tripath', '10+ Life Sections'].map((b) => (
                   <span key={b} className="lp-hero-badge">{b}</span>
                 ))}
               </div>
 
-              <button id="heroScrollBtn" onClick={scrollToForm} className="lp-cta-primary delay-4 animate-up">
-                <span>Begin Your Reading</span>
-                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_downward</span>
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="lp-scroll-indicator" aria-hidden="true">
-          <div className="lp-scroll-mouse">
-            <span className="lp-scroll-dot" />
-          </div>
-        </div>
-      </section>
-
-      {/* ── Cosmic Project Banner ── */}
-      <section className="cosmic-banner-section px-4">
-        <div className="cosmic-banner-container animate-up">
-          <img src="/trikal_darshi_banner_with_footer.png" alt="Trikal Darshi Banner" className="cosmic-banner-img" />
-        </div>
-      </section>
-
-      {/* ════════════════════════════════════════════════════════════
-           FEATURES SECTION
-         ════════════════════════════════════════════════════════════ */}
-      <section className="lp-features" id="features" aria-label="Platform features">
-        <div className="lp-section-inner">
-
-          <div className="lp-section-header" data-reveal>
-            <span className="lp-section-kicker">What We Offer</span>
-            <h2 className="lp-section-title">Ancient Science,<br />Modern Intelligence</h2>
-            <p className="lp-section-sub">
-              Three pillars of Vedic wisdom, unified under one AI-powered platform.
-            </p>
-          </div>
-
-          <div className="lp-features-grid">
-            {FEATURES.map((f, i) => (
-              <div
-                key={f.id}
-                className="lp-feature-card"
-                data-reveal
-                data-delay={String(i + 1)}
-                style={{ '--accent': f.accent }}
-              >
-                <div className="lp-feature-icon-wrap">
-                  <span
-                    className="material-symbols-outlined lp-feature-icon"
-                    style={{ fontVariationSettings: "'FILL' 1", color: f.accent }}
-                  >
-                    {f.icon}
-                  </span>
-                </div>
-                <h3 className="lp-feature-title">{f.title}</h3>
-                <p className="lp-feature-desc">{f.desc}</p>
-                <div className="lp-feature-arrow">
-                  <span className="material-symbols-outlined" style={{ fontSize: 16, color: f.accent }}>arrow_forward</span>
-                </div>
+              {/* CTA */}
+              <div className="lp-hero-cta-row delay-4 animate-up">
+                <button id="heroScrollBtn" onClick={scrollToForm} className="lp-cta-primary" aria-label="Scroll to login">
+                  <span>Begin Your Reading</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_downward</span>
+                </button>
+                <a href="#features" className="lp-cta-ghost">See Features</a>
               </div>
-            ))}
+
+              {/* Stats row */}
+              <div className="lp-hero-stats delay-4 animate-up">
+                {STATS.map((s, i) => (
+                  <React.Fragment key={s.label}>
+                    {i > 0 && <div className="lp-stat-sep" />}
+                    <div className="lp-stat">
+                      <span className="lp-stat-num">{s.num}</span>
+                      <span className="lp-stat-label">{s.label}</span>
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            {/* Right — Login Card */}
+            <div ref={guestLoginRef} className="lp-hero-right animate-up delay-2">
+              <div className="lp-login-card">
+                {/* Card header */}
+                <div className="lp-card-header">
+                  <div className="lp-card-emblem">
+                    <span className="material-symbols-outlined" style={{ fontSize: 24, color: '#c9952a', fontVariationSettings: "'FILL' 1" }}>
+                      auto_awesome
+                    </span>
+                  </div>
+                  <div>
+                    <p className="lp-card-kicker">Your Cosmic Journey</p>
+                    <h2 className="lp-card-title">
+                      {authMode === 'login' ? 'Welcome Back' : 'Join Trikal Darshi'}
+                    </h2>
+                  </div>
+                </div>
+                {renderAuthForm()}
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+
+          {/* Scroll indicator */}
+          <div className="lp-scroll-indicator" aria-hidden="true">
+            <div className="lp-scroll-mouse">
+              <span className="lp-scroll-dot" />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ════════════════════════════════════════════════════════════
-           WISDOM / TESTIMONIALS STRIP
+           LOGGED-IN WELCOME HEADER
          ════════════════════════════════════════════════════════════ */}
-      <section className="lp-wisdom" id="wisdom" aria-label="Wisdom from seekers">
-        <div className="lp-section-inner">
-          <div className="lp-section-header" data-reveal>
-            <span className="lp-section-kicker">From the Seekers</span>
-            <h2 className="lp-section-title">What the Stars Revealed</h2>
+      {user && (
+        <section className="lp-logged-welcome" aria-label="Welcome back">
+          <div className="lp-logged-welcome-inner">
+            <div className="lp-logged-welcome-emblem" aria-hidden="true">
+              <span className="material-symbols-outlined" style={{ fontSize: 28, color: '#c9952a', fontVariationSettings: "'FILL' 1" }}>
+                auto_awesome
+              </span>
+            </div>
+            <div>
+              <p className="lp-logged-welcome-greeting">
+                Welcome back, <strong>{user.name?.split(' ')[0] || 'Seeker'}</strong> ✦
+              </p>
+              <p className="lp-logged-welcome-sub">
+                Your cosmic journey awaits. Generate a new chart or view your saved blueprints below.
+              </p>
+            </div>
           </div>
+        </section>
+      )}
 
-          <div className="lp-testimonials" data-reveal data-delay="1">
-            <div className="lp-testimonial-track">
-              {TESTIMONIALS.map((t, i) => (
+      {/* ════════════════════════════════════════════════════════════
+           FEATURES SECTION — GUEST ONLY
+         ════════════════════════════════════════════════════════════ */}
+      {!user && (
+        <section className="lp-features" id="features" aria-label="Platform features">
+          <div className="lp-section-inner">
+
+            <div className="lp-section-header" data-reveal>
+              <span className="lp-section-kicker">What We Offer</span>
+              <h2 className="lp-section-title">Ancient Science,<br />Modern Intelligence</h2>
+              <p className="lp-section-sub">
+                Three pillars of Vedic wisdom, unified under one AI-powered platform.
+              </p>
+            </div>
+
+            <div className="lp-features-grid">
+              {FEATURES.map((f, i) => (
                 <div
-                  key={i}
-                  className={`lp-testimonial-card ${i === activeTestimonial ? 'active' : ''}`}
-                  aria-hidden={i !== activeTestimonial}
+                  key={f.id}
+                  className="lp-feature-card"
+                  data-reveal
+                  data-delay={String(i + 1)}
+                  style={{ '--accent': f.accent }}
                 >
-                  <span className="lp-quote-mark">❝</span>
-                  <p className="lp-testimonial-quote">{t.quote}</p>
-                  <div className="lp-testimonial-author">
-                    <div className="lp-testimonial-avatar">{t.initial}</div>
-                    <div>
-                      <p className="lp-testimonial-name">{t.name}</p>
-                      <p className="lp-testimonial-role">{t.role}</p>
-                    </div>
+                  <div className="lp-feature-icon-wrap">
+                    <span
+                      className="material-symbols-outlined lp-feature-icon"
+                      style={{ fontVariationSettings: "'FILL' 1", color: f.accent }}
+                    >
+                      {f.icon}
+                    </span>
+                  </div>
+                  <h3 className="lp-feature-title">{f.title}</h3>
+                  <p className="lp-feature-desc">{f.desc}</p>
+                  <div className="lp-feature-arrow">
+                    <span className="material-symbols-outlined" style={{ fontSize: 16, color: f.accent }}>arrow_forward</span>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="lp-testimonial-dots" role="tablist" aria-label="Testimonials navigation">
-              {TESTIMONIALS.map((_, i) => (
-                <button
-                  key={i}
-                  role="tab"
-                  aria-selected={i === activeTestimonial}
-                  aria-label={`Testimonial ${i + 1}`}
-                  className={`lp-testimonial-dot ${i === activeTestimonial ? 'active' : ''}`}
-                  onClick={() => setActiveTestimonial(i)}
-                />
-              ))}
+          </div>
+        </section>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════
+           WISDOM / TESTIMONIALS STRIP — GUEST ONLY
+         ════════════════════════════════════════════════════════════ */}
+      {!user && (
+        <section className="lp-wisdom" id="wisdom" aria-label="Wisdom from seekers">
+          <div className="lp-section-inner">
+            <div className="lp-section-header" data-reveal>
+              <span className="lp-section-kicker">From the Seekers</span>
+              <h2 className="lp-section-title">What the Stars Revealed</h2>
+            </div>
+
+            <div className="lp-testimonials" data-reveal data-delay="1">
+              <div className="lp-testimonial-track">
+                {TESTIMONIALS.map((t, i) => (
+                  <div
+                    key={i}
+                    className={`lp-testimonial-card ${i === activeTestimonial ? 'active' : ''}`}
+                    aria-hidden={i !== activeTestimonial}
+                  >
+                    <span className="lp-quote-mark">❝</span>
+                    <p className="lp-testimonial-quote">{t.quote}</p>
+                    <div className="lp-testimonial-author">
+                      <div className="lp-testimonial-avatar">{t.initial}</div>
+                      <div>
+                        <p className="lp-testimonial-name">{t.name}</p>
+                        <p className="lp-testimonial-role">{t.role}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="lp-testimonial-dots" role="tablist" aria-label="Testimonials navigation">
+                {TESTIMONIALS.map((_, i) => (
+                  <button
+                    key={i}
+                    role="tab"
+                    aria-selected={i === activeTestimonial}
+                    aria-label={`Testimonial ${i + 1}`}
+                    className={`lp-testimonial-dot ${i === activeTestimonial ? 'active' : ''}`}
+                    onClick={() => setActiveTestimonial(i)}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ════════════════════════════════════════════════════════════
            BIRTH FORM SECTION (logged-in only)
@@ -815,15 +915,15 @@ export default function HomePage() {
                   <div className="lp-spinner">
                     <span className="material-symbols-outlined" style={{ fontSize: 40 }}>progress_activity</span>
                   </div>
-                  <h3 className="lp-loading-title">Calculating your destiny…</h3>
-                  <p className="lp-loading-text">Aligning planetary houses, dashas &amp; numerology matrix</p>
+                  <h3 className="lp-loading-title">{t('home.form.calculatingDestiny')}</h3>
+                  <p className="lp-loading-text">{t('home.form.aligningMatrix')}</p>
                 </div>
               ) : (
                 <div>
                   {/* Saved charts */}
                   {userCharts.length > 0 && (
                     <div className="lp-saved-charts">
-                      <h3 className="lp-saved-title">Your Saved Cosmic Blueprints</h3>
+                      <h3 className="lp-saved-title">{t('home.form.savedBlueprints')}</h3>
                       <div className="lp-saved-grid">
                         {userCharts.map((chart) => (
                           <div
@@ -842,7 +942,7 @@ export default function HomePage() {
                           </div>
                         ))}
                       </div>
-                      
+
                       {!showBirthForm && (
                         <div className="flex justify-center mt-6">
                           <button
@@ -851,26 +951,26 @@ export default function HomePage() {
                             className="blueprint-button shimmer-button max-w-xs w-full flex items-center justify-center gap-2"
                           >
                             <span className="material-symbols-outlined">add_circle</span>
-                            Add New Member
+                            {t('home.form.addNewMember')}
                           </button>
                         </div>
                       )}
                     </div>
                   )}
-                  
+
                   {/* Render the birth form if we don't have saved charts, OR if showBirthForm is true */}
                   {(userCharts.length === 0 || showBirthForm) && (
                     <div className="mt-8 animate-fade-in">
                       {userCharts.length > 0 && (
                         <div className="flex justify-between items-center mb-6 border-b border-outline-variant/15 pb-3">
-                          <h3 className="text-xs uppercase font-bold tracking-widest text-primary">New Cosmic Member</h3>
+                          <h3 className="text-xs uppercase font-bold tracking-widest text-primary">{t('home.form.newCosmicMember')}</h3>
                           <button
                             type="button"
                             onClick={() => setShowBirthForm(false)}
                             className="text-xs text-outline hover:text-primary flex items-center gap-1 font-semibold cursor-pointer bg-transparent border-none"
                           >
                             <span className="material-symbols-outlined text-[14px]">cancel</span>
-                            Cancel
+                            {t('dashboard.modal.cancel')}
                           </button>
                         </div>
                       )}
@@ -897,7 +997,7 @@ export default function HomePage() {
             {/* Brand */}
             <div className="lp-footer-brand">
               <div className="lp-footer-emblem">
-                <img src="/Trikal_Darshi_logo.png" alt="Trikal Darshi Logo" className="lp-navbar-logo-img" />
+                <img src="/Trikal_Darshi_logo.png" alt="Trikal Darshi Logo" className="lp-footer-logo-img" />
               </div>
               <span className="lp-footer-name">Trikal Darshi</span>
             </div>

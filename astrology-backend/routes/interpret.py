@@ -43,9 +43,6 @@ async def generate_interpretation_stream(
     Groq/Qwen3-32b (primary) or OpenRouter/Gemma-4-31b (fallback),
     and automatically saves + caches the result on stream completion.
     """
-    # Overwrite language to english since translation feature is omitted
-    language = "english"
-
     if tab_number not in TAB_MAP:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -123,12 +120,15 @@ async def generate_interpretation_stream(
     async def ai_stream_generator() -> AsyncGenerator[str, None]:
         logger.info(f"Starting AI interpretation stream: chart={chart_id_str} Tab={tab_number}")
         accumulated_text = ""
+        model_info = {}
         
         try:
             async for token in stream_interpretation(
                 chart_data=chart_data,
                 tab_number=tab_number,
-                full_name=full_name
+                full_name=full_name,
+                language=language,
+                model_info=model_info
             ):
                 accumulated_text += token
                 yield token
@@ -163,6 +163,7 @@ async def generate_interpretation_stream(
         try:
             # Save to PostgreSQL
             new_id = uuid.uuid4()
+            model_used = model_info.get("model", "unknown")
             # We use an independent database connection pool acquire for saving on-completion
             from db.database import get_db_pool
             pool = await get_db_pool()
@@ -174,6 +175,7 @@ async def generate_interpretation_stream(
                     ON CONFLICT (chart_id, tab_number, language)
                     DO UPDATE SET
                         content = EXCLUDED.content,
+                        model_used = EXCLUDED.model_used,
                         generated_at = NOW()
                     """,
                     new_id,
@@ -181,7 +183,7 @@ async def generate_interpretation_stream(
                     tab_number,
                     tab_name,
                     accumulated_text,
-                    "google/gemma-4-31b-it:free",
+                    model_used,
                     language
                 )
             
@@ -197,15 +199,18 @@ async def generate_interpretation_stream(
 @router.get("/interpret/{chart_id}")
 async def get_all_interpretations(
     chart_id: uuid.UUID,
+    language: str = "english",
     conn: asyncpg.Connection = Depends(get_db),
 ):
     """
-    GET /interpret/{chart_id}
-    Retrieves all generated interpretations for a chart from PostgreSQL.
+    GET /interpret/{chart_id}?language=english
+    Retrieves all generated interpretations for a chart from PostgreSQL
+    for the specified language.
     """
     rows = await conn.fetch(
-        "SELECT tab_number, content FROM interpretations WHERE chart_id = $1 AND language = 'english'",
-        chart_id
+        "SELECT tab_number, content FROM interpretations WHERE chart_id = $1 AND language = $2",
+        chart_id,
+        language
     )
     result = {}
     for row in rows:

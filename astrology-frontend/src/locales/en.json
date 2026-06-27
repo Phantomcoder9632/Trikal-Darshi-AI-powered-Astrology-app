@@ -1,0 +1,533 @@
+{
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out"
+  },
+  "home": {
+    "title": "Trikal Darshi",
+    "subtitle": "AI-Powered Vedic Astrology",
+    "cta": "Reveal My Cosmic Blueprint",
+    "form": {
+      "fullName": "Full Name",
+      "dateOfBirth": "Date of Birth",
+      "timeOfBirth": "Time of Birth",
+      "cityOfBirth": "City of Birth",
+      "currentCity": "Current City",
+      "optional": "(optional)",
+      "birthTimeConfidence": "Birth Time Confidence",
+      "language": "Chart Language",
+      "confidence": {
+        "exact": "Exact",
+        "approximate": "Approximate (±15 min)",
+        "unknown": "Unknown"
+      },
+      "languageOptions": {
+        "english": "English",
+        "hindi": "हिंदी (Hindi)",
+        "bengali": "বাংলা (Bengali)"
+      },
+      "submit": "Generate My Chart",
+      "generating": "Generating...",
+      "languageNote": "The AI readings for this chart will be generated in the selected language.",
+      "savedBlueprints": "Your Saved Cosmic Blueprints",
+      "addNewMember": "Add New Member",
+      "newCosmicMember": "New Cosmic Member",
+      "calculatingDestiny": "Calculating your destiny…",
+      "aligningMatrix": "Aligning planetary houses, dashas & numerology matrix"
+    }
+  },
+  "dashboard": {
+    "channeling_blueprints": "Channeling Celestial Blueprints…",
+    "system_warning": "System Warning",
+    "return_to_birth_chamber": "Return to Birth Chamber",
+    "all_sections_ready": "✦ All Sections Ready",
+    "progress_badge": "✦ Cosmic Blueprint Preparing — {{count}} of 11 Sections Ready",
+    "download_report": "Download Report",
+    "download_report_title": "Download print-friendly report of all cosmic tabs",
+    "tabs": {
+      "1": "Lagna & Soul Blueprint",
+      "2": "Lal Kitab Analysis",
+      "3": "Numerology Matrix",
+      "4": "Career & Dashamsha D10",
+      "5": "Wealth & Abundance D4",
+      "6": "Love Marriage & Navamsha D9",
+      "7": "Health & Vitality D30",
+      "8": "Remedies Tripath System",
+      "9": "Progeny Lineage & Saptamsha D7",
+      "10": "Gochar Current Transits",
+      "11": "Education & Intelligence",
+      "basics": "Basics",
+      "vedic_report": "Vedic Report"
+    },
+    "categories": {
+      "basics": "Basics",
+      "chart_description": "Chart Description",
+      "report_analysis": "Report & Analysis"
+    },
+    "charts": {
+      "D1": "D1 — Lagna (Rashi)",
+      "D9": "D9 — Navamsha",
+      "D10": "D10 — Dashamsha",
+      "D4": "D4 — Chaturthamsa",
+      "D7": "D7 — Saptamsha",
+      "D30": "D30 — Trimsamsa",
+      "chandra": "Chandra Kundali",
+      "surya": "Surya Kundali",
+      "gochar": "Gochar (Transits)"
+    },
+    "basics": {
+      "cards": {
+        "birth_identity": {
+          "title": "Birth Identity",
+          "full_name": "Full Name",
+          "date_of_birth": "Date of Birth",
+          "time_of_birth": "Time of Birth",
+          "place_of_birth": "Place of Birth",
+          "current_city": "Current City",
+          "time_confidence": "Time Confidence",
+          "ayanamsha": "Ayanamsha"
+        },
+        "lagna_moon": {
+          "title": "Lagna & Moon",
+          "ascendant": "Lagna (Ascendant)",
+          "lagna_nakshatra": "Lagna Nakshatra",
+          "moon_sign": "Moon Sign (Rashi)",
+          "moon_nakshatra": "Moon Nakshatra",
+          "nakshatra_pada": "Nakshatra Pada",
+          "nakshatra_lord": "Nakshatra Lord"
+        },
+        "vedic_panchang": {
+          "title": "Vedic Panchang",
+          "tithi": "Tithi (Lunar Day)",
+          "karana": "Karana (Half Tithi)",
+          "yoga": "Yoga (Sun/Moon angle)",
+          "nakshatra": "Nakshatra (Moon Mansion)"
+        },
+        "avakhada_chakra": {
+          "title": "Avakhada Chakra",
+          "varna": "Varna (Temperament)",
+          "vashya": "Vashya (Dominance)",
+          "yoni": "Yoni (Animal Symbol)",
+          "gana": "Gana (Disposition)",
+          "nadi": "Nadi (Health Type)"
+        },
+        "current_dasha": {
+          "title": "Current Dasha",
+          "mahadasha_lord": "Mahadasha Lord",
+          "antardasha_lord": "Antardasha Lord",
+          "dasha_start": "Dasha Start Date",
+          "dasha_end": "Dasha End Date"
+        },
+        "dosha_summary": {
+          "title": "Dosha Summary",
+          "kalsarp": "Kalsarp Dosha",
+          "mangal": "Mangal Dosha",
+          "pitru": "Pitru Dosha",
+          "gand_mool": "Gand Mool"
+        }
+      }
+    },
+    "drawer": {
+      "title": "Cosmic Profile Menu",
+      "personal_details": "Personal Details",
+      "edit_birth_details": "Edit Birth Details",
+      "name": "Name",
+      "confidence": "Confidence",
+      "dob": "Date of Birth",
+      "tob": "Time of Birth",
+      "pob": "Place of Birth",
+      "current_city": "Current City",
+      "saved_blueprints": "Saved Blueprints",
+      "no_blueprints": "No other blueprints saved.",
+      "cosmic_journey": "Cosmic Journey",
+      "read_another": "Read Another Chart",
+      "themes": "Cosmic Themes",
+      "logout": "Log Out Session"
+    },
+    "modal": {
+      "alignment": "CORRECT CELESTIAL ALIGNMENT",
+      "title": "Edit Birth Details",
+      "recalculating": "Recalculating Cosmic Matrix…",
+      "realigning": "Re-aligning houses, planets & divisional tables",
+      "lang_warning": "Changing language will regenerate all AI readings in the selected language.",
+      "cancel": "Cancel",
+      "recalculate": "Recalculate",
+      "fill_required": "Please fill in all required birth parameters marked with *"
+    },
+    "values": {
+      "active": "Active",
+      "absent": "Absent",
+      "exact": "Exact",
+      "approximate": "Approximate",
+      "unknown": "Unknown",
+      "n_a": "N/A",
+      "aries": "Aries",
+      "taurus": "Taurus",
+      "gemini": "Gemini",
+      "cancer": "Cancer",
+      "leo": "Leo",
+      "virgo": "Virgo",
+      "libra": "Libra",
+      "scorpio": "Scorpio",
+      "sagittarius": "Sagittarius",
+      "capricorn": "Capricorn",
+      "aquarius": "Aquarius",
+      "pisces": "Pisces",
+      "sun": "Sun",
+      "moon": "Moon",
+      "mars": "Mars",
+      "mercury": "Mercury",
+      "jupiter": "Jupiter",
+      "venus": "Venus",
+      "saturn": "Saturn",
+      "rahu": "Rahu",
+      "ketu": "Ketu",
+      "ashwini": "Ashwini",
+      "bharani": "Bharani",
+      "krittika": "Krittika",
+      "rohini": "Rohini",
+      "mrigashira": "Mrigashira",
+      "ardra": "Ardra",
+      "punarvasu": "Punarvasu",
+      "pushya": "Pushya",
+      "ashlesha": "Ashlesha",
+      "magha": "Magha",
+      "purva_phalguni": "Purva Phalguni",
+      "uttara_phalguni": "Uttara Phalguni",
+      "hasta": "Hasta",
+      "chitra": "Chitra",
+      "swati": "Swati",
+      "vishakha": "Vishakha",
+      "anuradha": "Anuradha",
+      "jyeshtha": "Jyeshtha",
+      "mula": "Mula",
+      "purva_ashadha": "Purva Ashadha",
+      "uttara_ashadha": "Uttara Ashadha",
+      "shravana": "Shravana",
+      "dhanishtha": "Dhanishtha",
+      "shatabhisha": "Shatabhisha",
+      "purva_bhadrapada": "Purva Bhadrapada",
+      "uttara_bhadrapada": "Uttara Bhadrapada",
+      "revati": "Revati",
+      "brahmin": "Brahmin",
+      "kshatriya": "Kshatriya",
+      "vaishya": "Vaishya",
+      "shudra": "Shudra",
+      "chatuspad": "Chatuspad",
+      "dwipad": "Dwipad",
+      "jalachar": "Jalachar",
+      "vanachar": "Vanachar",
+      "keeta": "Keeta",
+      "horse": "Horse",
+      "elephant": "Elephant",
+      "goat": "Goat",
+      "serpent": "Serpent",
+      "dog": "Dog",
+      "cat": "Cat",
+      "rat": "Rat",
+      "cow": "Cow",
+      "buffalo": "Buffalo",
+      "tiger": "Tiger",
+      "deer": "Deer",
+      "monkey": "Monkey",
+      "mongoose": "Mongoose",
+      "lion": "Lion",
+      "deva": "Deva",
+      "manushya": "Manushya",
+      "rakshasa": "Rakshasa",
+      "adi": "Adi",
+      "madhya": "Madhya",
+      "antya": "Antya",
+      "shukla_pratipada": "Shukla Pratipada",
+      "shukla_dwitiya": "Shukla Dwitiya",
+      "shukla_tritiya": "Shukla Tritiya",
+      "shukla_chaturthi": "Shukla Chaturthi",
+      "shukla_panchami": "Shukla Panchami",
+      "shukla_shasthi": "Shukla Shasthi",
+      "shukla_saptami": "Shukla Saptami",
+      "shukla_ashtami": "Shukla Ashtami",
+      "shukla_navami": "Shukla Navami",
+      "shukla_dashami": "Shukla Dashami",
+      "shukla_ekadashi": "Shukla Ekadashi",
+      "shukla_dwadashi": "Shukla Dwadashi",
+      "shukla_trayodashi": "Shukla Trayodashi",
+      "shukla_chaturdashi": "Shukla Chaturdashi",
+      "purnima": "Purnima",
+      "krishna_pratipada": "Krishna Pratipada",
+      "krishna_dwitiya": "Krishna Dwitiya",
+      "krishna_tritiya": "Krishna Tritiya",
+      "krishna_chaturthi": "Krishna Chaturthi",
+      "krishna_panchami": "Krishna Panchami",
+      "krishna_shasthi": "Krishna Shasthi",
+      "krishna_saptami": "Krishna Saptami",
+      "krishna_ashtami": "Krishna Ashtami",
+      "krishna_navami": "Krishna Navami",
+      "krishna_dashami": "Krishna Dashami",
+      "krishna_ekadashi": "Krishna Ekadashi",
+      "krishna_dwadashi": "Krishna Dwadashi",
+      "krishna_trayodashi": "Krishna Trayodashi",
+      "krishna_chaturdashi": "Krishna Chaturdashi",
+      "amavasya": "Amavasya",
+      "bava": "Bava",
+      "balava": "Balava",
+      "kaulava": "Kaulava",
+      "taitila": "Taitila",
+      "gara": "Gara",
+      "vanija": "Vanija",
+      "vishti": "Vishti",
+      "kintughna": "Kintughna",
+      "shakuni": "Shakuni",
+      "chatushpada": "Chatushpada",
+      "naga": "Naga",
+      "vishkumbha": "Vishkumbha",
+      "priti": "Priti",
+      "ayushman": "Ayushman",
+      "saubhagya": "Saubhagya",
+      "shobhana": "Shobhana",
+      "atiganda": "Atiganda",
+      "sukarma": "Sukarma",
+      "dhriti": "Dhriti",
+      "shula": "Shula",
+      "ganda": "Ganda",
+      "vridhi": "Vridhi",
+      "dhruva": "Dhruva",
+      "vyaghata": "Vyaghata",
+      "harshana": "Harshana",
+      "vajra": "Vajra",
+      "siddhi": "Siddhi",
+      "vyatipata": "Vyatipata",
+      "variyan": "Variyan",
+      "parigha": "Parigha",
+      "shiva": "Shiva",
+      "siddha": "Siddha",
+      "sadhya": "Sadhya",
+      "shubha": "Shubha",
+      "shukla": "Shukla",
+      "brahma": "Brahma",
+      "indra": "Indra",
+      "vaidhriti": "Vaidhriti"
+    },
+    "loading": "Streaming cosmic insights...",
+    "editChart": "Edit Birth Details",
+    "deleteChart": "Delete Chart",
+    "askAI": "Ask AI Guide",
+    "streaming": "Streaming…",
+    "channeling": "Channeling cosmic blueprints…",
+    "loading_metrics": "Loading birth metrics...",
+    "education_blank": "Education report is being generated. Please wait a moment.",
+    "not_yet_generated": "Not yet generated",
+    "channeling_content": "Channeling content...",
+    "vedic_report": {
+      "title": "✦ VEDIC COSMIC REPORT ✦",
+      "blueprint": "Trikal Darshi Blueprint",
+      "name": "Name",
+      "dob": "DOB",
+      "tob": "TOB",
+      "place": "Place",
+      "ayanamsha": "Ayanamsha",
+      "generated": "Generated",
+      "incomplete_title": "Incomplete Cosmic Report",
+      "incomplete_desc": "{{count}} of 11 chapters are missing from this report. Generate them to compile your complete cosmic blueprint.",
+      "generate_full": "Generate Full Report",
+      "generating_chapters": "Generating Chapters...",
+      "complete_title": "Complete Cosmic Report",
+      "complete_desc": "All 11 chapters have been successfully compiled. You can read, print, or download the full document.",
+      "chapter_1": "Chapter 1: Lagna & Soul Blueprint",
+      "chapter_2": "Chapter 2: Career & Dashamsha D10",
+      "chapter_3": "Chapter 3: Education & Intelligence",
+      "chapter_4": "Chapter 4: Wealth & Abundance D4",
+      "chapter_5": "Chapter 5: Love Marriage & Navamsha D9",
+      "chapter_6": "Chapter 6: Health & Vitality D30",
+      "chapter_7": "Chapter 7: Progeny Lineage & Saptamsha D7",
+      "chapter_8": "Chapter 8: Gochar Current Transits",
+      "chapter_9": "Chapter 9: Lal Kitab Analysis",
+      "chapter_10": "Chapter 10: Numerology Matrix",
+      "chapter_11": "Chapter 11: Remedies Tripath System"
+    }
+  },
+  "language": {
+    "label": "Language",
+    "english": "English",
+    "hindi": "हिंदी",
+    "bengali": "বাংলা"
+  },
+  "auth": {
+    "selectLanguage": "Choose Your Preferred Language",
+    "languageSubtitle": "Your readings and UI will default to this language. You can change it per chart too.",
+    "continue": "Continue",
+    "signInWith": "Sign in with Google",
+    "orContinueWith": "or continue with email",
+    "email": "Email Address",
+    "password": "Password",
+    "enterCosmos": "Enter the Cosmos",
+    "beginJourney": "Begin Journey",
+    "continueGoogle": "Continue with Google",
+    "welcomeBack": "Welcome Back",
+    "joinTrikal": "Join Trikal Darshi",
+    "yourCosmicJourney": "Your Cosmic Journey"
+  },
+  "home_page": {
+    "hero": {
+      "tagline": "Vedic Jyotish · Lal Kitab · Numerology",
+      "desc": "Unlock the ancient science of Jyotish through AI-powered readings. Your full Kundali, dashas, and personalised remedies — all in one sacred space.",
+      "beginReading": "Begin Your Reading",
+      "seeFeatures": "See Features",
+      "divisionalCharts": "Divisional Charts",
+      "aiStreaming": "AI Streaming",
+      "remedyTripath": "Remedy Tripath",
+      "tenLifeSections": "10+ Life Sections"
+    },
+    "features": {
+      "kicker": "What We Offer",
+      "title": "Ancient Science, Modern Intelligence",
+      "sub": "Three pillars of Vedic wisdom, unified under one AI-powered platform.",
+      "items": {
+        "charts": {
+          "title": "Divisional Kundali",
+          "desc": "D1 · D9 · D10 · D4 · D7 · D30 and more — rendered in authentic North Indian style with dignity indicators."
+        },
+        "ai": {
+          "title": "AI-Powered Readings",
+          "desc": "Gemini-powered streaming interpretations across 10 life sections — Career, Wealth, Love, Health & Remedies."
+        },
+        "remedies": {
+          "title": "Remedy Tripath System",
+          "desc": "Tailored remedies spanning Vedic Mantras, Lal Kitab Farmaans, and Numerological corrections."
+        }
+      }
+    },
+    "stats": {
+      "charts": "Divisional Charts",
+      "sections": "Life Sections",
+      "streams": "Wisdom Streams",
+      "insights": "Cosmic Insights"
+    },
+    "testimonials": {
+      "kicker": "From the Seekers",
+      "title": "What the Stars Revealed",
+      "items": {
+        "0": {
+          "quote": "The AI interpretations are uncannily accurate. It described my career challenges with remarkable precision.",
+          "name": "Priya S.",
+          "role": "Vedic Astrology Enthusiast"
+        },
+        "1": {
+          "quote": "I never expected technology to understand Lal Kitab this deeply. The remedy tripath is a masterpiece.",
+          "name": "Arjun M.",
+          "role": "Jyotish Practitioner"
+        },
+        "2": {
+          "quote": "Finally an app that treats Jyotish with the seriousness it deserves. The divisional charts are flawless.",
+          "name": "Kavita R.",
+          "role": "Numerology Student"
+        }
+      }
+    },
+    "birthSection": {
+      "title": "Enter Your Birth Details",
+      "sub": "Precise birth data unlocks the most accurate planetary interpretations."
+    },
+    "footer": {
+      "tagline": "Ancient Wisdom · Modern Precision",
+      "copy": "© 2025 Trikal Darshi · All Rights Reserved",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "support": "Consultation Support"
+    }
+  },
+  "dashboard_components": {
+    "profile": {
+      "subtitle": "Cosmic Blueprint Holder"
+    },
+    "transit": {
+      "title": "Jupiter Exaltation Window",
+      "ends_in": "Strategic wealth allocation window ends in:"
+    },
+    "remedies_panel": {
+      "title": "Triple-Alignment Remedies",
+      "sub": "Prescriptions parsed from your cosmic blueprint records",
+      "vedic": "Vedic Jyotish Upayas",
+      "lalkitab": "Lal Kitab Farmaan",
+      "numerology": "Ankjyotish Corrections"
+    },
+    "planet_table": {
+      "title": "Planetary Positions",
+      "grahas": "Grahas",
+      "headers": {
+        "planet": "Planet",
+        "sign": "Sign / H.",
+        "dignity": "Dignity",
+        "dir": "Dir."
+      },
+      "dignity": {
+        "exalted": "Exalted",
+        "own": "Own",
+        "debil": "Debil.",
+        "neutral": "Neutral"
+      },
+      "legend": {
+        "exalt": "Exalt",
+        "own": "Own",
+        "debil": "Debil",
+        "retro": "℞ Retro"
+      }
+    },
+    "charts": {
+      "purposes": {
+        "D1": "Best for overall physical destiny, physical body, general health, life path, and baseline financial potential.",
+        "D9": "Best for marriage happiness, relationship dynamics, spouse attributes, inner potential, and soul's dharma.",
+        "D10": "Best for career direction, profession, social status, job cycles, and public reputation.",
+        "D4": "Best for fixed assets, real estate property, home ownership, conveyances (vehicles), and stability.",
+        "D7": "Best for progeny (children), relationship with offspring, legacy, and creative potential.",
+        "D30": "Best for physical ailments, chronic illnesses, hidden vulnerabilities, obstacles, and debts.",
+        "chandra": "Best for emotional framework, mental health, cognitive perception, and overall mind state.",
+        "surya": "Best for professional visibility, ego, authority figures, vitality, and soul purpose.",
+        "gochar": "Best for real-time planetary transits and timing daily life events relative to your birth chart."
+      },
+      "sidebar_purposes": {
+        "lagna_d1": "Best for: Core personality, physical body, life path & overall life predictions",
+        "chandra": "Best for: Mind, emotions, mental tendencies & mother-related matters",
+        "lal_kitab": "Best for: Lal Kitab remedies & karmic debt analysis",
+        "d10": "Best for: Career, profession, public image & ambitions — use D10 for detailed career predictions",
+        "d1_career": "Best for: General life direction & first-house career overview",
+        "d4": "Best for: Fixed assets, property, vehicles & immovable wealth — use D4 for wealth specifics",
+        "d1_wealth": "Best for: Overall financial potential from the natal chart perspective",
+        "d9": "Best for: Marriage, spouse qualities, relationship destiny & spiritual evolution",
+        "d7_relationship": "Best for: Children, progeny potential & relationship with offspring",
+        "d30": "Best for: Chronic diseases, misfortunes, accidents & hidden vulnerabilities",
+        "surya": "Best for: Overall vitality, father, government relationships & authority figures",
+        "d1_remedies": "Best for: Holistic remedies, planetary pacification & karmic balance",
+        "d7_progeny": "Best for: Children, progeny timing & parental bonds — D7 is the primary progeny chart",
+        "d9_progeny": "Best for: Spiritual growth, dharma & marriage context for progeny",
+        "gochar": "Best for: Current planetary transits, timing of events & live predictions",
+        "gochar_natal": "Best for: How transits interact with your natal chart placements"
+      },
+      "best_used_for": "Best Used For"
+    },
+    "chatbot": {
+      "ask_ai": "Ask AI",
+      "ask_ai_guide": "Trikal AI Guide",
+      "alignment_active": "Cosmic Alignment Active",
+      "suggested_inquiries": "Suggested Inquiries",
+      "query_tooltip": "Ask your query! 🔮",
+      "input_placeholder": "Ask AI your cosmic query...",
+      "typing_indicator": "Channeling celestial matrices...",
+      "welcome_guest": "Hey there! 😊 Welcome to Trikal Darshi — I'm your AI Guide!\n\nI'm here to help you understand what the stars say about your life — your career, love life, finances, and more. And don't worry, I'll explain everything in simple everyday language, no complicated astrology words!\n\nTo get started, go ahead and enter your birth details (date, time, and city) so I can give you a personalized reading. Or feel free to ask me any general question right now! 🌟",
+      "welcome_loading": "Hey! 😊 I'm loading your birth chart details... Give me just a moment! In the meantime, feel free to ask me any general question about astrology and I'll be happy to help.",
+      "welcome_loaded": "Hey! 😊 I'm your Trikal AI Guide. I can see your birth chart is loaded up. Ask me anything about your life — career, love, money, what's coming up — and I'll explain it all in simple, easy-to-understand language. No confusing terms, just real talk! 🌟",
+      "welcome_named": "Hey {{name}}! 😊 I'm your Trikal AI Guide — think of me as that wise friend who's read your whole life story and is here to help you understand it.\n\nI can see you were born{{dob}} in {{city}}. Ask me anything — career, love, money, family, or just what's coming up in your life. I'll explain everything in simple, everyday words — no confusing astrology jargon, I promise! 🌟",
+      "welcome_named_born": " on {{dob}}",
+      "welcome_named_hometown": "your hometown",
+      "connection_interrupted": "⚠️ My cosmic connection was interrupted. Please try asking again.",
+      "quick_prompts": {
+        "career": "Will I get a good job soon?",
+        "relationship": "When will I find my life partner?",
+        "money": "How does my financial future look?",
+        "remedies": "What should I do to improve my life right now?"
+      }
+    }
+  }
+}

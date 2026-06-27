@@ -1,4 +1,32 @@
 ================================================================================
+SUMMARY OF CHANGES - JUNE 27, 2026
+================================================================================
+
+1. Cosmic Banner Styling & Cropping
+   - Cropped out the dark brown bottom footer bar ("Vedic Wisdom · Precise Analytics...") from the banner image (`trikal_darshi_banner_with_footer.png`) using CSS `clip-path: inset(2px 0px 18.1% 0px)` so only the clean cream-toned graphics display.
+   - Removed the baked-in top white border line and disabled the hover zoom animation to make the banner static and clean.
+   - Aligned the banner container `margin-top: 72px` to exactly offset the fixed navbar height.
+   - Added a smooth parallax scrolling effect where the banner shifts dynamically on scroll, powered by `requestAnimationFrame` and a passive scroll listener updating a CSS variable (`--banner-parallax`).
+
+2. Streamlined Logged-In Flow & Welcome Bar
+   - Completely restructured the homepage layout for authenticated users: hid the banner, guest hero (glows, yantra, star canvas), features, and testimonials.
+   - Created a new compact, elegant Welcome Bar (`.lp-logged-welcome`) shown to logged-in users with a personalized greeting, a small pulsing gold emblem, and sub-text guiding them.
+   - Logged-in users now go straight from the navbar to the welcome bar, then straight to their saved blueprints grid and birth details form, eliminating horizontal/vertical spacing gaps and redundancy.
+   - Solved a duplicate stale JSX parser error at the end of `HomePage.jsx` that was causing Vite's HMR parser to crash on raw `</div >` tokens.
+
+3. Mobile & Tablet Responsive Optimizations
+   - Added comprehensive media query overrides at the end of `index.css` for mobile screens (< 640px) and tablet screens (640px–1024px).
+   - Stacks the guest hero section columns vertically, centers text alignment, wraps stats in a clean grid, and makes CTA buttons full-width on mobile.
+   - Upgraded the logged-in welcome bar to fit compact screens, scaling down the emblem icon size and hiding sub-text on mobile to preserve vertical space.
+   - Optimized spacing, grids, text scaling, inputs, saved cards, and footers across all viewports to eliminate horizontal scrolling.
+
+4. Premium Aesthetics (WOW Factors)
+   - Upgraded the login/register card with premium glassmorphism using `backdrop-filter: blur(32px) saturate(2.0) brightness(1.04)` and a multi-layer soft drop shadow.
+   - Added a full-width shimmering gold sheen sweep top border gradient to the login card.
+   - Enhanced the background `StarCanvas` to include 240 particles, adding 80 larger golden sparkles with a pulsing animation.
+   - Added an ambient diagonal golden shimmer wave sweep to the hero background section that repeats every 8 seconds.
+
+================================================================================
 SUMMARY OF CHANGES - JUNE 20, 2026
 ================================================================================
 

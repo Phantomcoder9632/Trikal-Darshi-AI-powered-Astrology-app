@@ -73,6 +73,45 @@ export default function DashboardPage() {
     document.body.className = newTheme;
   };
 
+  const handleLanguageChange = async (e) => {
+    const newLang = e.target.value; // 'english' / 'hindi' / 'bengali'
+    if (!chartData) return;
+
+    setShowDrawer(false); // Close drawer to show transitions/loader
+    const i18nCode = backendLangToI18n(newLang);
+    i18n.changeLanguage(i18nCode);
+    localStorage.setItem('trikal_lang_chosen', newLang);
+
+    const updatePayload = {
+      full_name: chartData.full_name,
+      date_of_birth: chartData.date_of_birth,
+      time_of_birth: chartData.time_of_birth ? chartData.time_of_birth.slice(0, 5) : '',
+      birth_time_confidence: chartData.birth_time_confidence || 'exact',
+      city_of_birth: chartData.city_of_birth,
+      current_city: chartData.current_city || '',
+      language: newLang,
+    };
+
+    try {
+      setLoadingChart(true);
+      const updatedData = await updateChart(chartId, updatePayload);
+
+      if (updatedData.chart_id && updatedData.chart_id !== chartId) {
+        navigate(`/dashboard/${updatedData.chart_id}`);
+      } else {
+        setChartData(updatedData);
+        setInterpretations({});
+        setTabLoading({});
+        setTabError({});
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error('Failed to change language:', err);
+    } finally {
+      setLoadingChart(false);
+    }
+  };
+
   const handleOpenEdit = () => {
     if (!chartData) return;
     setEditFormData({
@@ -726,6 +765,22 @@ export default function DashboardPage() {
               <span className="material-symbols-outlined text-[16px]">add_circle</span>
               {t('dashboard.drawer.read_another')}
             </button>
+          </div>
+
+          {/* Section 3.5: Language Selection */}
+          <div className="space-y-3">
+            <h4 className="text-xs uppercase font-bold tracking-widest text-primary flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[15px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 300" }}>translate</span>
+              {t('language.label')}
+            </h4>
+            <div className="bg-surface-container-low rounded-xl p-3 border border-outline-variant/20">
+              <LanguageSelect
+                id="drawer_language"
+                name="drawer_language"
+                value={chartData?.language || 'english'}
+                onChange={handleLanguageChange}
+              />
+            </div>
           </div>
 
           {/* Section 4: Themes */}

@@ -1,4 +1,28 @@
 ================================================================================
+SUMMARY OF CHANGES - JUNE 30, 2026
+================================================================================
+1. CORS & IDOR / BOLA Security Hardening (Backend Routes & main.py)
+   - Secured the backend CORS configuration. If `CORS_ORIGINS` is not set, it defaults to `["*"]` only when `APP_ENV` is explicitly set to `"development"`.
+   - Patched Insecure Direct Object Reference (IDOR/BOLA) vulnerabilities where chart-related sub-resources (chat, chat history, interpretations, progress) were accessible without ownership verification.
+   - Enforced validation checks against the parent chart's `user_id` using the current user's authenticated token in `routes/interpret.py`, `routes/chat.py`, and `routes/progress.py`. Guest charts remain publicly accessible.
+
+2. Redis-Based Rate Limiting (services/security.py)
+   - Created a request throttling service checking client IPs against window buckets in Redis.
+   - Enforces limit bounds: Max 5 attempts/min for login/register, Max 10 requests/min for chatbot, and Max 15 requests/min for AI interpretation generations.
+
+3. JWT Expiration & Password Strength Hardening (routes/auth.py)
+   - Reduced JWT access token expiration duration from 30 days to 24 hours (`ACCESS_TOKEN_EXPIRE_HOURS = 24`) to limit session hijacking exposure.
+   - Enforced regex password strength validation during email registration (requiring 8+ characters, uppercase, lowercase, and numbers).
+
+4. Frontend Dependency Recovery & Branding Updates
+   - Restored missing packages (such as `react-i18next` and `i18next`) in `astrology-frontend` resolving the Vite import analysis crash.
+   - Updated the site's favicon in `index.html` to point to `/Trikal_Darshi_logo.png` instead of the default Vite logo.
+
+5. Instant Profile Drawer Language Switcher (DashboardPage.jsx)
+   - Integrated the premium `LanguageSelect` component directly into the slide-over profile menu drawer on the dashboard.
+   - Added a `handleLanguageChange` handler that instantly switches the UI translation language (via `react-i18next`), saves the user preference locally, and triggers a backend chart language update.
+   - Automatically navigates/re-aligns to the correct language-specific chart profile, triggering real-time AI interpretation streaming in the newly selected language instantly.
+================================================================================
 SUMMARY OF CHANGES - JUNE 27, 2026
 ================================================================================
 

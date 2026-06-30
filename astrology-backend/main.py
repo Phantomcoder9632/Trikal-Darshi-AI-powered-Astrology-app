@@ -18,7 +18,18 @@ from contextlib import asynccontextmanager
 
 # CORS origins configuration
 cors_origins_str = os.getenv("CORS_ORIGINS", "")
-cors_origins = [o.strip() for o in cors_origins_str.split(",") if o.strip()] if cors_origins_str else ["*"]
+app_env = os.getenv("APP_ENV", "production").lower()
+
+if cors_origins_str:
+    cors_origins = [o.strip() for o in cors_origins_str.split(",") if o.strip()]
+else:
+    if app_env == "development":
+        logger.warning("CORS_ORIGINS not set. Defaulting to wildcard '*' in development mode.")
+        cors_origins = ["*"]
+    else:
+        logger.error("CORS_ORIGINS is not configured in production environment. Blocking all cross-origin requests for security.")
+        cors_origins = []
+
 
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):

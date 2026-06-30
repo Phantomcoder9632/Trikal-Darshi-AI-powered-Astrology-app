@@ -1,13 +1,15 @@
 from typing import List, Optional
 import json
 import logging
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uuid
 
 from db.database import get_db_pool
 from rag.pipeline import stream_chat_response
+from routes.auth import get_optional_current_user
+from services.security import RateLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +32,11 @@ class ChatRequest(BaseModel):
     ai_msg_id: Optional[str] = None
     language: Optional[str] = "english"
 
-@router.post("/chat")
-async def chat_endpoint(request: ChatRequest):
+@router.post("/chat", dependencies=[Depends(RateLimiter("chat", limit=10))])
+async def chat_endpoint(
+    request: ChatRequest,
+    current_user: Optional[dict] = Depends(get_optional_current_user)
+):
     chart_data = None
     interpretations = []
     stage = STAGE_NO_CHART
@@ -43,7 +48,7 @@ async def chat_endpoint(request: ChatRequest):
             async with pool.acquire() as conn:
                 # ── 1. Fetch chart row ────────────────────────────────────────
                 chart_row = await conn.fetchrow(
-                    """SELECT full_name, date_of_birth, time_of_birth,
+                    """SELECT user_id, full_name, date_of_birth, time_of_birth,
                               city_of_birth, current_city, birth_time_confidence, raw_chart_data
                        FROM charts WHERE id = $1""",
                     chart_uuid
@@ -51,6 +56,15 @@ async def chat_endpoint(request: ChatRequest):
 
                 if chart_row:
                     stage = STAGE_CHART_ONLY  # we at least have a chart
+
+                    # Check ownership if user_id is set
+                    chart_owner_id = chart_row["user_id"]
+                    if chart_owner_id:
+                        if not current_user or uuid.UUID(str(current_user["id"])) != chart_owner_id:
+                            raise HTTPException(
+                                status_code=status.HTTP_403_FORBIDDEN,
+                                detail="You do not have permission to access the chat chatbot context for this chart."
+                            )
 
                     # Build chart_data dict from raw JSONB + basic fields
                     raw_str = chart_row["raw_chart_data"]
@@ -105,6 +119,8 @@ async def chat_endpoint(request: ChatRequest):
                         f"[chat] No interpretations yet for chart {chart_uuid} — using chart_only stage"
                     )
 
+        except HTTPException:
+            raise
         except Exception as e:
             logger.warning(f"[chat] Failed to load data for chat: {e}")
 
@@ -148,11 +164,28 @@ async def chat_endpoint(request: ChatRequest):
     return StreamingResponse(stream_generator(), media_type="text/plain")
 
 @router.get("/chat/history/{chart_id}")
-async def get_chat_history(chart_id: str):
+async def get_chat_history(
+    chart_id: str,
+    current_user: Optional[dict] = Depends(get_optional_current_user)
+):
     try:
         c_id = uuid.UUID(chart_id)
         pool = await get_db_pool()
         async with pool.acquire() as conn:
+            # Check ownership if user_id is set
+            chart_row = await conn.fetchrow(
+                "SELECT user_id FROM charts WHERE id = $1",
+                c_id
+            )
+            if chart_row:
+                chart_owner_id = chart_row["user_id"]
+                if chart_owner_id:
+                    if not current_user or uuid.UUID(str(current_user["id"])) != chart_owner_id:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="You do not have permission to access this chat history."
+                        )
+            
             rows = await conn.fetch(
                 "SELECT id, sender, text, created_at FROM chat_messages WHERE chart_id = $1 ORDER BY created_at ASC",
                 c_id
@@ -165,6 +198,8 @@ async def get_chat_history(chart_id: str):
                     "time": r["created_at"].strftime("%I:%M %p")
                 } for r in rows
             ]
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[chat] Failed to fetch history: {e}")
         return []

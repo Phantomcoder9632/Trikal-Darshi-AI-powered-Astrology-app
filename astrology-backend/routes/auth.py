@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 import logging
 import hashlib
@@ -14,6 +15,7 @@ import jwt
 import httpx
 
 from db.database import get_db
+from services.security import RateLimiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Authentication"])
@@ -21,7 +23,7 @@ router = APIRouter(tags=["Authentication"])
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_DAYS = 30
+ACCESS_TOKEN_EXPIRE_HOURS = 24
 
 security = HTTPBearer(auto_error=False)
 
@@ -73,7 +75,7 @@ def create_access_token(user_id: uuid.UUID, email: str) -> str:
     """
     Generate a signed JWT access token for local session management.
     """
-    expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+    expire = datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     payload = {
         "user_id": str(user_id),
         "email": email,
@@ -331,7 +333,7 @@ def verify_password(password: str, hashed: str) -> bool:
         return False
 
 
-@router.post("/auth/register", response_model=LoginResponse)
+@router.post("/auth/register", response_model=LoginResponse, dependencies=[Depends(RateLimiter("auth", limit=5))])
 async def email_register(payload: EmailRegisterPayload, conn = Depends(get_db)):
     """
     Register a new user using email and password.
@@ -340,10 +342,12 @@ async def email_register(payload: EmailRegisterPayload, conn = Depends(get_db)):
     password = payload.password
     name = payload.name.strip() if payload.name else None
 
-    if len(password) < 6:
+    # Password complexity policy: at least 8 characters, 1 uppercase, 1 lowercase, 1 number
+    PASSWORD_REGEX = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$"
+    if not re.match(PASSWORD_REGEX, password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 6 characters long."
+            detail="Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number."
         )
 
     # Check if user already exists
@@ -393,7 +397,7 @@ async def email_register(payload: EmailRegisterPayload, conn = Depends(get_db)):
     }
 
 
-@router.post("/auth/login", response_model=LoginResponse)
+@router.post("/auth/login", response_model=LoginResponse, dependencies=[Depends(RateLimiter("auth", limit=5))])
 async def email_login(payload: EmailLoginPayload, conn = Depends(get_db)):
     """
     Log in an existing user using email and password.

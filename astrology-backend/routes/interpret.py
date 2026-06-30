@@ -1,7 +1,7 @@
 import uuid
 import logging
 import json
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Body, BackgroundTasks
 from fastapi.responses import StreamingResponse, JSONResponse
 import asyncpg
@@ -9,6 +9,8 @@ import asyncpg
 from db.database import get_db, get_db_pool
 from services.ai import stream_interpretation
 from services.cache import cache_interpretation, get_cached_interpretation
+from routes.auth import get_optional_current_user
+from services.security import RateLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +31,13 @@ TAB_MAP = {
     11: "Education & Intelligence",
 }
 
-@router.post("/interpret/{chart_id}/{tab_number}")
+@router.post("/interpret/{chart_id}/{tab_number}", dependencies=[Depends(RateLimiter("interpret", limit=15))])
 async def generate_interpretation_stream(
     chart_id: uuid.UUID,
     tab_number: int,
     background_tasks: BackgroundTasks,
     language: str = Body("english", embed=True),
+    current_user: Optional[dict] = Depends(get_optional_current_user),
 ):
     """
     POST /interpret/{chart_id}/{tab_number}
@@ -52,6 +55,33 @@ async def generate_interpretation_stream(
     tab_name = TAB_MAP[tab_number]
     chart_id_str = str(chart_id)
 
+    # ── Verify chart existence and ownership first ──
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        chart_row = await conn.fetchrow(
+            """
+            SELECT user_id, full_name, date_of_birth, time_of_birth, city_of_birth, current_city, raw_chart_data 
+            FROM charts 
+            WHERE id = $1
+            """,
+            chart_id
+        )
+
+    if not chart_row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Parent birth chart with ID {chart_id} not found."
+        )
+
+    # Check ownership if user_id is set
+    chart_owner_id = chart_row["user_id"]
+    if chart_owner_id:
+        if not current_user or uuid.UUID(str(current_user["id"])) != chart_owner_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to access interpretations for this chart."
+            )
+
     # ── a. Check Redis cache first (fastest) ────────────────────────────────────────────────
     cached_text = await get_cached_interpretation(chart_id_str, tab_number, language)
     if cached_text:
@@ -62,10 +92,8 @@ async def generate_interpretation_stream(
             
         return StreamingResponse(yield_cached(), media_type="text/plain")
 
-    # ── b. Query PostgreSQL for existing interpretation or chart details ────
-    pool = await get_db_pool()
+    # ── b. Query PostgreSQL for existing interpretation ────
     async with pool.acquire() as conn:
-        # Check interpretations table
         row = await conn.fetchrow(
             "SELECT content FROM interpretations WHERE chart_id = $1 AND tab_number = $2 AND language = $3",
             chart_id,
@@ -80,16 +108,6 @@ async def generate_interpretation_stream(
                 yield content
                 
             return StreamingResponse(yield_stored(), media_type="text/plain")
-
-        # Fetch chart row
-        chart_row = await conn.fetchrow(
-            """
-            SELECT full_name, date_of_birth, time_of_birth, city_of_birth, current_city, raw_chart_data 
-            FROM charts 
-            WHERE id = $1
-            """,
-            chart_id
-        )
 
     # Beyond this point, the database connection is fully released back to the pool!
     if not chart_row:
@@ -201,12 +219,32 @@ async def get_all_interpretations(
     chart_id: uuid.UUID,
     language: str = "english",
     conn: asyncpg.Connection = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_current_user),
 ):
     """
     GET /interpret/{chart_id}?language=english
     Retrieves all generated interpretations for a chart from PostgreSQL
     for the specified language.
     """
+    # Verify chart exists and check ownership
+    chart_row = await conn.fetchrow(
+        "SELECT user_id FROM charts WHERE id = $1",
+        chart_id
+    )
+    if not chart_row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Parent birth chart with ID {chart_id} not found."
+        )
+
+    chart_owner_id = chart_row["user_id"]
+    if chart_owner_id:
+        if not current_user or uuid.UUID(str(current_user["id"])) != chart_owner_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to access interpretations for this chart."
+            )
+
     rows = await conn.fetch(
         "SELECT tab_number, content FROM interpretations WHERE chart_id = $1 AND language = $2",
         chart_id,

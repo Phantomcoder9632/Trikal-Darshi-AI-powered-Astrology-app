@@ -13,10 +13,11 @@ endpoint every few seconds to show a "X of 10 sections ready" badge.
 import uuid
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import asyncpg
 
 from db.database import get_db
+from routes.auth import get_optional_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ TOTAL_TABS = 11
 async def get_generation_progress(
     chart_id: uuid.UUID,
     conn: asyncpg.Connection = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_current_user),
 ):
     """
     GET /progress/{chart_id}
@@ -45,9 +47,9 @@ async def get_generation_progress(
             "is_complete": false
         }
     """
-    # Verify chart exists and fetch its language
+    # Verify chart exists and fetch its language and owner
     row = await conn.fetchrow(
-        "SELECT language FROM charts WHERE id = $1",
+        "SELECT language, user_id FROM charts WHERE id = $1",
         chart_id,
     )
     if not row:
@@ -55,6 +57,16 @@ async def get_generation_progress(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Chart with ID {chart_id} not found.",
         )
+    
+    # Check ownership if user_id is set
+    chart_owner_id = row["user_id"]
+    if chart_owner_id:
+        if not current_user or uuid.UUID(str(current_user["id"])) != chart_owner_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to access the progress for this chart."
+            )
+            
     chart_lang = row["language"] or "english"
 
     # Fetch all tab numbers that have been fully generated for that language

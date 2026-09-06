@@ -45,6 +45,5 @@ astrology-backend/test_*.py
 
 # Deployment and Stitch Design Source Folders
 temp_hf_deploy/
-stitch_trikal_darshi_editorial_redesign/
 stitch*/
 language_feature_guide.md

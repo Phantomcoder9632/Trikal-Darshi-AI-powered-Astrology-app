@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trikal Darshi — AskAI Cosmic Synthesizer</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;family=Noto+Sans+Bengali:wght@400;600&amp;family=Noto+Sans+Devanagari:wght@400;600&amp;family=Noto+Serif+Bengali:wght@400;600&amp;family=Noto+Serif+Devanagari:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<style>
+    @layer base {
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #FBF6EA;
+        color: #16223F;
+      }
+      body {
+        overscroll-behavior: none;
+      }
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F4EAD6;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #D9A63C;
+      border-radius: 9999px;
+    }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#FBF6EA",
+            navy: {
+              900: "#10192E",
+              800: "#16223F",
+              700: "#1F3A6B",
+              600: "#2B4C85",
+              100: "#E6EDF8"
+            },
+            gold: {
+              700: "#9E7319",
+              600: "#B88622",
+              500: "#D9A63C",
+              300: "#E8C87A",
+              100: "#F0DFAF",
+              50: "#FAF3DE"
+            },
+            paper: {
+              card: "#FFFFFF",
+              muted: "#F7F2E4",
+              border: "#E9DFCE"
+            }
+          },
+          fontFamily: {
+            serif: ["\"Fraunces\", Georgia, serif"],
+            sans: ["\"Inter\", -apple-system, BlinkMacSystemFont, sans-serif"]
+          },
+          borderRadius: {
+            '2xl': '1rem',
+            '3xl': '1.5rem'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-canvas text-navy-800 font-sans antialiased selection:bg-gold-500 selection:text-navy-900 min-h-screen flex flex-col">
+<!-- TOP NAVIGATION BAR -->
+<header class="sticky top-0 z-50 w-full bg-[#FBF6EA]/90 backdrop-blur-md border-b border-paper-border shadow-[0_2px_12px_rgba(22,34,63,0.04)]">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+<!-- Brand & Section Status -->
+<div class="flex items-center gap-4 lg:gap-6">
+<a class="flex items-center gap-3 group" href="#">
+<div class="w-10 h-10 rounded-xl bg-navy-700 text-gold-500 flex items-center justify-center shadow-md group-hover:bg-navy-800 transition-colors">
+<span class="material-symbols-outlined text-[22px]">all_inclusive</span>
+</div>
+<div class="flex flex-col">
+<span class="font-serif font-bold text-lg text-navy-700 tracking-tight leading-none">TRIKAL DARSHI</span>
+<span class="font-sans text-[10px] text-gold-700 uppercase tracking-widest font-semibold mt-1">Jyotish Ephemeris</span>
+</div>
+</a>
+<!-- Breadcrumb / Synthesizer Badge -->
+<div class="hidden md:flex items-center gap-2 pl-4 border-l border-paper-border">
+<span class="font-serif text-sm font-semibold text-navy-800">AskAI Synthesizer</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gold-100 text-gold-700 border border-gold-300/60">
+            Tri-Focal V3.2
+          </span>
+<div class="flex items-center gap-1.5 ml-2 pl-2 border-l border-paper-border">
+<span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+<span class="text-xs text-navy-800/70 font-medium">Ephemeris Connected</span>
+</div>
+</div>
+</div>
+<!-- Main Nav Links -->
+<nav class="hidden lg:flex items-center gap-1">
+<a class="px-3 py-1.5 rounded-lg text-xs font-medium text-navy-800/70 hover:text-navy-800 hover:bg-paper-muted transition-colors" href="#">Observatory</a>
+<a class="px-3 py-1.5 rounded-lg text-xs font-medium text-navy-800/70 hover:text-navy-800 hover:bg-paper-muted transition-colors" href="#">Soul Dashboard</a>
+<a class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-navy-700 text-gold-100 shadow-sm" href="#">AskAI Guide</a>
+<a class="px-3 py-1.5 rounded-lg text-xs font-medium text-navy-800/70 hover:text-navy-800 hover:bg-paper-muted transition-colors" href="#">Saved Charts</a>
+</nav>
+<!-- Language & Profile CTA -->
+<div class="flex items-center gap-3">
+<!-- Language Selector -->
+<div class="flex items-center bg-white border border-paper-border px-2.5 py-1 rounded-lg shadow-sm">
+<span class="text-sm mr-1.5">🇮🇳</span>
+<select aria-label="Select Language" class="bg-transparent text-xs font-semibold text-navy-800 focus:outline-none cursor-pointer">
+<option value="en">EN</option>
+<option value="hi">HI (हिन्दी)</option>
+<option value="bn">BN (বাংলা)</option>
+</select>
+</div>
+<a class="hidden sm:inline-flex items-center gap-1.5 bg-navy-700 hover:bg-navy-800 text-gold-100 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all" href="#">
+<span class="material-symbols-outlined text-[16px] text-gold-500">menu_book</span>
+<span>Begin Reading</span>
+</a>
+<!-- Active Persona Avatar -->
+<button class="w-8 h-8 rounded-full bg-navy-700 border-2 border-gold-300 flex items-center justify-center text-gold-100 font-semibold text-xs shadow-sm hover:scale-105 transition-transform" title="Account profile" type="button">
+          AR
+        </button>
+</div>
+</div>
+</header>
+<!-- MAIN WORKSPACE CONTAINER -->
+<div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1">
+<div class="flex flex-col lg:flex-row items-start gap-8">
+<!-- ================= LEFT SIDEBAR (Width: ~320px) ================= -->
+<aside class="w-full lg:w-80 flex-shrink-0 flex flex-col gap-6">
+<!-- Active Cosmic Profile Card -->
+<div class="bg-white rounded-2xl border border-paper-border p-5 shadow-sm">
+<!-- Profile Header -->
+<div class="flex items-start justify-between pb-4 border-b border-paper-border/80">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-full bg-navy-100 border border-navy-700/20 text-navy-700 font-serif font-bold text-base flex items-center justify-center">
+                AR
+              </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h2 class="font-serif font-bold text-base text-navy-800 leading-tight">Aditya Roy</h2>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gold-100 text-gold-700 border border-gold-300/70">
+                    Natal Core
+                  </span>
+</div>
+<p class="text-xs text-navy-800/60 mt-0.5">14 Oct 1991 • 06:42 AM</p>
+<p class="text-xs text-navy-800/60">Varanasi, Uttar Pradesh</p>
+</div>
+</div>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center bg-paper-muted hover:bg-gold-100 text-navy-700 transition-colors" title="Switch Kundali Profile">
+<span class="material-symbols-outlined text-[18px]">sync_alt</span>
+</button>
+</div>
+<!-- 4 Core Astro Metrics (Cleanly spaced grid) -->
+<div class="grid grid-cols-2 gap-2.5 pt-4">
+<!-- Metric 1 -->
+<div class="bg-paper-muted rounded-xl p-3 border border-paper-border/60 flex flex-col justify-between">
+<span class="text-[10px] font-bold uppercase tracking-wider text-navy-800/60">Rising Lagna</span>
+<span class="font-serif font-bold text-sm text-navy-700 mt-1">Libra 21°44'</span>
+<span class="text-[11px] font-medium text-gold-700 mt-0.5">Swati (Ch. 4)</span>
+</div>
+<!-- Metric 2 -->
+<div class="bg-paper-muted rounded-xl p-3 border border-paper-border/60 flex flex-col justify-between">
+<span class="text-[10px] font-bold uppercase tracking-wider text-navy-800/60">Current Dasha</span>
+<span class="font-serif font-bold text-sm text-navy-700 mt-1">Shani / Budha</span>
+<span class="text-[11px] font-medium text-gold-700 mt-0.5">Ends Mar 2026</span>
+</div>
+<!-- Metric 3 -->
+<div class="bg-paper-muted rounded-xl p-3 border border-paper-border/60 flex flex-col justify-between">
+<span class="text-[10px] font-bold uppercase tracking-wider text-navy-800/60">Atmakaraka</span>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="font-serif font-bold text-sm text-navy-700">Guru 28°</span>
+<span class="text-[9px] px-1 py-0.2 bg-gold-100 text-gold-700 font-bold rounded">Ex</span>
+</div>
+<span class="text-[11px] font-medium text-navy-800/60 mt-0.5">Pushya Nak.</span>
+</div>
+<!-- Metric 4 -->
+<div class="bg-paper-muted rounded-xl p-3 border border-paper-border/60 flex flex-col justify-between">
+<span class="text-[10px] font-bold uppercase tracking-wider text-navy-800/60">Bhagyank Matrix</span>
+<span class="font-serif font-bold text-sm text-navy-700 mt-1">7 <span class="text-xs font-normal text-navy-800/60">(Ketu)</span></span>
+<span class="text-[11px] font-medium text-gold-700 mt-0.5">Moolank: 5 (Me)</span>
+</div>
+</div>
+</div>
+<!-- D10 Dashamsha Mini-Map Card -->
+<div class="bg-white rounded-2xl border border-paper-border p-5 shadow-sm flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-gold-600">stars</span>
+<h3 class="font-serif font-bold text-xs uppercase tracking-wider text-navy-700">Dashamsha (D10) • Profession</h3>
+</div>
+<span class="text-[10px] font-semibold text-navy-800/50 uppercase">North Indian</span>
+</div>
+<!-- Kundali Vector Canvas -->
+<div class="relative w-full aspect-square bg-paper-muted rounded-xl p-2.5 border border-paper-border flex items-center justify-center overflow-hidden">
+<svg class="w-full h-full text-navy-700" fill="none" stroke="currentColor" stroke-width="1.2" viewbox="0 0 200 200">
+<!-- Outer Square -->
+<rect fill="#FAF6ED" height="192" stroke="#1F3A6B" stroke-opacity="0.35" width="192" x="4" y="4"></rect>
+<!-- Center Diamond -->
+<polygon fill="#FAF3DE" fill-opacity="0.5" points="100,4 196,100 100,196 4,100" stroke="#1F3A6B" stroke-opacity="0.55"></polygon>
+<!-- Diagonals -->
+<line stroke="#1F3A6B" stroke-opacity="0.35" x1="4" x2="196" y1="4" y2="196"></line>
+<line stroke="#1F3A6B" stroke-opacity="0.35" x1="196" x2="4" y1="4" y2="196"></line>
+<!-- Kendra 10th House Highlight -->
+<polygon fill="#F0DFAF" fill-opacity="0.65" points="100,4 148,52 100,100 52,52" stroke="#D9A63C" stroke-width="1.5"></polygon>
+<!-- Planetary Positions in D10 Houses -->
+<!-- 10th House (Top Diamond) -->
+<text class="font-sans text-[9.5px] fill-navy-800 font-bold" text-anchor="middle" x="100" y="34">Su • Me</text>
+<text class="font-sans text-[7.5px] fill-gold-700 font-semibold" text-anchor="middle" x="100" y="48">10H (Budhaditya)</text>
+<!-- 1st House (Lagna - Center Top Triangle) -->
+<text class="font-sans text-[8px] fill-navy-700 font-semibold" text-anchor="middle" x="100" y="86">Lg: Ta 2°</text>
+<!-- 4th House (Bottom Diamond) -->
+<text class="font-sans text-[8.5px] fill-navy-800 font-semibold" text-anchor="middle" x="100" y="152">Sa (R)</text>
+<!-- 7th House (Right Diamond) -->
+<text class="font-sans text-[8.5px] fill-navy-800 font-semibold" text-anchor="middle" x="156" y="104">Ju (Ex)</text>
+<!-- 9th House -->
+<text class="font-sans text-[8px] fill-navy-700" text-anchor="middle" x="44" y="48">Ma</text>
+<!-- 11th House -->
+<text class="font-sans text-[8px] fill-navy-700" text-anchor="middle" x="156" y="48">Ve</text>
+</svg>
+<!-- Kendra Sovereign Badge -->
+<div class="absolute bottom-3 right-3 bg-white/95 backdrop-blur-xs px-2 py-0.5 rounded border border-gold-300 text-[10px] font-bold text-navy-700 shadow-xs">
+              Kendra Sovereign
+            </div>
+</div>
+</div>
+<!-- Family Vault & Saved Charts -->
+<div class="bg-white rounded-2xl border border-paper-border p-5 shadow-sm flex flex-col gap-3">
+<div class="flex items-center justify-between pb-2 border-b border-paper-border/80">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-gold-600">folder_supervised</span>
+<h3 class="font-serif font-bold text-sm text-navy-800">Family Vault &amp; Charts</h3>
+</div>
+<span class="text-[11px] font-semibold text-navy-800/60">3 Profiles</span>
+</div>
+<!-- Profile List -->
+<div class="flex flex-col gap-2 pt-1">
+<!-- Active Profile -->
+<button class="w-full text-left p-2.5 rounded-xl bg-gold-50 border border-gold-300/80 flex items-center justify-between group transition-all" type="button">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-full bg-navy-700 text-gold-100 text-xs font-bold flex items-center justify-center">AR</span>
+<div class="flex flex-col">
+<span class="font-medium text-xs text-navy-800 font-semibold">Aditya Roy (Self)</span>
+<span class="text-[10px] text-gold-700">Libra Lagna • Shani/Budha</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-gold-600 text-[18px]">verified</span>
+</button>
+<!-- Profile 2 -->
+<button class="w-full text-left p-2.5 rounded-xl hover:bg-paper-muted border border-transparent hover:border-paper-border flex items-center justify-between group transition-all" type="button">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-full bg-paper-muted text-navy-700 text-xs font-semibold flex items-center justify-center group-hover:bg-white">MR</span>
+<div class="flex flex-col">
+<span class="font-medium text-xs text-navy-800">Meenakshi Roy (Spouse)</span>
+<span class="text-[10px] text-navy-800/50">Pisces Lagna • Guru/Shukra</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-navy-800/40 text-[16px] group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</button>
+<!-- Profile 3 -->
+<button class="w-full text-left p-2.5 rounded-xl hover:bg-paper-muted border border-transparent hover:border-paper-border flex items-center justify-between group transition-all" type="button">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-full bg-paper-muted text-navy-700 text-xs font-semibold flex items-center justify-center group-hover:bg-white">SV</span>
+<div class="flex flex-col">
+<span class="font-medium text-xs text-navy-800">Shri V.K. Roy (Father)</span>
+<span class="text-[10px] text-navy-800/50">Leo Lagna • Budha Mahadasha</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-navy-800/40 text-[16px] group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</button>
+</div>
+<!-- Add New Kundali Button -->
+<button class="mt-1 py-2 text-center text-xs font-bold text-navy-700 hover:text-gold-700 hover:bg-paper-muted rounded-lg flex items-center justify-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-gold-600">add_circle</span>
+            Calculate New Kundali
+          </button>
+</div>
+<!-- Ayanamsha Calibration Footer Pill -->
+<div class="bg-paper-muted rounded-xl border border-paper-border p-3.5 flex items-center gap-3 shadow-xs">
+<span class="material-symbols-outlined text-gold-600 text-[22px] flex-shrink-0">auto_stories</span>
+<div class="flex flex-col">
+<span class="font-serif font-bold text-xs text-navy-800">Siddhantic Alignment</span>
+<span class="text-[11px] text-navy-800/70 leading-tight mt-0.5">Lahiri Ayanamsha (Chitra Paksha) 23°44'32" applied.</span>
+</div>
+</div>
+</aside>
+<!-- ================= RIGHT MAIN CHAT STREAM ================= -->
+<main class="flex-1 w-full flex flex-col gap-6">
+<!-- Top Synthesizer Subheader Card -->
+<div class="bg-white rounded-2xl border border-paper-border p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-center gap-3.5">
+<div class="w-11 h-11 rounded-xl bg-navy-700 text-gold-500 flex items-center justify-center shadow-sm flex-shrink-0">
+<span class="material-symbols-outlined text-[24px]">psychology</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2 flex-wrap">
+<h1 class="font-serif font-bold text-xl text-navy-800">AskAI Cosmic Synthesizer</h1>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gold-100 text-gold-700 border border-gold-300">
+                  Tri-Focal Engine
+                </span>
+</div>
+<p class="text-xs text-navy-800/70 mt-0.5">Unified Vedic Parashari, Lal Kitab Farmaan &amp; Pythagorean Numerology Matrix</p>
+</div>
+</div>
+<div class="flex items-center gap-2 self-end sm:self-center">
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+<span class="text-xs font-semibold text-navy-700 bg-paper-muted px-2.5 py-1 rounded-full border border-paper-border">
+              Realtime Transit Live
+            </span>
+</div>
+</div>
+<!-- Quick Prompts Rail (Spread out, comfortable horizontal scroll) -->
+<div class="w-full overflow-x-auto pb-1">
+<div class="flex items-center gap-2.5 min-w-max">
+<button class="px-3.5 py-2 rounded-xl bg-white hover:bg-gold-50 border border-paper-border hover:border-gold-300 text-navy-800 font-medium text-xs flex items-center gap-2 transition-all shadow-xs group" type="button">
+<span class="material-symbols-outlined text-[16px] text-gold-600 group-hover:scale-110 transition-transform">work_outline</span>
+<span>Career &amp; D10</span>
+</button>
+<button class="px-3.5 py-2 rounded-xl bg-white hover:bg-gold-50 border border-paper-border hover:border-gold-300 text-navy-800 font-medium text-xs flex items-center gap-2 transition-all shadow-xs group" type="button">
+<span class="material-symbols-outlined text-[16px] text-gold-600 group-hover:scale-110 transition-transform">favorite_border</span>
+<span>Love &amp; Marriage</span>
+</button>
+<button class="px-3.5 py-2 rounded-xl bg-white hover:bg-gold-50 border border-paper-border hover:border-gold-300 text-navy-800 font-medium text-xs flex items-center gap-2 transition-all shadow-xs group" type="button">
+<span class="material-symbols-outlined text-[16px] text-gold-600 group-hover:scale-110 transition-transform">account_balance</span>
+<span>Wealth &amp; Assets</span>
+</button>
+<button class="px-3.5 py-2 rounded-xl bg-white hover:bg-gold-50 border border-paper-border hover:border-gold-300 text-navy-800 font-medium text-xs flex items-center gap-2 transition-all shadow-xs group" type="button">
+<span class="material-symbols-outlined text-[16px] text-gold-600 group-hover:scale-110 transition-transform">healing</span>
+<span>Remedies &amp; Farmaan</span>
+</button>
+<button class="px-3.5 py-2 rounded-xl bg-white hover:bg-gold-50 border border-paper-border hover:border-gold-300 text-navy-800 font-medium text-xs flex items-center gap-2 transition-all shadow-xs group" type="button">
+<span class="material-symbols-outlined text-[16px] text-gold-600 group-hover:scale-110 transition-transform">explore</span>
+<span>Transits (Gochar)</span>
+</button>
+</div>
+</div>
+<!-- Chat Conversation Stream (Generously spaced) -->
+<div class="flex flex-col gap-6">
+<!-- 1. AI Welcome Greeting Card -->
+<div class="flex items-start gap-3.5">
+<div class="w-10 h-10 rounded-xl bg-navy-700 border border-gold-300 text-gold-500 flex-shrink-0 flex items-center justify-center shadow-sm mt-0.5">
+<span class="material-symbols-outlined text-[22px]">auto_awesome</span>
+</div>
+<div class="flex-1 bg-white rounded-2xl border border-paper-border p-5 shadow-sm">
+<div class="flex items-center justify-between pb-2 mb-2 border-b border-paper-border/60">
+<div class="flex items-center gap-2">
+<span class="font-serif font-bold text-base text-navy-800">Pranam, Aditya.</span>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-navy-100 text-navy-700">Ephemeris Loaded</span>
+</div>
+<span class="text-xs text-navy-800/50">08:14 AM</span>
+</div>
+<p class="text-sm text-navy-800 leading-relaxed">
+                Based on your birth record of <strong class="text-navy-700 font-semibold">14 Oct 1991 (Varanasi)</strong>, rising sign <strong class="text-navy-700 font-semibold">Libra</strong>, and your ongoing <strong class="text-navy-700 font-semibold">Shani-Budha</strong> dasha, your D10 Dashamsha indicates significant structural shifts in professional authority. Where shall we direct cosmic synthesis today?
+              </p>
+</div>
+</div>
+<!-- 2. User Query Message Bubble -->
+<div class="flex items-start justify-end gap-3.5 pl-6 sm:pl-16">
+<div class="bg-navy-700 text-white rounded-2xl p-5 shadow-sm max-w-2xl border border-navy-600">
+<div class="flex items-center justify-between gap-4 pb-2 mb-2 border-b border-navy-600/70">
+<div class="flex items-center gap-2">
+<span class="font-serif font-bold text-xs text-gold-300">Aditya Roy</span>
+<span class="text-[10px] px-1.5 py-0.2 bg-navy-800 text-gold-100 rounded">Querent</span>
+</div>
+<span class="text-xs text-white/60">08:16 AM</span>
+</div>
+<p class="text-sm text-gold-50 leading-relaxed">
+                What does my D10 indicate about starting an independent advisory practice in early 2025?
+              </p>
+</div>
+<div class="w-10 h-10 rounded-xl bg-navy-800 border border-gold-300 text-gold-100 flex-shrink-0 flex items-center justify-center font-bold text-xs shadow-sm mt-0.5">
+              AR
+            </div>
+</div>
+<!-- 3. AI Deep Response Card: Tri-Focal Synthesis -->
+<div class="flex items-start gap-3.5">
+<div class="w-10 h-10 rounded-xl bg-navy-700 border border-gold-300 text-gold-500 flex-shrink-0 flex items-center justify-center shadow-sm mt-0.5">
+<span class="material-symbols-outlined text-[22px]">auto_awesome</span>
+</div>
+<div class="flex-1 bg-white rounded-2xl border border-paper-border p-6 shadow-sm flex flex-col gap-6">
+<!-- Response Header with Metaphysical Coordinates -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-paper-border">
+<div>
+<span class="text-[11px] font-bold text-gold-700 uppercase tracking-widest">Synthesis Delineation</span>
+<h2 class="font-serif font-bold text-xl text-navy-800 mt-0.5">Vocation &amp; Sovereign Enterprise Matrix</h2>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 bg-paper-muted text-navy-700 rounded-lg text-xs font-semibold border border-paper-border">D10 Dashamsha</span>
+<span class="px-2.5 py-1 bg-paper-muted text-navy-700 rounded-lg text-xs font-semibold border border-paper-border">2025 Transit</span>
+</div>
+</div>
+<!-- Executive Synthesis Overview -->
+<p class="text-sm text-navy-800 leading-relaxed">
+                Your celestial mechanics are entering an extraordinary configuration for independent advisory work. Because Mercury acts as your 9th house lord in the Rashi chart and is exceptionally dignified in the Dashamsha 10th house, your advisory voice shifts from subordinate consulting to sovereign counsel.
+              </p>
+<!-- 3 Distinct Spacious Sub-Cards -->
+<div class="grid grid-cols-1 gap-4">
+<!-- Sub-Card 01: Parashari D10 -->
+<div class="bg-paper-muted rounded-xl p-4 sm:p-5 border border-paper-border flex flex-col gap-2.5">
+<div class="flex items-center justify-between flex-wrap gap-2">
+<div class="flex items-center gap-2.5">
+<span class="w-6 h-6 rounded-full bg-navy-700 text-gold-100 text-xs flex items-center justify-center font-bold">01</span>
+<h4 class="font-serif font-bold text-sm text-navy-800">Parashari D10 Dasamsa: Executive Sovereignty</h4>
+</div>
+<span class="text-xs font-bold text-gold-700 bg-gold-100 px-2 py-0.5 rounded border border-gold-300">Budhaditya Yoga</span>
+</div>
+<p class="text-xs sm:text-sm text-navy-800/80 leading-relaxed">
+                    In your D10, the Sun and Mercury form a pristine <strong class="text-navy-800">Budhaditya Yoga</strong> directly across the 10th House of Status (Midheaven). During the current Saturn-Mercury dasha period, Mercury activates analytical jurisprudence and high-ticket advisory. Saturn as the 10th lord provides stability, ensuring institutional clients take your independent counsel seriously.
+                  </p>
+<!-- Bulleted Traits -->
+<div class="flex flex-wrap items-center gap-3 pt-1 border-t border-paper-border/60">
+<span class="inline-flex items-center gap-1.5 text-xs font-medium text-navy-800">
+<span class="material-symbols-outlined text-[16px] text-gold-600">check_circle</span>
+                      10th House Prominence Verified
+                    </span>
+<span class="inline-flex items-center gap-1.5 text-xs font-medium text-navy-800">
+<span class="material-symbols-outlined text-[16px] text-gold-600">check_circle</span>
+                      Swati Nakshatra Air Agility
+                    </span>
+</div>
+</div>
+<!-- Sub-Card 02: Lal Kitab Farmaan #41 -->
+<div class="bg-paper-muted rounded-xl p-4 sm:p-5 border border-paper-border flex flex-col gap-2.5">
+<div class="flex items-center justify-between flex-wrap gap-2">
+<div class="flex items-center gap-2.5">
+<span class="w-6 h-6 rounded-full bg-navy-700 text-gold-100 text-xs flex items-center justify-center font-bold">02</span>
+<h4 class="font-serif font-bold text-sm text-navy-800">Lal Kitab Farmaan #41: Liquid Reserves &amp; Metals</h4>
+</div>
+<span class="text-xs font-bold text-gold-700 bg-gold-100 px-2 py-0.5 rounded border border-gold-300">Preventive Upaya</span>
+</div>
+<p class="text-xs sm:text-sm text-navy-800/80 leading-relaxed">
+                    Under Lal Kitab principles, starting an enterprise during a Rahu/Shani transit requires establishing a grounded physical node. Farmaan #41 prescribes establishing a <strong class="text-navy-800">pure solid silver square plate (4 grams)</strong> wrapped in off-white silk in your workspace cash box before accepting initial retainers. This mitigates unexpected client disputes and keeps liquidity flowing without interruption.
+                  </p>
+<!-- Protocol Box -->
+<div class="bg-white p-3 rounded-lg border border-gold-300/80 text-xs text-navy-800 flex items-start gap-2.5 shadow-xs">
+<span class="material-symbols-outlined text-gold-600 text-[18px] mt-0.5 flex-shrink-0">lightbulb</span>
+<p class="leading-relaxed">
+<strong>Farmaan Protocol:</strong> Avoid partnerships where the counterparty's 8th house hosts a retrograde malefic; maintain independent billing under your registered sole proprietorship.
+                    </p>
+</div>
+</div>
+<!-- Sub-Card 03: Numerology Matrix -->
+<div class="bg-paper-muted rounded-xl p-4 sm:p-5 border border-paper-border flex flex-col gap-2.5">
+<div class="flex items-center justify-between flex-wrap gap-2">
+<div class="flex items-center gap-2.5">
+<span class="w-6 h-6 rounded-full bg-navy-700 text-gold-100 text-xs flex items-center justify-center font-bold">03</span>
+<h4 class="font-serif font-bold text-sm text-navy-800">Numerology Matrix: Bhagyank 7 &amp; Personal Year 5</h4>
+</div>
+<span class="text-xs font-bold text-gold-700 bg-gold-100 px-2 py-0.5 rounded border border-gold-300">Harmonic Orbit</span>
+</div>
+<p class="text-xs sm:text-sm text-navy-800/80 leading-relaxed">
+                    Your <strong class="text-navy-800">Bhagyank 7 (Destiny Number)</strong> enters an auspicious acceleration in 2025 as you enter <strong class="text-navy-800">Personal Year 5 (Mercury)</strong>. Year 5 unlocks rapid expansion, media exposure, and independent consultancy contracts. The synergy between your Mercury birth number (14 = 1+4 = 5) and Year 5 produces natural authority in advisory niches.
+                  </p>
+</div>
+</div>
+<!-- Recommended Inauguration Window (Warm Gold Card #F0DFAF background, Deep Blue text) -->
+<div class="bg-gold-100 rounded-2xl p-5 border border-gold-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+<div class="flex items-center gap-3.5">
+<div class="w-12 h-12 rounded-xl bg-white text-navy-700 flex items-center justify-center shadow-xs flex-shrink-0">
+<span class="material-symbols-outlined text-[28px] text-navy-700">event_available</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-navy-800/70 uppercase tracking-widest">Recommended Inauguration Window</span>
+<h3 class="font-serif font-bold text-base sm:text-lg text-navy-900 leading-snug">February 13, 2025 • 09:18 AM IST</h3>
+<span class="text-xs text-navy-800/80 mt-0.5">Shukla Paksha Pratipada • Pushya Nakshatra • Abhijit Muhurta</span>
+</div>
+</div>
+<button class="w-full sm:w-auto px-4 py-2 bg-navy-700 hover:bg-navy-800 text-gold-100 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm flex-shrink-0" type="button">
+<span class="material-symbols-outlined text-[18px] text-gold-300">calendar_add_on</span>
+                  Sync Muhurta to iCal
+                </button>
+</div>
+<!-- Suggested Follow-Up Prompts -->
+<div class="flex flex-col gap-2.5 pt-2 border-t border-paper-border">
+<span class="text-[11px] font-bold uppercase tracking-wider text-navy-800/60">Suggested Follow-Up Prompts</span>
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1.5 bg-paper-muted hover:bg-gold-50 border border-paper-border hover:border-gold-300 text-navy-800 rounded-lg text-xs font-medium transition-all text-left" type="button">
+                    Tell me more about the silver square remedy for Farmaan #41 →
+                  </button>
+<button class="px-3 py-1.5 bg-paper-muted hover:bg-gold-50 border border-paper-border hover:border-gold-300 text-navy-800 rounded-lg text-xs font-medium transition-all text-left" type="button">
+                    Which business naming syllables resonate with Bhagyank 7? →
+                  </button>
+<button class="px-3 py-1.5 bg-paper-muted hover:bg-gold-50 border border-paper-border hover:border-gold-300 text-navy-800 rounded-lg text-xs font-medium transition-all text-left" type="button">
+                    Analyze Jupiter's transit into Gemini in May 2025 →
+                  </button>
+</div>
+</div>
+<!-- Response Action Toolbar -->
+<div class="flex items-center justify-between pt-3 border-t border-paper-border text-xs text-navy-800/70">
+<div class="flex items-center gap-3">
+<button class="hover:text-navy-900 flex items-center gap-1 font-medium transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span> Copy
+                  </button>
+<button class="hover:text-navy-900 flex items-center gap-1 font-medium transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">picture_as_pdf</span> PDF Dossier
+                  </button>
+<button class="hover:text-navy-900 flex items-center gap-1 font-medium transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">tune</span> Adjust Ephemeris
+                  </button>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-7 h-7 rounded-lg hover:bg-paper-muted text-navy-800/70 hover:text-navy-900 flex items-center justify-center transition-colors" title="Accurate Reading" type="button">
+<span class="material-symbols-outlined text-[16px]">thumb_up</span>
+</button>
+<button class="w-7 h-7 rounded-lg hover:bg-paper-muted text-navy-800/70 hover:text-navy-900 flex items-center justify-center transition-colors" title="Report Inaccuracy" type="button">
+<span class="material-symbols-outlined text-[16px]">thumb_down</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sticky / Floating Bottom Chat Composer -->
+<div class="bg-white rounded-2xl border border-paper-border p-4 shadow-md flex flex-col gap-3">
+<form class="flex flex-col gap-3" id="askai-composer-form" onsubmit="event.preventDefault();">
+<div class="relative w-full">
+<textarea class="w-full bg-paper-muted text-navy-800 placeholder:text-navy-800/40 text-sm rounded-xl p-3.5 border border-paper-border focus:border-navy-700 focus:outline-none focus:bg-white transition-all resize-none" id="askai-input" placeholder="Ask Trikal AI about your transits, Lal Kitab farmaan, or remedies... (Shift + Enter for new line)" rows="3"></textarea>
+</div>
+<!-- Composer Toolbar & Action Buttons -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-2 flex-wrap">
+<!-- Model Badge -->
+<button class="px-2.5 py-1.5 rounded-lg bg-paper-muted hover:bg-paper-border text-navy-800 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-paper-border" type="button">
+<span class="material-symbols-outlined text-[16px] text-navy-700">tune</span>
+<span>Model: <strong>Tri-Focal</strong></span>
+</button>
+<!-- Add Kundali Context -->
+<button class="px-2.5 py-1.5 rounded-lg bg-paper-muted hover:bg-paper-border text-navy-800 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-paper-border" type="button">
+<span class="material-symbols-outlined text-[16px] text-gold-600">attach_file</span>
+<span>Add Kundali</span>
+</button>
+<span class="text-[11px] text-navy-800/50 hidden md:inline ml-1">Press Enter ↵ to synthesize</span>
+</div>
+<!-- Blue (#1F3A6B) + Warm Gold CTA -->
+<div class="self-end sm:self-auto">
+<button class="px-6 py-2.5 rounded-xl bg-navy-700 hover:bg-navy-800 text-gold-100 font-serif font-bold text-sm flex items-center gap-2 shadow-md transition-all" id="synthesize-btn" type="submit">
+<span>Synthesize</span>
+<span class="material-symbols-outlined text-[18px] text-gold-500">auto_awesome</span>
+</button>
+</div>
+</div>
+</form>
+<!-- Verbatim Mandatory Astrological Disclaimer -->
+<div class="text-center pt-2 border-t border-paper-border/60">
+<p class="text-[11px] text-navy-800/60 leading-tight">
+              Trikal AI synthesizes Parashari Vedic Jyotish, Lal Kitab Farmaan &amp; Numerology. Predictions are for guidance.
+            </p>
+</div>
+</div>
+</main>
+</div>
+</div>
+<!-- FOOTER -->
+<footer class="w-full bg-[#F4EAD6] border-t border-paper-border py-8 mt-12">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+<div class="flex flex-col gap-1">
+<span class="font-serif font-bold text-base text-navy-800">TRIKAL DARSHI</span>
+<p class="text-xs text-navy-800/70 max-w-md">
+          Vedic precision computing, Kundali delineations, and celestial timelines anchored in traditional Jyotish Shastra.
+        </p>
+</div>
+<div class="flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-navy-800/70">
+<a class="hover:text-navy-900 transition-colors" href="#">Ephemeris Tables</a>
+<a class="hover:text-navy-900 transition-colors" href="#">Daily Panchang</a>
+<a class="hover:text-navy-900 transition-colors" href="#">Methodology</a>
+<a class="hover:text-navy-900 transition-colors" href="#">Privacy &amp; Terms</a>
+</div>
+<div class="text-xs text-navy-800/60">
+        © 2025 Trikal Darshi. All planetary coordinates verified.
+      </div>
+</div>
+</footer>
+<script>
+    (function initAskAI() {
+      const textarea = document.getElementById('askai-input');
+      const form = document.getElementById('askai-composer-form');
+      
+      if (textarea && form) {
+        textarea.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (textarea.value.trim().length > 0) {
+              form.dispatchEvent(new Event('submit', { cancelable: true }));
+              textarea.value = '';
+            }
+          }
+        });
+      }
+    })();
+  </script>
+</body></html>

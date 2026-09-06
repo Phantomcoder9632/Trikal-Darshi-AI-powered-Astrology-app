@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trikal Darshi — Language Welcome Modal</title>
+<!-- Google Fonts: Fraunces, Inter, Noto Serif Devanagari, Noto Sans Bengali -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&amp;family=Inter:wght@400;500;600&amp;family=Noto+Sans+Bengali:wght@400;500;600&amp;family=Noto+Serif+Devanagari:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Custom Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              navy: '#16223F',
+              primary: '#1F3A6B',
+              softGold: '#D9A63C',
+              lightGold: '#F0DFAF',
+              paper: '#FDFBF7',
+              raisedSurface: '#FFFDF6',
+              inkSoft: '#4A567A',
+              inkMuted: '#6B7A99',
+              goldBorder: '#D9A63C',
+            }
+          },
+          fontFamily: {
+            serif: ['Fraunces', 'Georgia', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+            hindi: ['Noto Serif Devanagari', 'serif'],
+            bengali: ['Noto Sans Bengali', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+<!-- Custom Styles for Astrological & Design Tokens -->
+<style data-purpose="custom-typography">
+    .font-fraunces {
+      font-family: 'Fraunces', Georgia, serif;
+    }
+    .font-devanagari {
+      font-family: 'Noto Serif Devanagari', serif;
+    }
+    .font-bengali {
+      font-family: 'Noto Sans Bengali', sans-serif;
+    }
+  </style>
+<style data-purpose="visual-effects">
+    /* Subtle astrolabe rotating ambient animation for background aesthetic */
+    @keyframes slowRotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-celestial-slow {
+      animation: slowRotate 180s linear infinite;
+    }
+  </style>
+</head>
+<body class="bg-[#F6F2EA] text-brand-navy font-sans antialiased relative min-h-screen overflow-hidden">
+<!-- BEGIN: Blurred Observatory Homepage Backdrop -->
+<!-- Mimics SCREEN_6 (Observatory Homepage) underneath the dimmed celestial modal overlay -->
+<div class="fixed inset-0 w-full h-full pointer-events-none select-none z-0 overflow-y-auto filter blur-[2px] opacity-70">
+<!-- Top Bar Mock -->
+<header class="bg-brand-raisedSurface border-b border-[#E7DECD] px-8 py-3 flex items-center justify-between">
+<div class="flex items-center space-x-3">
+<div class="w-6 h-6 rounded-full border border-brand-softGold flex items-center justify-center text-xs text-brand-softGold font-serif">✦</div>
+<span class="font-serif font-medium tracking-wider text-brand-navy">TRIKAL DARSHI</span>
+<span class="text-xs text-brand-inkSoft font-devanagari">त्रिकाल दर्शी</span>
+</div>
+<div class="flex items-center space-x-6 text-xs text-brand-inkSoft">
+<span class="bg-[#F1ECE1] px-3 py-1 rounded-full text-brand-navy font-medium">Observatory</span>
+<span>Soul Dashboard</span>
+<span>AskAI Guide</span>
+<span>Saved Charts</span>
+</div>
+<div class="flex items-center space-x-4">
+<div class="border border-brand-softGold/50 rounded-full px-3 py-1 text-xs text-brand-navy">🇮🇳 EN ▾</div>
+<div class="bg-brand-primary text-brand-lightGold text-xs px-4 py-1.5 rounded-lg">✦ Begin Reading</div>
+</div>
+</header>
+<!-- Ephemeris Sub-strip Mock -->
+<div class="bg-[#F8F5EE] border-b border-[#EAE2D4] px-8 py-1.5 flex justify-between text-[11px] text-brand-inkSoft">
+<span>✦ KALA-CHAKRA OBSERVATORY • Sidereal Lahiri Ephemeris</span>
+<span>Ayanamsa: 24° 11' 42" • Bṛhat Parāśara Horāśāstra Standard</span>
+</div>
+<!-- Hero Content Mock -->
+<main class="max-w-7xl mx-auto px-8 py-12 grid grid-cols-12 gap-8">
+<div class="col-span-7 pt-6">
+<div class="inline-flex items-center space-x-2 text-[11px] text-brand-softGold tracking-wide uppercase font-semibold">
+<span>TRIKAL DARSHI ✦ त्रिकाल दर्शी</span>
+<span>•</span>
+<span>Kala-Chakra Engine</span>
+</div>
+<h1 class="font-serif text-5xl text-brand-navy mt-4 leading-tight">
+          The Geometry of <br/><span class="italic font-normal">Soul &amp; Time.</span>
+</h1>
+<p class="mt-4 text-brand-inkSoft text-base max-w-lg">
+          Mathematical Vedic delineations anchored in immutable celestial coordinates. Unveiling sixteen levels of karmic projection through razor-sharp planetary mechanics.
+        </p>
+</div>
+<!-- Right Form Mock -->
+<div class="col-span-5 bg-brand-raisedSurface border border-brand-softGold/40 rounded-2xl p-6 shadow-sm">
+<div class="flex justify-between items-center pb-4 border-b border-stone-200">
+<span class="text-xs font-semibold uppercase tracking-wider text-brand-softGold">✦ Janma Kundali Generator</span>
+<span class="text-[10px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded">COORD • J108</span>
+</div>
+<div class="mt-4 space-y-3">
+<div class="h-9 bg-[#F4EFE6] rounded-lg"></div>
+<div class="grid grid-cols-2 gap-3">
+<div class="h-9 bg-[#F4EFE6] rounded-lg"></div>
+<div class="h-9 bg-[#F4EFE6] rounded-lg"></div>
+</div>
+<div class="h-9 bg-[#F4EFE6] rounded-lg"></div>
+</div>
+</div>
+</main>
+</div>
+<!-- END: Blurred Observatory Homepage Backdrop -->
+<!-- BEGIN: Dimmed Celestial Scrim Overlay -->
+<!-- Dimmed scrim (#16223F/55 backdrop-blur-md) covering the full viewport -->
+<div class="fixed inset-0 z-40 bg-[#16223F]/55 backdrop-blur-md transition-opacity duration-300 flex items-center justify-center p-4 sm:p-6" data-purpose="modal-backdrop-container" id="modalBackdrop">
+<!-- BEGIN: Centered Language Welcome Modal Card -->
+<div aria-labelledby="modal-title" aria-modal="true" class="relative w-full max-w-[520px] bg-[#FFFDF6] border-[1.5px] border-[#D9A63C]/40 rounded-2xl p-6 sm:p-8 shadow-2xl overflow-hidden text-left" data-purpose="language-selection-modal" role="dialog">
+<!-- Sacred Geometry Accent: Faint Celestial Mandala / Yantra Watermark -->
+<svg aria-hidden="true" class="absolute -top-16 -right-16 w-56 h-56 text-[#D9A63C] opacity-[0.14] pointer-events-none select-none animate-celestial-slow" fill="none" viewbox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<circle cx="100" cy="100" r="96" stroke="currentColor" stroke-dasharray="3 3" stroke-width="1"></circle>
+<circle cx="100" cy="100" r="82" stroke="currentColor" stroke-width="1.2"></circle>
+<circle cx="100" cy="100" r="64" stroke="currentColor" stroke-width="0.8"></circle>
+<circle cx="100" cy="100" r="46" stroke="currentColor" stroke-dasharray="4 2" stroke-width="1"></circle>
+<circle cx="100" cy="100" r="28" stroke="currentColor" stroke-width="0.8"></circle>
+<!-- 12 Radiating Lines representing Bhavas/Houses -->
+<line stroke="currentColor" stroke-width="0.75" x1="100" x2="100" y1="4" y2="196"></line>
+<line stroke="currentColor" stroke-width="0.75" x1="4" x2="196" y1="100" y2="100"></line>
+<line stroke="currentColor" stroke-width="0.75" x1="32.1" x2="167.9" y1="32.1" y2="167.9"></line>
+<line stroke="currentColor" stroke-width="0.75" x1="32.1" x2="167.9" y1="167.9" y2="32.1"></line>
+<!-- Sacred Triangles (Shri Yantra motif) -->
+<polygon fill="none" points="100,20 172,145 28,145" stroke="currentColor" stroke-width="0.9"></polygon>
+<polygon fill="none" points="100,180 28,55 172,55" stroke="currentColor" stroke-width="0.9"></polygon>
+<polygon fill="none" points="100,38 152,130 48,130" stroke="currentColor" stroke-width="0.6"></polygon>
+<polygon fill="none" points="100,162 48,70 152,70" stroke="currentColor" stroke-width="0.6"></polygon>
+<circle cx="100" cy="100" fill="currentColor" r="4"></circle>
+</svg>
+<!-- Dismiss Button (Top Right) -->
+<button aria-label="Close modal" class="absolute top-4 right-4 sm:top-5 sm:right-5 w-8 h-8 rounded-full flex items-center justify-center text-[#4A567A] hover:text-[#16223F] hover:bg-[#D9A63C]/10 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#D9A63C]/50" onclick="document.getElementById('modalBackdrop').style.display='none'" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- BEGIN: Modal Header Section -->
+<div class="text-center relative z-10">
+<!-- Gold Accent Badge -->
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF5E9] border border-[#D9A63C]/35 text-[#9E6D13] text-[10.5px] tracking-wider uppercase font-semibold">
+<span class="text-xs">✦</span>
+<span>Trikal Darshi • Welcome to Kala-Chakra</span>
+</div>
+<!-- Headline -->
+<h2 class="font-serif font-medium text-[#16223F] text-2xl sm:text-[28px] mt-3 tracking-tight" id="modal-title">
+          Select Interpretation Language
+        </h2>
+<!-- Subtitle -->
+<p class="font-sans text-[#4A567A] text-xs sm:text-sm mt-2 leading-relaxed max-w-md mx-auto">
+          Choose your preferred language for natal charts, planetary dignities, ephemeris calculations, and AI astrological synthesis.
+        </p>
+</div>
+<!-- END: Modal Header Section -->
+<!-- BEGIN: Language Choice Cards (Interactive Stack) -->
+<form class="mt-6 space-y-3 relative z-10" id="languageForm" onsubmit="event.preventDefault(); document.getElementById('modalBackdrop').style.display='none';">
+<!-- Card 1: English (Selected Default State) -->
+<label class="relative flex items-start p-3.5 sm:p-4 rounded-xl cursor-pointer transition-all duration-200 border border-[#1F3A6B] bg-[#F0DFAF]/40 shadow-sm hover:border-[#1F3A6B] group" data-purpose="language-option-card" for="lang-en">
+<input checked="" class="sr-only" id="lang-en" name="interpretation_language" onchange="updateLanguageSelection(this)" type="radio" value="en"/>
+<!-- Flag / Cultural Emblem -->
+<div class="flex-shrink-0 w-9 h-9 rounded-lg bg-white border border-[#D9A63C]/40 flex items-center justify-center shadow-xs overflow-hidden mt-0.5 mr-3 sm:mr-3.5">
+<!-- Global / Astrolabe & IAST Roman Icon -->
+<svg class="w-5 h-5 text-[#1F3A6B]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="2" x2="22" y1="12" y2="12"></line>
+<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+</svg>
+</div>
+<!-- Language Metadata -->
+<div class="flex-grow pr-2">
+<div class="flex items-center gap-2">
+<span class="font-medium text-[#16223F] text-sm sm:text-base tracking-tight">English</span>
+<span class="text-[11px] font-medium bg-[#1F3A6B]/10 text-[#1F3A6B] px-2 py-0.5 rounded-md">Global / IAST</span>
+</div>
+<p class="text-[11.5px] sm:text-xs text-[#4A567A] mt-1 leading-snug">
+              Classical Sanskrit terminology in Roman script (e.g., Mahadasha, Digbala, Uchha)
+            </p>
+</div>
+<!-- Radio Selection Indicator (Active State) -->
+<div class="flex-shrink-0 flex items-center self-center pl-1">
+<div class="w-5 h-5 rounded-full bg-[#1F3A6B] flex items-center justify-center text-white ring-2 ring-[#1F3A6B]/20">
+<svg class="w-3 h-3 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+</label>
+<!-- Card 2: Hindi (हिंदी) -->
+<label class="relative flex items-start p-3.5 sm:p-4 rounded-xl cursor-pointer transition-all duration-200 border border-[#E7DECD] bg-white/70 hover:bg-[#FFFDF6] hover:border-[#D9A63C]/60 hover:shadow-sm group" data-purpose="language-option-card" for="lang-hi">
+<input class="sr-only" id="lang-hi" name="interpretation_language" onchange="updateLanguageSelection(this)" type="radio" value="hi"/>
+<!-- Flag / Cultural Emblem: Indian Tricolor SVG -->
+<div class="flex-shrink-0 w-9 h-9 rounded-lg bg-white border border-[#E7DECD] flex items-center justify-center shadow-xs overflow-hidden mt-0.5 mr-3 sm:mr-3.5">
+<svg class="w-6 h-4.5 rounded-xs" fill="none" viewbox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
+<!-- Saffron top bar -->
+<rect fill="#FF9933" height="6.66" width="30"></rect>
+<!-- White center bar -->
+<rect fill="#FFFFFF" height="6.66" width="30" y="6.66"></rect>
+<!-- Green bottom bar -->
+<rect fill="#138808" height="6.66" width="30" y="13.33"></rect>
+<!-- Ashoka Chakra -->
+<circle cx="15" cy="10" fill="none" r="2.2" stroke="#000080" stroke-width="0.5"></circle>
+<circle cx="15" cy="10" fill="#000080" r="0.4"></circle>
+</svg>
+</div>
+<!-- Language Metadata -->
+<div class="flex-grow pr-2">
+<div class="flex items-center gap-2">
+<span class="font-devanagari font-semibold text-[#16223F] text-sm sm:text-base">हिंदी</span>
+<span class="text-xs text-[#6B7A99] font-normal">(Hindi)</span>
+</div>
+<p class="font-devanagari text-[11.5px] sm:text-xs text-[#4A567A] mt-1 leading-snug">
+              पारंपरिक वैदिक ज्योतिष, लाल किताब फरमान एवं पंचांग विश्लेषण
+            </p>
+</div>
+<!-- Radio Selection Indicator -->
+<div class="flex-shrink-0 flex items-center self-center pl-1">
+<div class="w-5 h-5 rounded-full border-2 border-stone-300 group-hover:border-[#D9A63C] flex items-center justify-center transition-colors">
+<div class="w-2.5 h-2.5 rounded-full bg-transparent"></div>
+</div>
+</div>
+</label>
+<!-- Card 3: Bengali (বাংলা) -->
+<label class="relative flex items-start p-3.5 sm:p-4 rounded-xl cursor-pointer transition-all duration-200 border border-[#E7DECD] bg-white/70 hover:bg-[#FFFDF6] hover:border-[#D9A63C]/60 hover:shadow-sm group" data-purpose="language-option-card" for="lang-bn">
+<input class="sr-only" id="lang-bn" name="interpretation_language" onchange="updateLanguageSelection(this)" type="radio" value="bn"/>
+<!-- Flag / Cultural Emblem -->
+<div class="flex-shrink-0 w-9 h-9 rounded-lg bg-white border border-[#E7DECD] flex items-center justify-center shadow-xs overflow-hidden mt-0.5 mr-3 sm:mr-3.5">
+<svg class="w-6 h-4.5 rounded-xs" fill="none" viewbox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
+<!-- Traditional Indian Tricolor representing Bengali linguistic heritage in Indian Vedic tradition -->
+<rect fill="#FF9933" height="6.66" width="30"></rect>
+<rect fill="#FFFFFF" height="6.66" width="30" y="6.66"></rect>
+<rect fill="#138808" height="6.66" width="30" y="13.33"></rect>
+<circle cx="15" cy="10" fill="none" r="2.2" stroke="#000080" stroke-width="0.5"></circle>
+<circle cx="15" cy="10" fill="#000080" r="0.4"></circle>
+</svg>
+</div>
+<!-- Language Metadata -->
+<div class="flex-grow pr-2">
+<div class="flex items-center gap-2">
+<span class="font-bengali font-semibold text-[#16223F] text-sm sm:text-base">বাংলা</span>
+<span class="text-xs text-[#6B7A99] font-normal">(Bengali)</span>
+</div>
+<p class="font-bengali text-[11.5px] sm:text-xs text-[#4A567A] mt-1 leading-snug">
+              প্রামাণ্য বৈদিক জ্যোতিষ, কোষ্ঠী বিচার ও নবগ্রহ প্রতিকার বিধান
+            </p>
+</div>
+<!-- Radio Selection Indicator -->
+<div class="flex-shrink-0 flex items-center self-center pl-1">
+<div class="w-5 h-5 rounded-full border-2 border-stone-300 group-hover:border-[#D9A63C] flex items-center justify-center transition-colors">
+<div class="w-2.5 h-2.5 rounded-full bg-transparent"></div>
+</div>
+</div>
+</label>
+<!-- BEGIN: Modal Bottom Actions -->
+<div class="pt-3">
+<!-- Primary CTA Button -->
+<button class="w-full py-3.5 px-6 rounded-xl bg-[#1F3A6B] hover:bg-[#162a4f] text-[#F0DFAF] font-medium text-sm sm:text-base flex items-center justify-center space-x-2 transition duration-200 shadow-md hover:shadow-lg active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-[#D9A63C] focus:ring-offset-2" type="submit">
+<span>Confirm Language &amp; Enter Observatory</span>
+<span class="text-base leading-none">➔</span>
+</button>
+<!-- Footnote Reminder -->
+<p class="text-[#4A567A] text-[11px] sm:text-xs text-center mt-3 leading-tight">
+            You can change your language preference at any time from the navigation bar or settings.
+          </p>
+</div>
+<!-- END: Modal Bottom Actions -->
+</form>
+<!-- END: Language Choice Cards -->
+</div>
+<!-- END: Centered Language Welcome Modal Card -->
+</div>
+<!-- END: Dimmed Celestial Scrim Overlay -->
+<!-- BEGIN: Interactive Card Script -->
+<script data-purpose="language-modal-interactivity">
+    /**
+     * Updates visual radio selection styling on language card select
+     * Keeps code framework-free and lightweight
+     */
+    function updateLanguageSelection(selectedRadio) {
+      const cards = document.querySelectorAll('[data-purpose="language-option-card"]');
+      
+      cards.forEach(card => {
+        const input = card.querySelector('input[type="radio"]');
+        const indicator = card.querySelector('.flex-shrink-0:last-child > div');
+        
+        if (input.checked) {
+          // Active state styling
+          card.classList.remove('border-[#E7DECD]', 'bg-white/70', 'hover:bg-[#FFFDF6]');
+          card.classList.add('border-[#1F3A6B]', 'bg-[#F0DFAF]/40', 'shadow-sm');
+          
+          indicator.className = 'w-5 h-5 rounded-full bg-[#1F3A6B] flex items-center justify-center text-white ring-2 ring-[#1F3A6B]/20';
+          indicator.innerHTML = '<svg class="w-3 h-3 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>';
+        } else {
+          // Unselected state styling
+          card.classList.add('border-[#E7DECD]', 'bg-white/70', 'hover:bg-[#FFFDF6]');
+          card.classList.remove('border-[#1F3A6B]', 'bg-[#F0DFAF]/40', 'shadow-sm');
+          
+          indicator.className = 'w-5 h-5 rounded-full border-2 border-stone-300 group-hover:border-[#D9A63C] flex items-center justify-center transition-colors';
+          indicator.innerHTML = '<div class="w-2.5 h-2.5 rounded-full bg-transparent"></div>';
+        }
+      });
+    }
+  </script>
+<!-- END: Interactive Card Script -->
+</body></html>

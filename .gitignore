@@ -43,7 +43,6 @@ astrology-backend/clear_*.py
 astrology-backend/debug_*.py
 astrology-backend/test_*.py
 
-# Deployment and Stitch Design Source Folders
+# Deployment Folders
 temp_hf_deploy/
-stitch*/
 language_feature_guide.md

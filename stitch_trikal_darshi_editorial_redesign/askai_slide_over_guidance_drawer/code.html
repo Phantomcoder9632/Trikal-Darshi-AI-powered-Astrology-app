@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trikal Darshi — Soul Dashboard with AskAI Oracle Drawer</title>
+<!-- Google Fonts: Fraunces & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..800;1,9..144,300..700&amp;family=Inter:wght@300;400;500;600;700&amp;family=Cinzel:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            paper: '#FBF6EA',
+            ink: '#16223F',
+            'ink-soft': '#4A567A',
+            blue: {
+              DEFAULT: '#1F3A6B',
+              deep: '#12244A',
+            },
+            gold: {
+              DEFAULT: '#D9A63C',
+              soft: '#F0DFAF',
+            },
+            surface: {
+              raised: '#FFFDF6',
+            }
+          },
+          fontFamily: {
+            fraunces: ['Fraunces', 'serif'],
+            inter: ['Inter', 'sans-serif'],
+            cinzel: ['Cinzel', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles for Scrollbars & Astrological Layout Elements -->
+<style data-purpose="custom-scrollbars-and-accents">
+    /* Subtle custom scrollbar for drawer streams */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #D9A63C66;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #D9A63C;
+    }
+  </style>
+</head>
+<body class="bg-paper text-ink font-inter antialiased h-full overflow-hidden relative">
+<!-- BEGIN: Underlying Soul Dashboard Context (Screen 10 Backdrop) -->
+<div aria-hidden="true" class="flex h-screen w-full overflow-hidden select-none filter blur-[2px] transition-all duration-300" id="underlying-dashboard" tabindex="-1">
+<!-- Left Sidebar -->
+<aside class="w-64 border-r border-[#16223F]/10 bg-surface-raised flex flex-col justify-between p-4 flex-shrink-0">
+<div class="space-y-6">
+<!-- Logo -->
+<div class="flex items-center gap-3 px-2">
+<div class="w-8 h-8 rounded-full bg-blue text-gold flex items-center justify-center font-cinzel text-lg shadow-sm">
+            ☸
+          </div>
+<div>
+<h1 class="font-fraunces font-bold text-ink leading-none text-base">Kundali Shastra</h1>
+<span class="text-[10px] tracking-wider text-ink-soft uppercase font-semibold">11 Soul Dimensions</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="space-y-1 text-xs font-medium text-ink-soft">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gold-soft/30 transition" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            Overview
+          </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gold-soft/30 transition" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            D1 Lagna Kundali
+          </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gold-soft/30 transition" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            D9 Navamsha
+          </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue text-white font-semibold shadow-sm" href="#">
+<svg class="w-4 h-4 text-gold" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            D10 Career &amp; Karma
+          </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gold-soft/30 transition" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            Vimshottari Dasha
+          </a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gold-soft/30 transition" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            Current Transits
+          </a>
+</nav>
+</div>
+<!-- Quick Action Consult Button in Sidebar -->
+<button class="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border border-gold text-blue bg-gold-soft/40 hover:bg-gold-soft/80 text-xs font-semibold">
+<span>🔮</span> Consult AskAI Jyotishi
+      </button>
+</aside>
+<!-- Main Content Simulation -->
+<div class="flex-1 flex flex-col h-full overflow-y-auto">
+<!-- Header bar -->
+<header class="h-16 border-b border-[#16223F]/10 bg-surface-raised flex items-center justify-between px-8">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-gold"></span>
+<span class="font-fraunces text-ink font-semibold">Vedic Astrological Observatory</span>
+</div>
+<div class="flex items-center gap-4 text-xs font-medium">
+<span class="px-3 py-1 bg-gold-soft/50 rounded-full text-blue">Aaryavart Sharma • Varanasi</span>
+<div class="w-8 h-8 rounded-full bg-blue text-white flex items-center justify-center font-bold">AS</div>
+</div>
+</header>
+<!-- Dashboard Body Content -->
+<main class="p-8 space-y-6 max-w-6xl mx-auto w-full">
+<!-- Ephemeris Bar -->
+<div class="grid grid-cols-5 gap-3 p-4 bg-surface-raised rounded-xl border border-gold/30">
+<div>
+<div class="text-[10px] text-ink-soft uppercase font-semibold">Ascendant (Lagna)</div>
+<div class="font-fraunces font-bold text-blue">Scorpio (Vrishchika)</div>
+<div class="text-xs text-ink-soft">14°28' • Anuradha IV</div>
+</div>
+<div>
+<div class="text-[10px] text-ink-soft uppercase font-semibold">Chandra Rashi</div>
+<div class="font-fraunces font-bold text-green-700">Moon in Rohini</div>
+<div class="text-xs text-ink-soft">Uccha (Exalted) 18°42'</div>
+</div>
+<div>
+<div class="text-[10px] text-ink-soft uppercase font-semibold">Atmakaraka Graha</div>
+<div class="font-fraunces font-bold text-blue">Jupiter (Guru)</div>
+<div class="text-xs text-ink-soft">27°11' Punarvasu</div>
+</div>
+<div>
+<div class="text-[10px] text-ink-soft uppercase font-semibold">Active Dasha</div>
+<div class="font-fraunces font-bold text-ink">Guru — Shani</div>
+<div class="text-xs text-ink-soft">Mahadasha Phase</div>
+</div>
+<div>
+<div class="text-[10px] text-ink-soft uppercase font-semibold">Anka Shastra</div>
+<div class="font-fraunces font-bold text-gold">Bhagyank: 7</div>
+<div class="text-xs text-ink-soft">Ketu Governed Ray</div>
+</div>
+</div>
+<!-- Center Two Columns -->
+<div class="grid grid-cols-12 gap-6">
+<div class="col-span-5 bg-surface-raised p-5 rounded-2xl border border-gold/25 h-80">
+<h3 class="font-fraunces font-bold text-sm text-ink mb-2">Dashamsha (D10) Varga Grid</h3>
+<div class="h-60 border border-gold/40 rounded bg-paper flex items-center justify-center text-xs text-ink-soft">
+              [Vedic Diamond Chart Rendering: Surya in 10H Digbala]
+            </div>
+</div>
+<div class="col-span-7 bg-surface-raised p-6 rounded-2xl border border-gold/25">
+<span class="text-[10px] tracking-wider uppercase text-gold font-bold">Chapter IV • Rigorous Exegesis</span>
+<h2 class="font-fraunces text-xl font-bold text-ink mt-1">Career Architecture &amp; Dashamsha Synthesis</h2>
+<p class="text-xs text-ink-soft mt-3 leading-relaxed">
+              In classical Jyotish doctrine, the Dashamsha (D10) chart unfolds an individual’s societal impact, legacy, and executive dominion. With your Ascendant rooted in Scorpio, the 10th house is naturally governed by the fiery solar archetype of Simha (Leo).
+            </p>
+</div>
+</div>
+</main>
+</div>
+</div>
+<!-- END: Underlying Soul Dashboard Context -->
+<!-- BEGIN: Modal Backdrop Scrim -->
+<div class="fixed inset-0 bg-[#16223F]/45 backdrop-blur-sm transition-opacity duration-300 z-40" data-purpose="backdrop-scrim" id="oracle-backdrop" onclick="closeDrawer()"></div>
+<!-- END: Modal Backdrop Scrim -->
+<!-- BEGIN: AskAI Slide-Over Drawer Panel -->
+<aside aria-labelledby="oracle-heading" aria-modal="true" class="fixed top-0 right-0 h-full w-full sm:w-[480px] max-w-full bg-surface-raised border-l border-gold/40 shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-out" data-purpose="askai-slideover-panel" id="askai-drawer" role="dialog">
+<!-- SECTION: Drawer Header -->
+<header class="flex-shrink-0 px-6 py-5 border-b border-gold/25 bg-paper/60 backdrop-blur-md relative" data-purpose="drawer-header">
+<div class="flex items-start justify-between">
+<div>
+<!-- Gold Accent Label -->
+<div class="flex items-center gap-1.5 mb-1">
+<span class="text-[10px] font-bold tracking-widest text-gold uppercase">✦ ASKAI GUIDANCE ORACLE</span>
+</div>
+<!-- Oracle Title with Active Status Dot -->
+<div class="flex items-center gap-2">
+<h2 class="font-fraunces text-2xl font-bold text-ink tracking-tight" id="oracle-heading">Cosmic Synthesizer</h2>
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" title="Active Synthesizer State"></span>
+</span>
+</div>
+<p class="text-xs text-ink-soft mt-0.5">Synthesizing Parashari Jyotish, Lal Kitab &amp; Numerology</p>
+</div>
+<!-- Prominent Close Button Affordance -->
+<button aria-label="Close Oracle Panel" class="p-2 rounded-full text-ink-soft hover:text-ink hover:bg-gold-soft/40 active:scale-95 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-gold/50" onclick="closeDrawer()" type="button">
+<svg class="w-5 h-5 stroke-current" fill="none" viewbox="0 0 24 24">
+<path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</header>
+<!-- SECTION: Drawer Scrollable Body -->
+<div class="flex-1 overflow-y-auto custom-scrollbar px-6 py-5 space-y-6" data-purpose="chat-stream-and-prompts">
+<!-- Personalized Welcome Card -->
+<div class="bg-gold-soft/60 border border-gold/40 p-4 rounded-xl shadow-xs relative overflow-hidden" data-purpose="personalized-salutation">
+<div class="absolute -right-4 -bottom-4 text-gold/20 font-cinzel text-7xl select-none pointer-events-none">ॐ</div>
+<div class="flex items-start gap-3 relative z-10">
+<span class="text-lg">🪷</span>
+<p class="text-xs text-ink leading-relaxed font-medium">
+<strong class="font-semibold text-blue font-fraunces text-sm block mb-1">Pranam, Aaryavart</strong>
+            With your <span class="text-blue font-semibold">Scorpio (Vrishchika)</span> rising and current <span class="text-blue font-semibold">Jupiter-Saturn</span> (Mahadasha/Antardasha), what celestial vector shall we synthesize today?
+          </p>
+</div>
+</div>
+<!-- Quick Prompt Suggestions by Grouped Categories -->
+<div class="space-y-3" data-purpose="categorized-quick-prompts">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-semibold tracking-wider text-ink-soft uppercase">Inquiry Vectors</span>
+<span class="text-[10px] text-gold font-medium">Click to synthesize</span>
+</div>
+<!-- Prompt Category 1: Career & D10 -->
+<div class="space-y-1.5">
+<span class="text-[10px] font-bold text-blue uppercase tracking-wide flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-gold"></span> Career &amp; D10
+          </span>
+<div class="flex flex-wrap gap-2">
+<button class="text-left text-xs bg-paper hover:bg-gold-soft/50 border border-gold/30 hover:border-gold px-3 py-1.5 rounded-lg text-ink transition-all shadow-2xs hover:shadow-xs" onclick="populatePrompt(this)">
+              How does 10H Sun in Leo impact upcoming leadership transitions?
+            </button>
+<button class="text-left text-xs bg-paper hover:bg-gold-soft/50 border border-gold/30 hover:border-gold px-3 py-1.5 rounded-lg text-ink transition-all shadow-2xs hover:shadow-xs" onclick="populatePrompt(this)">
+              Best muhurta for business contract signing?
+            </button>
+</div>
+</div>
+<!-- Prompt Category 2: Relationships & D9 -->
+<div class="space-y-1.5 pt-1">
+<span class="text-[10px] font-bold text-blue uppercase tracking-wide flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-gold"></span> Relationships &amp; D9
+          </span>
+<div class="flex flex-wrap gap-2">
+<button class="text-left text-xs bg-paper hover:bg-gold-soft/50 border border-gold/30 hover:border-gold px-3 py-1.5 rounded-lg text-ink transition-all shadow-2xs hover:shadow-xs" onclick="populatePrompt(this)">
+              Analyze Venus-Rahu transit in 5th house
+            </button>
+<button class="text-left text-xs bg-paper hover:bg-gold-soft/50 border border-gold/30 hover:border-gold px-3 py-1.5 rounded-lg text-ink transition-all shadow-2xs hover:shadow-xs" onclick="populatePrompt(this)">
+              Navamsha marriage harmony markers
+            </button>
+</div>
+</div>
+<!-- Prompt Category 3: Wealth & Assets (D4) -->
+<div class="space-y-1.5 pt-1">
+<span class="text-[10px] font-bold text-blue uppercase tracking-wide flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-gold"></span> Wealth &amp; Assets (D4)
+          </span>
+<div class="flex flex-wrap gap-2">
+<button class="text-left text-xs bg-paper hover:bg-gold-soft/50 border border-gold/30 hover:border-gold px-3 py-1.5 rounded-lg text-ink transition-all shadow-2xs hover:shadow-xs" onclick="populatePrompt(this)">
+              Mitigating 8H financial debts via Lal Kitab
+            </button>
+<button class="text-left text-xs bg-paper hover:bg-gold-soft/50 border border-gold/30 hover:border-gold px-3 py-1.5 rounded-lg text-ink transition-all shadow-2xs hover:shadow-xs" onclick="populatePrompt(this)">
+              Liquid wealth timeline in 2025
+            </button>
+</div>
+</div>
+<!-- Prompt Category 4: Remedies & Farmaan -->
+<div class="space-y-1.5 pt-1">
+<span class="text-[10px] font-bold text-blue uppercase tracking-wide flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-gold"></span> Remedies &amp; Farmaan
+          </span>
+<div class="flex flex-wrap gap-2">
+<button class="text-left text-xs bg-paper hover:bg-gold-soft/50 border border-gold/30 hover:border-gold px-3 py-1.5 rounded-lg text-ink transition-all shadow-2xs hover:shadow-xs" onclick="populatePrompt(this)">
+              Surya Arghya water ritual protocol
+            </button>
+<button class="text-left text-xs bg-paper hover:bg-gold-soft/50 border border-gold/30 hover:border-gold px-3 py-1.5 rounded-lg text-ink transition-all shadow-2xs hover:shadow-xs" onclick="populatePrompt(this)">
+              Farmaan #34 silver square remedy
+            </button>
+</div>
+</div>
+</div>
+<!-- SECTION: Mini Chat Stream Demo -->
+<div class="space-y-4 pt-3 border-t border-[#16223F]/10" data-purpose="chat-history-stream">
+<div class="text-[11px] font-semibold tracking-wider text-ink-soft uppercase flex items-center justify-between">
+<span>Active Synthesis Session</span>
+<span class="text-[10px] text-ink-soft">Just now</span>
+</div>
+<!-- User Prompt Bubble -->
+<div class="flex justify-end">
+<div class="max-w-[85%] bg-blue text-gold-soft rounded-2xl rounded-tr-xs px-4 py-2.5 text-xs shadow-md font-medium leading-relaxed">
+            What does my D10 indicate about launching an independent enterprise?
+          </div>
+</div>
+<!-- AI Synthesized Response Card -->
+<div class="bg-white border border-blue/15 rounded-2xl rounded-tl-xs p-4 shadow-sm space-y-3.5 text-ink text-xs leading-relaxed" data-purpose="ai-oracle-response">
+<!-- Response Header -->
+<div class="flex items-center justify-between border-b border-paper pb-2">
+<div class="flex items-center gap-2">
+<span class="w-5 h-5 rounded bg-gold/20 text-gold flex items-center justify-center text-xs">✨</span>
+<span class="font-fraunces font-bold text-blue text-sm">Tri-Vector Synthesis</span>
+</div>
+<!-- Auspicious Muhurta Badge -->
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+<svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" fill-rule="evenodd"></path></svg>
+              Auspicious Muhurta: Feb 13, 2025
+            </span>
+</div>
+<!-- Structured Astrological Exegesis -->
+<div class="space-y-2.5">
+<!-- Parashari D10 -->
+<div>
+<h4 class="font-semibold text-blue flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+<span class="text-gold">●</span> Parashari D10 (Dashamsha):
+              </h4>
+<p class="text-ink-soft pl-3 mt-0.5">
+                Surya enjoys full <strong>Digbala</strong> in the 10th house of Simha. This signifies inherent administrative dominion; independent ventures thrive when positioned under personal sovereignty rather than subordinate partnership.
+              </p>
+</div>
+<!-- Lal Kitab Farmaan #41 -->
+<div>
+<h4 class="font-semibold text-blue flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+<span class="text-gold">●</span> Lal Kitab Farmaan #41:
+              </h4>
+<p class="text-ink-soft pl-3 mt-0.5">
+                Mars in the 3rd house grants relentless entrepreneurial valor, but warns against undocumented financial agreements. Safeguard seed capital before Shukla Paksha terminates.
+              </p>
+</div>
+<!-- Numerology Matrix Bhagyank 7 -->
+<div>
+<h4 class="font-semibold text-blue flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+<span class="text-gold">●</span> Numerology Matrix Bhagyank 7:
+              </h4>
+<p class="text-ink-soft pl-3 mt-0.5">
+                Ketu governs your trajectory: focus on knowledge systems, advisory, specialized engineering, or research architectures for paramount commercial success.
+              </p>
+</div>
+</div>
+<!-- Card Action/Feedback Footer -->
+<div class="pt-2 border-t border-[#16223F]/5 flex items-center justify-between text-[10px] text-ink-soft">
+<span class="italic font-fraunces">Aligned with Shastra Manuscript Folio #42</span>
+<div class="flex items-center gap-3">
+<button class="hover:text-blue transition" title="Copy synthesis">Copy</button>
+<button class="hover:text-blue transition" title="Save to Soul Folio">Save</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION: Bottom Composer -->
+<footer class="flex-shrink-0 p-4 border-t border-gold/30 bg-surface-raised space-y-2.5" data-purpose="composer-container">
+<form class="relative" onsubmit="handleQuerySubmit(event)">
+<div class="relative flex items-center">
+<input class="w-full pl-4 pr-32 py-3 rounded-xl border border-gold/40 bg-paper/80 text-xs text-ink placeholder:text-ink-soft/70 focus:outline-none focus:ring-2 focus:ring-blue focus:border-transparent transition shadow-inner" id="chat-input" placeholder="Ask Trikal AI about your transits, remedies, or vargas..." type="text"/>
+<!-- Attached Context Tags & Tools inside input -->
+<div class="absolute right-2 flex items-center gap-1.5">
+<!-- Audio Mic Button -->
+<button class="p-1.5 text-ink-soft hover:text-blue hover:bg-gold-soft/50 rounded-lg transition" title="Speak prompt" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+<!-- Active Kundali attachment chip indicator -->
+<span class="hidden md:inline-flex items-center px-1.5 py-0.5 text-[9px] font-semibold bg-gold/20 text-blue rounded border border-gold/40" title="Active Context: D10 Scorpio Chart">
+              D10 Active
+            </span>
+<!-- Synthesize CTA Button -->
+<button class="bg-blue hover:bg-blue-deep text-gold-soft font-semibold text-xs px-3 py-2 rounded-lg flex items-center gap-1 shadow-sm transition active:scale-95" type="submit">
+<span>Synthesize</span>
+<span class="text-gold">➔</span>
+</button>
+</div>
+</div>
+</form>
+<!-- Verbatim Mandatory Disclaimer -->
+<p class="text-[10px] text-center text-ink-soft leading-tight px-2">
+        Trikal AI synthesizes Parashari Vedic Jyotish, Lal Kitab Farmaan &amp; Numerology. Predictions are for guidance.
+      </p>
+</footer>
+</aside>
+<!-- END: AskAI Slide-Over Drawer Panel -->
+<!-- BEGIN: Client Interactivity Script -->
+<script data-purpose="drawer-interactivity">
+    // Populates prompt input from categorized pills
+    function populatePrompt(buttonElement) {
+      const promptText = buttonElement.innerText.trim();
+      const input = document.getElementById('chat-input');
+      if (input) {
+        input.value = promptText;
+        input.focus();
+      }
+    }
+
+    // Handles form submission inside drawer
+    function handleQuerySubmit(event) {
+      event.preventDefault();
+      const input = document.getElementById('chat-input');
+      if (!input || !input.value.trim()) return;
+
+      const userText = input.value.trim();
+      // For demonstration, clears the input and restores focus
+      input.value = '';
+      input.placeholder = "Synthesizing ephemeris matrix...";
+      setTimeout(() => {
+        input.placeholder = "Ask Trikal AI about your transits, remedies, or vargas...";
+      }, 1500);
+    }
+
+    // Closes slide-over drawer and restores unblurred background
+    function closeDrawer() {
+      const drawer = document.getElementById('askai-drawer');
+      const backdrop = document.getElementById('oracle-backdrop');
+      const backgroundDashboard = document.getElementById('underlying-dashboard');
+
+      if (drawer) {
+        drawer.classList.add('translate-x-full');
+      }
+      if (backdrop) {
+        backdrop.classList.add('opacity-0', 'pointer-events-none');
+      }
+      if (backgroundDashboard) {
+        backgroundDashboard.classList.remove('blur-[2px]');
+        backgroundDashboard.removeAttribute('aria-hidden');
+      }
+    }
+
+    // Keyboard accessibility: Close on ESC key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeDrawer();
+      }
+    });
+  </script>
+<!-- END: Client Interactivity Script -->
+</body></html>

@@ -1,6 +1,43 @@
 ================================================================================
+SUMMARY OF CHANGES - SEPTEMBER 6, 2026
+================================================================================
+
+1. Luminous Celestial Observatory Landing Page Redesign (HomePage.jsx)
+   - Transferred the complete high-precision observatory aesthetic matching the Stitch editorial design.
+   - Built a custom HTML5 dynamic canvas particle engine (`HeroStarCanvas`) with dual glowing cosmic auras and counter-rotating SVG astrolabes (`animate-astrolabe-slow` & `animate-astrolabe-reverse`).
+   - Masthead Ribbon & Editorial Typography using Fraunces serif and gold shimmer accents.
+   - 4 Feature Pills (Lahiri Ayanamsa, 16 Vargas, KP Sub-Lord, AI Synthesis) and 4 live metrics stat cards.
+   - "The Three Celestial Streams" 3-column breakdown: Parashari Vargas (D1–D60), Lal Kitab & Farmaan, and KP Stellar & Numerology.
+   - "Janma Lagna D1 Matrix": North Indian Diamond SVG Kundali showcase with Kendra house highlights, Bhavartha footnotes, and mathematical precision breakdown.
+   - "Voices of Inquiry": 3-column verified Jyotish scholar testimonial cards with 5-star ratings.
+   - "Live Celestial Clock": Real-time ephemeris transit banner linked to the Daily Panchang.
+   - Optimized max-width to 1600px with responsive gutters (px-4 sm:px-8 lg:px-16) to eliminate excess blank space on widescreen monitors.
+
+2. Saved Astrological Charts Vault Page (SavedChartsPage.jsx)
+   - Created a dedicated, full-featured saved charts directory page matching the editorial archive design.
+   - Interactive search filter across native names, birth cities, and lagna signs, alongside category filter pills (All Charts, Direct Family, Horary / Prashna).
+   - Rich chart cards displaying North Indian Kundali SVG thumbnails, harmonic division badges (D1, D9, D10, D7), native identity, and astrological vector grids (Lagna degree, Moon Nakshatra, Atmakaraka planet, Active Mahadasha).
+   - Active Delete Confirmation Popover connected to backend deletion and cache invalidation.
+   - Quick Export Banner with one-click "Export Kundali JSON" and "Download PDF Dossier".
+
+3. Authentication & Profile Modal (AuthModal.jsx & Context Sync)
+   - Created a standalone AuthModal supporting Sign In, Account/Profile Registration (with preferred script selection), and a 1-Click Verified Scholar Demo Profile for instant offline testing.
+   - Integrated auth triggers directly in the Landing Page Top Navigation and Janma Kundali Form Card.
+   - Connected with PostgreSQL user authentication endpoints (`/auth/login`, `/auth/register`, `/auth/google`) and user profile session management.
+
+4. Backend API & Cache Synchronization (routes/chart.py, api.js)
+   - Enhanced `GET /chart` to dynamically compute and return astrological vectors (Lagna, Moon Nakshatra, Atmakaraka, Mahadasha) for saved chart directory cards.
+   - Added `DELETE /chart/{chart_id}` endpoint in `routes/chart.py` with cascade removal of chat messages, interpretations, and Redis cache keys.
+   - Updated `src/services/api.js` with `deleteChart` and full endpoint bindings for seamless frontend-backend communication.
+   - Configured routing in `App.jsx` for `/charts`, `/saved-charts`, `/account`, `/profile`, and `/dashboard`.
+
+5. Repository Cleanup & Git Configuration (.gitignore)
+   - Updated `.gitignore` to skip the `stitch_trikal_darshi_editorial_redesign/` template directory, temporary deploy folders, and local environment files, preparing the repository for a clean git push.
+
+================================================================================
 SUMMARY OF CHANGES - JUNE 30, 2026
 ================================================================================
+
 1. CORS & IDOR / BOLA Security Hardening (Backend Routes & main.py)
    - Secured the backend CORS configuration. If `CORS_ORIGINS` is not set, it defaults to `["*"]` only when `APP_ENV` is explicitly set to `"development"`.
    - Patched Insecure Direct Object Reference (IDOR/BOLA) vulnerabilities where chart-related sub-resources (chat, chat history, interpretations, progress) were accessible without ownership verification.
@@ -22,6 +59,7 @@ SUMMARY OF CHANGES - JUNE 30, 2026
    - Integrated the premium `LanguageSelect` component directly into the slide-over profile menu drawer on the dashboard.
    - Added a `handleLanguageChange` handler that instantly switches the UI translation language (via `react-i18next`), saves the user preference locally, and triggers a backend chart language update.
    - Automatically navigates/re-aligns to the correct language-specific chart profile, triggering real-time AI interpretation streaming in the newly selected language instantly.
+
 ================================================================================
 SUMMARY OF CHANGES - JUNE 27, 2026
 ================================================================================

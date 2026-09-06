@@ -1,189 +1,118 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGoogleLogin } from '@react-oauth/google';
 import { generateChart, getUserCharts } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { i18nLangToBackend, backendLangToI18n } from '../i18n';
-import LanguageSelect from '../components/LanguageSelect';
+import { backendLangToI18n } from '../i18n';
+import AuthModal from '../components/AuthModal';
 
-const FEATURES = [
-  {
-    id: 'charts',
-    icon: 'grid_view',
-    title: 'Divisional Kundali',
-    desc: 'D1 · D9 · D10 · D4 · D7 · D30 and more — rendered in authentic North Indian style with dignity indicators.',
-    accent: '#f0c060',
-  },
-  {
-    id: 'ai',
-    icon: 'auto_awesome',
-    title: 'AI-Powered Readings',
-    desc: 'Gemini-powered streaming interpretations across 10 life sections — Career, Wealth, Love, Health & Remedies.',
-    accent: '#9b8cf7',
-  },
-  {
-    id: 'remedies',
-    icon: 'healing',
-    title: 'Remedy Tripath System',
-    desc: 'Tailored remedies spanning Vedic Mantras, Lal Kitab Farmaans, and Numerological corrections.',
-    accent: '#5fc9a0',
-  },
-];
-
-const STATS = [
-  { num: '16+', label: 'Divisional Charts' },
-  { num: '10', label: 'Life Sections' },
-  { num: '3', label: 'Wisdom Streams' },
-  { num: '∞', label: 'Cosmic Insights' },
-];
-
-const TESTIMONIALS = [
-  {
-    quote: 'The AI interpretations are uncannily accurate. It described my career challenges with remarkable precision.',
-    name: 'Priya S.',
-    role: 'Vedic Astrology Enthusiast',
-    initial: 'P',
-  },
-  {
-    quote: 'I never expected technology to understand Lal Kitab this deeply. The remedy tripath is a masterpiece.',
-    name: 'Arjun M.',
-    role: 'Jyotish Practitioner',
-    initial: 'A',
-  },
-  {
-    quote: 'Finally an app that treats Jyotish with the seriousness it deserves. The divisional charts are flawless.',
-    name: 'Kavita R.',
-    role: 'Numerology Student',
-    initial: 'K',
-  },
-];
-
-// Animated golden shimmer star field canvas
-function StarCanvas() {
+// Cosmic Stardust & Twinkling Celestial Canvas matching exact Stitch script
+function HeroStarCanvas() {
   const canvasRef = useRef(null);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    let w = canvas.width = canvas.offsetWidth;
-    let h = canvas.height = canvas.offsetHeight;
-    let animId;
+    let width, height;
+    let particles = [];
+    const particleCount = 48;
+    const colors = [
+      'rgba(217, 166, 60, ', // Gold
+      'rgba(240, 223, 175, ', // Light Gold
+      'rgba(31, 58, 107, ',   // Deep Cosmic Blue
+      'rgba(174, 198, 255, '  // Soft Astral Tint
+    ];
 
-    // Mix of tiny stars AND larger golden sparkles
-    const stars = Array.from({ length: 240 }, (_, i) => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      r: i < 180 ? Math.random() * 1.0 + 0.2 : Math.random() * 2.2 + 1.0, // some bigger sparkles
-      a: Math.random(),
-      speed: Math.random() * 0.35 + 0.08,
-      dir: Math.random() > 0.5 ? 1 : -1,
-      gold: i >= 160, // last 80 are golden sparkles
-    }));
-
-    function draw() {
-      ctx.clearRect(0, 0, w, h);
-      stars.forEach(s => {
-        s.a += s.speed * 0.007 * s.dir;
-        if (s.a > 1 || s.a < 0.04) s.dir *= -1;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        if (s.gold) {
-          ctx.fillStyle = `rgba(201, 149, 42, ${s.a * 0.45})`;
-        } else {
-          ctx.fillStyle = `rgba(140, 100, 20, ${s.a * 0.18})`;
-        }
-        ctx.fill();
-      });
-      animId = requestAnimationFrame(draw);
+    function resize() {
+      if (!canvas.parentElement) return;
+      width = canvas.width = canvas.parentElement.offsetWidth;
+      height = canvas.height = canvas.parentElement.offsetHeight;
     }
-    draw();
 
-    const onResize = () => {
-      w = canvas.width = canvas.offsetWidth;
-      h = canvas.height = canvas.offsetHeight;
-      stars.forEach(s => { s.x = Math.random() * w; s.y = Math.random() * h; });
-    };
-    window.addEventListener('resize', onResize);
-    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', onResize); };
-  }, []);
-  return <canvas ref={canvasRef} className="lp-star-canvas" aria-hidden="true" />;
-}
-
-// Yantra SVG ornament
-function YantraSVG({ size = 200, opacity = 0.18 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ opacity }} aria-hidden="true">
-      <circle cx="100" cy="100" r="96" stroke="#c9952a" strokeWidth="0.8" />
-      <circle cx="100" cy="100" r="70" stroke="#c9952a" strokeWidth="0.5" />
-      <circle cx="100" cy="100" r="44" stroke="#c9952a" strokeWidth="0.5" />
-      <polygon points="100,10 190,165 10,165" stroke="#c9952a" strokeWidth="0.7" fill="none" />
-      <polygon points="100,190 10,35 190,35" stroke="#c9952a" strokeWidth="0.7" fill="none" />
-      <polygon points="100,40 172,160 28,160" stroke="#c9952a" strokeWidth="0.4" fill="none" strokeOpacity="0.5" />
-      <polygon points="100,160 28,40 172,40" stroke="#c9952a" strokeWidth="0.4" fill="none" strokeOpacity="0.5" />
-      <circle cx="100" cy="100" r="8" stroke="#c9952a" strokeWidth="0.6" />
-      <circle cx="100" cy="100" r="3" fill="#c9952a" fillOpacity="0.5" />
-    </svg>
-  );
-}
-
-// Parallax banner hook
-function useBannerParallax() {
-  useEffect(() => {
-    const banner = document.querySelector('.cosmic-banner-img');
-    if (!banner) return;
-
-    let ticking = false;
-    function onScroll() {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          const scrollY = window.scrollY;
-          // Subtle parallax: moves at 25% of scroll speed
-          const offset = Math.min(scrollY * 0.25, 40);
-          banner.style.setProperty('--banner-parallax', `${offset}px`);
-          ticking = false;
-        });
-        ticking = true;
+    class StarParticle {
+      constructor() {
+        this.reset(true);
+      }
+      reset(initial = false) {
+        this.x = Math.random() * width;
+        this.y = initial ? Math.random() * height : height + 10;
+        this.size = Math.random() * 1.8 + 0.6;
+        this.baseAlpha = Math.random() * 0.45 + 0.15;
+        this.twinkleSpeed = Math.random() * 0.02 + 0.008;
+        this.twinklePhase = Math.random() * Math.PI * 2;
+        this.vy = -(Math.random() * 0.25 + 0.08);
+        this.vx = (Math.random() - 0.5) * 0.1;
+        this.colorPrefix = colors[Math.floor(Math.random() * colors.length)];
+      }
+      update() {
+        this.y += this.vy;
+        this.x += this.vx;
+        this.twinklePhase += this.twinkleSpeed;
+        if (this.y < -15 || this.x < -10 || this.x > width + 10) {
+          this.reset(false);
+        }
+      }
+      draw() {
+        const currentAlpha = Math.max(0, this.baseAlpha + Math.sin(this.twinklePhase) * 0.25);
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.colorPrefix + currentAlpha + ')';
+        ctx.fill();
       }
     }
 
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new StarParticle());
+    }
+
+    let animationId;
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      animationId = requestAnimationFrame(animate);
+    }
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      cancelAnimationFrame(animationId);
+    };
   }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full pointer-events-none -z-10"
+      aria-hidden="true"
+    />
+  );
 }
 
 export default function HomePage() {
   const navigate = useNavigate();
   const formRef = useRef(null);
-  const guestLoginRef = useRef(null);
-  const { user, login, loginWithEmail, registerWithEmail, logout } = useAuth();
-  const { t, i18n } = useTranslation();
-  const [signupLanguage, setSignupLanguage] = useState('english');
-
-  // Banner parallax on scroll
-  useBannerParallax();
-
-  const [authMode, setAuthMode] = useState('login');
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [authName, setAuthName] = useState('');
-  const [authError, setAuthError] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
+  const { user, isAuthenticated } = useAuth();
+  const { i18n } = useTranslation();
 
   const [formData, setFormData] = useState(() => {
-    // Use the language chosen in the welcome modal (or user's saved preference)
-    const savedLang = localStorage.getItem('trikal_lang_chosen')
-      || user?.preferred_language
-      || 'english';
+    const savedLang =
+      localStorage.getItem('trikal_lang_chosen') ||
+      user?.preferred_language ||
+      'english';
     return {
-      full_name: '',
-      date_of_birth: '',
-      time_of_birth: '',
+      full_name: 'Anandita Sen',
+      date_of_birth: '1994-08-18',
+      time_of_birth: '06:42',
       birth_time_confidence: 'exact',
-      city_of_birth: '',
-      current_city: '',
+      city_of_birth: 'Varanasi, India',
+      current_city: 'Bengaluru, India',
       language: savedLang,
     };
   });
@@ -191,85 +120,20 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [userCharts, setUserCharts] = useState([]);
-  const [loadingCharts, setLoadingCharts] = useState(false);
-  const [activeTestimonial, setActiveTestimonial] = useState(0);
-  const [showBirthForm, setShowBirthForm] = useState(false);
-
-  const handleAuthSuccess = async () => {
-    try {
-      const data = await getUserCharts();
-      setUserCharts(data || []);
-    } catch (err) {
-      console.error(err);
-    }
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 400);
-  };
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('login');
 
   useEffect(() => {
     async function loadCharts() {
-      setLoadingCharts(true);
       try {
         const data = await getUserCharts();
         setUserCharts(data || []);
       } catch (err) {
         console.error('Failed to load user charts:', err);
-        if (err.response?.status === 401) logout();
-      } finally {
-        setLoadingCharts(false);
       }
     }
     loadCharts();
-  }, []);
-
-  // Sync user preferred language to UI and form state on mount/change
-  useEffect(() => {
-    if (user?.preferred_language) {
-      const parsedLang = user.preferred_language.toLowerCase().trim();
-      setFormData((prev) => ({
-        ...prev,
-        language: parsedLang
-      }));
-      i18n.changeLanguage(backendLangToI18n(parsedLang));
-      localStorage.setItem('trikal_lang_chosen', parsedLang);
-    }
   }, [user]);
-
-  // Sync globally selected i18n language into formData.language to catch welcome modal choice
-  useEffect(() => {
-    const activeI18n = i18n.language || 'en';
-    const backendLangMap = { en: 'english', hi: 'hindi', bn: 'bengali' };
-    const resolvedLang = backendLangMap[activeI18n] || 'english';
-    setFormData((prev) => ({
-      ...prev,
-      language: resolvedLang
-    }));
-  }, [i18n.language]);
-
-  // Scroll reveal
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('revealed');
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
-    );
-    const elements = document.querySelectorAll('[data-reveal]');
-    elements.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
-
-  // Testimonial auto-rotate
-  useEffect(() => {
-    const t = setInterval(() => setActiveTestimonial(a => (a + 1) % TESTIMONIALS.length), 4500);
-    return () => clearInterval(t);
-  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -283,7 +147,7 @@ export default function HomePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.full_name || !formData.date_of_birth || !formData.time_of_birth || !formData.city_of_birth) {
-      setError(t('dashboard.modal.fill_required'));
+      setError('Please fill in all required birth parameters marked with *');
       return;
     }
     setLoading(true);
@@ -303,724 +167,1088 @@ export default function HomePage() {
     }
   };
 
-  // Custom Google login using popup mode — avoids the GSI One Tap redirect freeze on mobile
-  const handleGoogleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setGoogleLoading(true);
-      setAuthError('');
-      try {
-        // Step 1: Verify the access token by fetching Google user info on the frontend
-        const googleRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        });
-        if (!googleRes.ok) {
-          throw new Error('Could not verify your Google account. Please try again.');
-        }
-        // Step 2: Send to backend for account creation / login
-        const profile = await login(tokenResponse.access_token);
-        if (profile) await handleAuthSuccess();
-      } catch (err) {
-        console.error('Google login error:', err);
-        // Never expose raw token content in the error message
-        const rawDetail = err.response?.data?.detail || err.message || '';
-        const isTokenError = rawDetail.toLowerCase().includes('token') || rawDetail.toLowerCase().includes('segment');
-        const friendlyMsg = isTokenError
-          ? 'Google Sign-in is temporarily unavailable. Please try again in a moment or use email/password.'
-          : (rawDetail || 'Google Sign-in failed. Please try again.');
-        setAuthError(friendlyMsg);
-      } finally {
-        setGoogleLoading(false);
-      }
-    },
-    onError: (err) => {
-      console.error('Google login failed:', err);
-      setAuthError('Google Sign-in failed. Please try again.');
-    },
-    flow: 'implicit',
-    ux_mode: 'popup',
-  });
-
-  const scrollToForm = () => {
-    if (!user) {
-      guestLoginRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
-  const handleAuthSubmit = async (e) => {
-    e.preventDefault();
-    if (!authEmail || !authPassword || (authMode === 'register' && !authName)) {
-      setAuthError(t('dashboard.modal.fill_required'));
-      return;
-    }
-    setAuthLoading(true);
-    setAuthError('');
-    try {
-      if (authMode === 'login') {
-        await loginWithEmail(authEmail, authPassword);
-      } else {
-        await registerWithEmail(authEmail, authPassword, authName, signupLanguage);
-      }
-      await handleAuthSuccess();
-    } catch (err) {
-      console.error(err);
-      setAuthError(err.response?.data?.detail || err.message || 'Authentication failed. Please try again.');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  const renderAuthForm = () => (
-    <div className="lp-auth-form-wrapper">
-      {/* Tabs */}
-      <div className="lp-auth-tabs">
-        {['login', 'register'].map(mode => (
-          <button
-            key={mode}
-            type="button"
-            onClick={() => { setAuthMode(mode); setAuthError(''); }}
-            className={`lp-auth-tab ${authMode === mode ? 'active' : ''}`}
-          >
-            {mode === 'login' ? t('nav.signIn') : t('nav.signUp')}
-          </button>
-        ))}
-      </div>
-
-      {authError && (
-        <div className="lp-error-banner">
-          <span className="material-symbols-outlined" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>error</span>
-          <span>{authError}</span>
-        </div>
-      )}
-
-      {authLoading ? (
-        <div className="lp-loading-state">
-          <div className="lp-spinner">
-            <span className="material-symbols-outlined" style={{ fontSize: 36 }}>progress_activity</span>
-          </div>
-          <p className="lp-loading-text">Connecting to the cosmos…</p>
-        </div>
-      ) : (
-        <form onSubmit={handleAuthSubmit} className="lp-form">
-          {authMode === 'register' && (
-            <>
-              <div className="lp-field">
-                <label htmlFor="auth_name" className="lp-label">{t('home.form.fullName')}</label>
-                <input
-                  id="auth_name"
-                  type="text"
-                  value={authName}
-                  onChange={(e) => setAuthName(e.target.value)}
-                  placeholder={t('home.form.fullName')}
-                  className="lp-input"
-                  required
-                />
-              </div>
-              <div className="lp-field">
-                <label htmlFor="signup_language" className="lp-label">
-                  <span className="material-symbols-outlined" style={{ fontSize: 15, verticalAlign: 'middle', marginRight: 4 }}>translate</span>
-                  {t('auth.selectLanguage')}
-                </label>
-                <LanguageSelect
-                  id="signup_language"
-                  value={signupLanguage}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSignupLanguage(val);
-                    i18n.changeLanguage(backendLangToI18n(val));
-                  }}
-                />
-              </div>
-            </>
-          )}
-
-          <div className="lp-field">
-            <label htmlFor="auth_email" className="lp-label">{t('auth.email')}</label>
-            <input
-              id="auth_email"
-              type="email"
-              value={authEmail}
-              onChange={(e) => setAuthEmail(e.target.value)}
-              placeholder="seeker@example.com"
-              className="lp-input"
-              required
-            />
-          </div>
-
-          <div className="lp-field">
-            <label htmlFor="auth_password" className="lp-label">{t('auth.password')}</label>
-            <input
-              id="auth_password"
-              type="password"
-              value={authPassword}
-              onChange={(e) => setAuthPassword(e.target.value)}
-              placeholder="••••••••"
-              className="lp-input"
-              required
-            />
-          </div>
-
-          <button type="submit" className="lp-submit-btn">
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>vpn_key</span>
-            {authMode === 'login' ? t('auth.enterCosmos') : t('auth.beginJourney')}
-          </button>
-
-          <div className="lp-divider-row">
-            <span className="lp-divider-line" />
-            <span className="lp-divider-text">or</span>
-            <span className="lp-divider-line" />
-          </div>
-
-          <div className="lp-google-wrapper">
-            <button
-              type="button"
-              onClick={() => handleGoogleLogin()}
-              disabled={googleLoading}
-              className="lp-google-btn"
-              aria-label={t('auth.continueGoogle')}
-            >
-              {googleLoading ? (
-                <span className="material-symbols-outlined lp-spinner" style={{ fontSize: 18 }}>progress_activity</span>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4" />
-                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853" />
-                  <path d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05" />
-                  <path d="M9 3.583c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 6.294C4.672 4.167 6.656 3.583 9 3.583z" fill="#EA4335" />
-                </svg>
-              )}
-              <span>{t('auth.continueGoogle')}</span>
-            </button>
-          </div>
-        </form>
-      )}
-    </div>
-  );
-
-  const renderBirthForm = () => (
-    <form onSubmit={handleSubmit} id="birthForm" className="blueprint-form">
-      <div className="blueprint-form-group">
-        <label htmlFor="full_name" className="blueprint-label">{t('home.form.fullName')} *</label>
-        <input
-          id="full_name"
-          type="text"
-          name="full_name"
-          value={formData.full_name}
-          onChange={handleChange}
-          placeholder={t('home.form.fullName')}
-          autoComplete="name"
-          className="blueprint-input"
-        />
-      </div>
-
-      <div className="blueprint-form-group">
-        <label htmlFor="date_of_birth" className="blueprint-label">{t('home.form.dateOfBirth')} *</label>
-        <input
-          id="date_of_birth"
-          type="date"
-          name="date_of_birth"
-          value={formData.date_of_birth}
-          onChange={handleChange}
-          max={new Date().toISOString().split('T')[0]}
-          className="blueprint-input"
-        />
-      </div>
-
-      <div className="blueprint-form-group">
-        <label htmlFor="time_of_birth" className="blueprint-label">{t('home.form.timeOfBirth')} *</label>
-        <input
-          id="time_of_birth"
-          type="time"
-          name="time_of_birth"
-          value={formData.time_of_birth}
-          onChange={handleChange}
-          className="blueprint-input"
-        />
-        <div className="blueprint-pill-container">
-          {[
-            { value: 'exact', label: t('home.form.confidence.exact') },
-            { value: 'approximate', label: t('home.form.confidence.approximate') },
-            { value: 'unknown', label: t('home.form.confidence.unknown') },
-          ].map(({ value, label }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setFormData((prev) => ({ ...prev, birth_time_confidence: value }))}
-              className={`blueprint-pill${formData.birth_time_confidence === value ? ' active' : ''}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="blueprint-form-group">
-        <label htmlFor="city_of_birth" className="blueprint-label">{t('home.form.cityOfBirth')} *</label>
-        <div className="blueprint-input-row">
-          <span className="material-symbols-outlined text-outline text-[20px] shrink-0">location_on</span>
-          <input
-            id="city_of_birth"
-            type="text"
-            name="city_of_birth"
-            value={formData.city_of_birth}
-            onChange={handleChange}
-            placeholder="e.g. Kolkata, West Bengal"
-            autoComplete="off"
-            className="blueprint-input"
-          />
-        </div>
-      </div>
-
-      <div className="blueprint-form-group">
-        <label htmlFor="current_city" className="blueprint-label">
-          {t('home.form.currentCity')} <span style={{ fontWeight: 400, textTransform: 'none', opacity: 0.55 }}>{t('home.form.optional')}</span>
-        </label>
-        <div className="blueprint-input-row">
-          <span className="material-symbols-outlined text-outline text-[20px] shrink-0">my_location</span>
-          <input
-            id="current_city"
-            type="text"
-            name="current_city"
-            value={formData.current_city}
-            onChange={handleChange}
-            placeholder="e.g. Mumbai, Maharashtra"
-            autoComplete="off"
-            className="blueprint-input"
-          />
-        </div>
-      </div>
-
-      <div className="blueprint-form-group">
-        <label htmlFor="chart_language" className="blueprint-label">
-          <span className="material-symbols-outlined" style={{ fontSize: 15, verticalAlign: 'middle', marginRight: 4 }}>translate</span>
-          {t('home.form.language')}
-        </label>
-        <LanguageSelect
-          id="chart_language"
-          name="language"
-          value={formData.language || 'english'}
-          onChange={handleChange}
-        />
-        <p style={{ fontSize: 11, color: 'var(--color-text-muted, #aaa)', marginTop: 4, marginBottom: 0 }}>
-          {t('home.form.languageNote')}
-        </p>
-      </div>
-
-      <div className="lp-form-divider" aria-hidden="true">
-        <div className="lp-form-divider-line" />
-        <div className="lp-form-divider-diamond" />
-        <div className="lp-form-divider-line" />
-      </div>
-
-      <button type="submit" id="generateBlueprintBtn" className="blueprint-button shimmer-button">
-        <span className="material-symbols-outlined" style={{ fontSize: 18, fontVariationSettings: "'FILL' 1" }}>flare</span>
-        {t('home.form.submit')}
-      </button>
-    </form>
-  );
-
   return (
-    <div className="lp-root">
+    <div className="bg-[#FBF6EA] font-['Inter',sans-serif] text-[#16223F] antialiased selection:bg-[#F0DFAF] selection:text-[#022454] min-h-screen">
+      
+      {/* ── AUTH / PROFILE MODAL ── */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialMode={authModalMode}
+      />
 
-      {/* ── TOP NAVBAR ── */}
-      <header className="lp-navbar">
-        <div className="lp-navbar-inner">
-          <div className="lp-navbar-logo">
-            <div className="lp-navbar-emblem">
-              <img src="/Trikal_Darshi_logo.png" alt="Trikal Darshi Logo" className="lp-navbar-logo-img" />
+      {/* ── TOP NAVIGATION BAR ── */}
+      <header className="fixed top-0 left-0 w-full z-50 bg-[#FFFDF6]/95 backdrop-blur-md border-b border-[#E8DFC9] shadow-xs">
+        <div className="h-16 max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 flex items-center justify-between gap-4">
+          {/* Brand Logo */}
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-3 group text-left cursor-pointer bg-transparent border-none p-0"
+          >
+            <div className="w-9 h-9 rounded-lg bg-[#1F3A6B] flex items-center justify-center shadow-md border border-[#D9A63C]/40 text-[#F0DFAF]">
+              <span className="material-symbols-outlined text-[20px]">flare</span>
             </div>
-            <span className="lp-navbar-brand">Trikal Darshi</span>
-          </div>
-
-          <nav className="lp-navbar-links" aria-label="Main navigation">
-            <a href="#features" className="lp-nav-link">Features</a>
-            <a href="#wisdom" className="lp-nav-link">Wisdom</a>
-            {!user && (
-              <button
-                onClick={scrollToForm}
-                className="lp-nav-cta"
-                id="navBeginBtn"
-              >
-                Begin Reading
-              </button>
-            )}
-            {user && (
-              <div className="lp-navbar-user">
-                <div className="lp-navbar-avatar">
-                  {(user.name || 'U').charAt(0).toUpperCase()}
-                </div>
-                <span className="lp-navbar-name">{user.name?.split(' ')[0]}</span>
-                <button onClick={logout} className="lp-navbar-logout" title="Logout">
-                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>logout</span>
-                </button>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5 leading-none">
+                <span className="font-['Fraunces',serif] text-[18px] font-bold text-[#022454] tracking-tight">
+                  TRIKAL DARSHI
+                </span>
+                <span className="text-[#D9A63C] text-[13px]">✦</span>
               </div>
-            )}
+              <span className="text-[10px] text-[#7b5800] font-semibold uppercase tracking-widest mt-0.5">
+                Jyotish Ephemeris
+              </span>
+            </div>
+          </button>
+
+          {/* Center Links Navigation */}
+          <nav className="hidden md:flex items-center gap-1 bg-[#F5EEDC]/60 p-1 rounded-lg border border-[#E8DFC9]">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="px-3.5 py-1.5 rounded bg-[#1F3A6B] text-[#F0DFAF] text-xs font-semibold shadow-xs cursor-pointer"
+            >
+              Observatory
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard/mock-arjun-chart-108')}
+              className="px-3.5 py-1.5 rounded text-xs text-[#4A567A] hover:text-[#022454] hover:bg-[#FFFDF6] transition-colors cursor-pointer"
+            >
+              Soul Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/chat')}
+              className="px-3.5 py-1.5 rounded text-xs text-[#4A567A] hover:text-[#022454] hover:bg-[#FFFDF6] transition-colors cursor-pointer"
+            >
+              AskAI Guide
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/charts')}
+              className="px-3.5 py-1.5 rounded text-xs text-[#4A567A] hover:text-[#022454] hover:bg-[#FFFDF6] transition-colors cursor-pointer"
+            >
+              Saved Charts
+            </button>
           </nav>
+
+          {/* Right Actions: Language, Sign In / Profile, CTA */}
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex items-center bg-[#FFFDF6] px-2.5 py-1 rounded-md border border-[#E8DFC9] shadow-xs">
+              <span aria-hidden="true" className="text-[13px] mr-1.5">🇮🇳</span>
+              <select
+                aria-label="Select Language"
+                value={formData.language}
+                onChange={handleChange}
+                name="language"
+                className="bg-transparent text-[13px] text-[#16223F] font-medium focus:outline-hidden cursor-pointer pr-1"
+              >
+                <option value="english">EN (English)</option>
+                <option value="hindi">HI (हिन्दी)</option>
+                <option value="bengali">BN (বাংলা)</option>
+              </select>
+            </div>
+
+            {/* Sign In / Register Trigger */}
+            {!isAuthenticated ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthModalMode('login');
+                  setShowAuthModal(true);
+                }}
+                className="hidden sm:inline-flex items-center gap-1.5 bg-[#FFFDF6] hover:bg-[#F4EEDA] text-[#1F3A6B] text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#D9A63C]/40 transition-all cursor-pointer shadow-xs"
+              >
+                <span className="material-symbols-outlined text-[16px] text-[#D9A63C]">login</span>
+                <span>Sign In / Profile</span>
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => formRef.current?.scrollIntoView({ behavior: 'smooth' })}
+              className="hidden sm:inline-flex items-center gap-2 bg-[#1F3A6B] hover:bg-[#022454] text-[#F0DFAF] text-xs font-semibold px-4 py-2 rounded-lg border border-[#D9A63C]/50 transition-all shadow-md hover:shadow-lg cursor-pointer"
+            >
+              <span className="text-[#D9A63C] text-[14px]">✦</span>
+              <span>Begin Reading</span>
+            </button>
+
+            {/* Profile Avatar Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setAuthModalMode(isAuthenticated ? 'profile' : 'login');
+                setShowAuthModal(true);
+              }}
+              className="w-9 h-9 rounded-full bg-[#1F3A6B] text-[#F0DFAF] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs cursor-pointer text-xs font-bold hover:scale-105 transition-transform"
+              title={isAuthenticated ? `Profile: ${user?.name || user?.email}` : 'Sign In / Register Profile'}
+            >
+              {isAuthenticated && user?.name ? (
+                <span>{user.name.slice(0, 2).toUpperCase()}</span>
+              ) : (
+                <span className="material-symbols-outlined text-[18px]">person</span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* ── Cosmic Project Banner — GUEST ONLY ── */}
-      {!user && (
-        <section className="cosmic-banner-section">
-          <div className="cosmic-banner-container animate-up">
-            <img src="/trikal_darshi_banner_with_footer.png" alt="Trikal Darshi Banner" className="cosmic-banner-img" />
-          </div>
-        </section>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════
-           HERO SECTION — GUEST ONLY
-         ════════════════════════════════════════════════════════════ */}
-      {!user && (
-        <section className="lp-hero" aria-label="Trikal Darshi hero section">
-          {/* Star canvas */}
-          <StarCanvas />
-
-          {/* Radial ambient glows */}
-          <div className="lp-hero-glow lp-glow-1" aria-hidden="true" />
-          <div className="lp-hero-glow lp-glow-2" aria-hidden="true" />
-          <div className="lp-hero-glow lp-glow-3" aria-hidden="true" />
-
-          {/* Yantra ornament */}
-          <div className="lp-hero-yantra" aria-hidden="true">
-            <YantraSVG size={520} opacity={0.09} />
+      {/* â”€â”€ MAIN CONTENT â”€â”€ */}
+      <main className="w-full pt-16 min-h-screen">
+        
+        {/* Starfield SVG Pattern Ground */}
+        <div className="relative w-full overflow-hidden bg-[#FBF6EA]">
+          <div aria-hidden="true" className="absolute inset-0 pointer-events-none z-0 opacity-40">
+            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="astral-grid" width="96" height="96" patternUnits="userSpaceOnUse">
+                  <circle cx="12" cy="18" r="1.2" fill="#D9A63C" />
+                  <circle cx="68" cy="44" r="0.9" fill="#D9A63C" />
+                  <circle cx="48" cy="82" r="1.4" fill="#D9A63C" />
+                  <circle cx="86" cy="12" r="0.75" fill="#D9A63C" />
+                  <circle cx="32" cy="58" r="0.8" fill="#D9A63C" />
+                  <path d="M12 18 L16 18 M12 14 L12 22" stroke="#D9A63C" strokeWidth="0.5" opacity="0.35" />
+                  <path d="M48 82 L52 82 M48 78 L48 86" stroke="#D9A63C" strokeWidth="0.5" opacity="0.35" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#astral-grid)" />
+            </svg>
           </div>
 
-          <div className="lp-hero-inner lp-hero-split">
-            {/* Left — Brand */}
-            <div className="lp-hero-left animate-up">
-              {/* Badge */}
-              <div className="lp-hero-eyebrow">
-                <span className="lp-eyebrow-dot" />
-                <span>AI-Powered Vedic Astrology</span>
-              </div>
-
-              <p className="lp-hero-tagline delay-1 animate-up">
-                Vedic Jyotish · Lal Kitab · Numerology
-              </p>
-
-              <p className="lp-hero-sub delay-2 animate-up">
-                Unlock the ancient science of Jyotish through AI-powered readings.
-                Your full Kundali, dashas, and personalised remedies — all in one sacred space.
-              </p>
-
-              {/* Feature pills */}
-              <div className="lp-hero-badges delay-3 animate-up" aria-label="Key features">
-                {['Divisional Charts', 'AI Streaming', 'Remedy Tripath', '10+ Life Sections'].map((b) => (
-                  <span key={b} className="lp-hero-badge">{b}</span>
-                ))}
-              </div>
-
-              {/* CTA */}
-              <div className="lp-hero-cta-row delay-4 animate-up">
-                <button id="heroScrollBtn" onClick={scrollToForm} className="lp-cta-primary" aria-label="Scroll to login">
-                  <span>Begin Your Reading</span>
-                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_downward</span>
-                </button>
-                <a href="#features" className="lp-cta-ghost">See Features</a>
-              </div>
-
-              {/* Stats row */}
-              <div className="lp-hero-stats delay-4 animate-up">
-                {STATS.map((s, i) => (
-                  <React.Fragment key={s.label}>
-                    {i > 0 && <div className="lp-stat-sep" />}
-                    <div className="lp-stat">
-                      <span className="lp-stat-num">{s.num}</span>
-                      <span className="lp-stat-label">{s.label}</span>
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
-            </div>
-
-            {/* Right — Login Card */}
-            <div ref={guestLoginRef} className="lp-hero-right animate-up delay-2">
-              <div className="lp-login-card">
-                {/* Card header */}
-                <div className="lp-card-header">
-                  <div className="lp-card-emblem">
-                    <span className="material-symbols-outlined" style={{ fontSize: 24, color: '#c9952a', fontVariationSettings: "'FILL' 1" }}>
-                      auto_awesome
-                    </span>
-                  </div>
-                  <div>
-                    <p className="lp-card-kicker">Your Cosmic Journey</p>
-                    <h2 className="lp-card-title">
-                      {authMode === 'login' ? 'Welcome Back' : 'Join Trikal Darshi'}
-                    </h2>
-                  </div>
-                </div>
-                {renderAuthForm()}
-              </div>
-            </div>
-          </div>
-
-          {/* Scroll indicator */}
-          <div className="lp-scroll-indicator" aria-hidden="true">
-            <div className="lp-scroll-mouse">
-              <span className="lp-scroll-dot" />
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════
-           LOGGED-IN WELCOME HEADER
-         ════════════════════════════════════════════════════════════ */}
-      {user && (
-        <section className="lp-logged-welcome" aria-label="Welcome back">
-          <div className="lp-logged-welcome-inner">
-            <div className="lp-logged-welcome-emblem" aria-hidden="true">
-              <span className="material-symbols-outlined" style={{ fontSize: 28, color: '#c9952a', fontVariationSettings: "'FILL' 1" }}>
-                auto_awesome
-              </span>
-            </div>
-            <div>
-              <p className="lp-logged-welcome-greeting">
-                Welcome back, <strong>{user.name?.split(' ')[0] || 'Seeker'}</strong> ✦
-              </p>
-              <p className="lp-logged-welcome-sub">
-                Your cosmic journey awaits. Generate a new chart or view your saved blueprints below.
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════
-           FEATURES SECTION — GUEST ONLY
-         ════════════════════════════════════════════════════════════ */}
-      {!user && (
-        <section className="lp-features" id="features" aria-label="Platform features">
-          <div className="lp-section-inner">
-
-            <div className="lp-section-header" data-reveal>
-              <span className="lp-section-kicker">What We Offer</span>
-              <h2 className="lp-section-title">Ancient Science,<br />Modern Intelligence</h2>
-              <p className="lp-section-sub">
-                Three pillars of Vedic wisdom, unified under one AI-powered platform.
-              </p>
-            </div>
-
-            <div className="lp-features-grid">
-              {FEATURES.map((f, i) => (
-                <div
-                  key={f.id}
-                  className="lp-feature-card"
-                  data-reveal
-                  data-delay={String(i + 1)}
-                  style={{ '--accent': f.accent }}
+          {/* â”€â”€ SECTION 1: HERO CONTAINER WITH CELESTIAL ASTROLABE â”€â”€ */}
+          <section className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 pt-8 pb-16 lg:pt-12 lg:pb-20">
+            {/* Dynamic Animated Atmospheric Canvas & Astrolabe Layer */}
+            <div aria-hidden="true" className="absolute inset-0 pointer-events-none overflow-hidden -z-10 select-none">
+              <HeroStarCanvas />
+              <div className="absolute -top-16 left-1/4 w-[600px] h-[600px] bg-gradient-to-br from-[#D9A63C]/35 via-[#F0DFAF]/30 to-transparent rounded-full blur-3xl animate-cosmic-pulse" />
+              <div
+                className="absolute top-20 right-8 w-[580px] h-[580px] bg-gradient-to-tl from-[#1F3A6B]/25 via-[#aec6ff]/35 to-transparent rounded-full blur-3xl animate-cosmic-pulse"
+                style={{ animationDelay: '-4.5s' }}
+              />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[760px] h-[760px] lg:w-[940px] lg:h-[940px] pointer-events-none select-none">
+                <svg
+                  className="w-full h-full animate-astrolabe-reverse drop-shadow-md"
+                  fill="none"
+                  viewBox="0 0 900 900"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
-                  <div className="lp-feature-icon-wrap">
-                    <span
-                      className="material-symbols-outlined lp-feature-icon"
-                      style={{ fontVariationSettings: "'FILL' 1", color: f.accent }}
-                    >
-                      {f.icon}
-                    </span>
+                  <circle cx="450" cy="450" opacity="0.85" r="420" stroke="#D9A63C" strokeDasharray="3 8" strokeWidth="1.5" />
+                  <circle cx="450" cy="450" opacity="0.6" r="395" stroke="#1F3A6B" strokeWidth="1" />
+                  <circle cx="450" cy="450" opacity="0.75" r="370" stroke="#D9A63C" strokeDasharray="6 6" strokeWidth="1.2" />
+                  <line opacity="0.65" stroke="#D9A63C" strokeDasharray="4 8" strokeWidth="1" x1="30" x2="870" y1="450" y2="450" />
+                  <line opacity="0.65" stroke="#D9A63C" strokeDasharray="4 8" strokeWidth="1" x1="450" x2="450" y1="30" y2="870" />
+                  <line opacity="0.5" stroke="#1F3A6B" strokeDasharray="3 7" strokeWidth="0.9" x1="153" x2="747" y1="153" y2="747" />
+                  <line opacity="0.5" stroke="#1F3A6B" strokeDasharray="3 7" strokeWidth="0.9" x1="747" x2="153" y1="153" y2="747" />
+                  <circle cx="450" cy="30" fill="#D9A63C" r="5" />
+                  <circle cx="450" cy="870" fill="#D9A63C" r="5" />
+                  <circle cx="30" cy="450" fill="#1F3A6B" r="5" />
+                  <circle cx="870" cy="450" fill="#1F3A6B" r="5" />
+                  <circle cx="153" cy="153" fill="#D9A63C" opacity="0.8" r="4" />
+                  <circle cx="747" cy="153" fill="#1F3A6B" opacity="0.8" r="4" />
+                  <circle cx="153" cy="747" fill="#1F3A6B" opacity="0.8" r="4" />
+                  <circle cx="747" cy="747" fill="#D9A63C" opacity="0.8" r="4" />
+                  <text fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="11" fontWeight="700" letterSpacing="0.2em" opacity="0.85" textAnchor="middle" x="450" y="58">
+                    0Â° ARIES â€¢ MESHA â™ˆ
+                  </text>
+                  <text fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="11" fontWeight="700" letterSpacing="0.2em" opacity="0.85" textAnchor="middle" x="450" y="852">
+                    180Â° LIBRA â€¢ TULA â™Ž
+                  </text>
+                  <text fill="#022454" fontFamily="Inter, sans-serif" fontSize="11" fontWeight="700" letterSpacing="0.2em" opacity="0.85" textAnchor="middle" transform="rotate(-90 58 450)" x="58" y="450">
+                    270Â° CAPRICORN â€¢ MAKARA â™‘
+                  </text>
+                  <text fill="#022454" fontFamily="Inter, sans-serif" fontSize="11" fontWeight="700" letterSpacing="0.2em" opacity="0.85" textAnchor="middle" transform="rotate(90 842 450)" x="842" y="450">
+                    90Â° CANCER â€¢ KARKA â™‹
+                  </text>
+                </svg>
+                <svg
+                  className="absolute inset-0 w-full h-full animate-astrolabe-slow drop-shadow-lg"
+                  fill="none"
+                  viewBox="0 0 900 900"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle cx="450" cy="450" opacity="0.85" r="310" stroke="#D9A63C" strokeWidth="1.8" />
+                  <circle cx="450" cy="450" opacity="0.65" r="260" stroke="#1F3A6B" strokeDasharray="6 8" strokeWidth="1.2" />
+                  <circle cx="450" cy="450" opacity="0.75" r="180" stroke="#D9A63C" strokeDasharray="3 5" strokeWidth="1" />
+                  <polygon opacity="0.65" points="450,140 718,605 182,605" stroke="#D9A63C" strokeWidth="1.4" />
+                  <polygon opacity="0.55" points="450,760 182,295 718,295" stroke="#1F3A6B" strokeWidth="1.4" />
+                  <polygon opacity="0.5" points="450,220 649,565 251,565" stroke="#D9A63C" strokeDasharray="4 4" strokeWidth="1" />
+                  <polygon opacity="0.45" points="450,680 251,335 649,335" stroke="#1F3A6B" strokeDasharray="4 4" strokeWidth="1" />
+                  <circle cx="450" cy="450" fill="#FAF8FF" opacity="0.9" r="50" stroke="#D9A63C" strokeWidth="1.5" />
+                  <circle cx="450" cy="450" fill="#D9A63C" r="8" />
+                  <circle cx="450" cy="450" fill="none" opacity="0.8" r="18" stroke="#1F3A6B" strokeDasharray="3 3" strokeWidth="1" />
+                  <g transform="translate(760, 450)">
+                    <circle fill="#D9A63C" r="7" />
+                    <circle fill="none" opacity="0.75" r="14" stroke="#D9A63C" strokeDasharray="2 3" strokeWidth="1" />
+                    <circle fill="none" opacity="0.4" r="22" stroke="#1F3A6B" strokeWidth="0.8" />
+                  </g>
+                  <g transform="translate(140, 450)">
+                    <circle fill="#1F3A6B" r="6" />
+                    <circle fill="none" opacity="0.7" r="12" stroke="#1F3A6B" strokeDasharray="2 3" strokeWidth="1" />
+                  </g>
+                  <g transform="translate(450, 140)">
+                    <circle fill="#D9A63C" r="6.5" />
+                    <circle fill="none" opacity="0.65" r="13" stroke="#D9A63C" strokeWidth="1" />
+                  </g>
+                  <g transform="translate(450, 760)">
+                    <circle fill="#1F3A6B" r="5.5" />
+                    <circle fill="none" opacity="0.6" r="11" stroke="#1F3A6B" strokeWidth="1" />
+                  </g>
+                  <g transform="translate(634, 266)">
+                    <circle fill="#BA1A1A" opacity="0.85" r="4.5" />
+                    <circle fill="none" opacity="0.6" r="9" stroke="#BA1A1A" strokeDasharray="2 2" strokeWidth="0.8" />
+                  </g>
+                  <g transform="translate(266, 634)">
+                    <circle fill="#7B5800" opacity="0.85" r="5" />
+                    <circle fill="none" opacity="0.6" r="10" stroke="#7B5800" strokeWidth="0.8" />
+                  </g>
+                </svg>
+              </div>
+            </div>
+
+            {/* Editorial Masthead Overline Ribbon */}
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 mb-8 rounded-lg bg-[#FFFDF6]/90 backdrop-blur-sm border border-[#E8DFC9] shadow-xs">
+              <div className="flex items-center gap-2 text-[#4A567A]">
+                <span className="material-symbols-outlined text-[18px] text-[#D9A63C]">explore</span>
+                <span className="text-[12px] uppercase tracking-widest text-[#022454] font-bold">Kala-Chakra Observatory</span>
+                <span className="text-[#D9A63C]">âœ¦</span>
+                <span className="text-[12px] text-[#4A567A]">Sidereal Lahiri Ephemeris</span>
+              </div>
+              <div className="flex items-center gap-3 text-[12px]">
+                <span className="text-[#4A567A]">Ayanamsa: <strong className="text-[#16223F]">24Â° 11' 42"</strong></span>
+                <span className="text-[#D9A63C]">âœ¦</span>
+                <span className="text-[#022454] font-semibold">Bá¹›hat ParÄÅ›ara HorÄÅ›Ästra Standard</span>
+              </div>
+            </div>
+
+            {/* 2-Column Hero Architecture */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+              
+              {/* LEFT HERO COLUMN */}
+              <div className="lg:col-span-7 flex flex-col gap-6 lg:gap-8">
+                {/* Brand Pre-badge */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center gap-2 self-start">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#FBF5E5] border-2 border-[#D9A63C]/60 text-[#7b5800] shadow-md">
+                      <span className="font-['Fraunces',serif] text-sm font-bold text-[#022454] tracking-tight">TRIKAL DARSHI</span>
+                      <span className="text-[#D9A63C] text-[13px]">âœ¦</span>
+                      <span className="text-[11px] font-semibold tracking-wider uppercase">à¤¤à¥à¤°à¤¿à¤•à¤¾à¤² à¤¦à¤°à¥à¤¶à¥€</span>
+                    </div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFFDF6]/95 border border-[#D9A63C]/40 text-[#022454] shadow-xs">
+                      <span className="w-2 h-2 rounded-full bg-[#D9A63C] animate-pulse" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#7b5800]">âœ¦ Kala-Chakra Engine â€¢ Sidereal 0.02Â° Precision</span>
+                    </div>
                   </div>
-                  <h3 className="lp-feature-title">{f.title}</h3>
-                  <p className="lp-feature-desc">{f.desc}</p>
-                  <div className="lp-feature-arrow">
-                    <span className="material-symbols-outlined" style={{ fontSize: 16, color: f.accent }}>arrow_forward</span>
+
+                  <h1 className="font-['Fraunces',serif] text-4xl sm:text-5xl lg:text-[54px] font-semibold leading-[1.12] text-[#0E1A37] tracking-tight pt-1">
+                    The Geometry of <br />
+                    <span className="italic font-['Fraunces',serif] font-bold gold-shimmer-text decoration-[#D9A63C] decoration-2 underline underline-offset-8 drop-shadow-sm">
+                      Soul &amp; Time.
+                    </span>
+                  </h1>
+
+                  <p className="text-base sm:text-lg text-[#4A567A] leading-relaxed max-w-2xl pt-1">
+                    Mathematical Vedic delineations anchored in immutable celestial coordinates. Unveiling sixteen levels of karmic projection through razor-sharp planetary mechanics.
+                  </p>
+                </div>
+
+                {/* Feature Pills With Distinct Tints & Icons */}
+                <div className="flex flex-wrap gap-2.5">
+                  <div className="hero-pill-hover bg-[#FFFDF6]/90 backdrop-blur-xs border border-[#E5DEC7] px-3.5 py-2 rounded-lg shadow-xs flex items-center gap-2 cursor-default">
+                    <span className="w-2 h-2 rounded-full bg-[#D9A63C]" />
+                    <span className="text-[13px] font-semibold text-[#16223F]">Divisional Charts</span>
+                  </div>
+                  <div className="hero-pill-hover bg-[#FFFDF6]/90 backdrop-blur-xs border border-[#E5DEC7] px-3.5 py-2 rounded-lg shadow-xs flex items-center gap-2 cursor-default">
+                    <span className="w-2 h-2 rounded-full bg-[#1F3A6B]" />
+                    <span className="text-[13px] font-semibold text-[#16223F]">AI Streaming</span>
+                  </div>
+                  <div className="hero-pill-hover bg-[#FFFDF6]/90 backdrop-blur-xs border border-[#E5DEC7] px-3.5 py-2 rounded-lg shadow-xs flex items-center gap-2 cursor-default">
+                    <span className="w-2 h-2 rounded-full bg-[#D9A63C]" />
+                    <span className="text-[13px] font-semibold text-[#16223F]">Remedy Tripath</span>
+                  </div>
+                  <div className="hero-pill-hover bg-[#FFFDF6]/90 backdrop-blur-xs border border-[#E5DEC7] px-3.5 py-2 rounded-lg shadow-xs flex items-center gap-2 cursor-default">
+                    <span className="w-2 h-2 rounded-full bg-[#1F3A6B]" />
+                    <span className="text-[13px] font-semibold text-[#16223F]">10+ Life Sections</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
-      {/* ════════════════════════════════════════════════════════════
-           WISDOM / TESTIMONIALS STRIP — GUEST ONLY
-         ════════════════════════════════════════════════════════════ */}
-      {!user && (
-        <section className="lp-wisdom" id="wisdom" aria-label="Wisdom from seekers">
-          <div className="lp-section-inner">
-            <div className="lp-section-header" data-reveal>
-              <span className="lp-section-kicker">From the Seekers</span>
-              <h2 className="lp-section-title">What the Stars Revealed</h2>
-            </div>
-
-            <div className="lp-testimonials" data-reveal data-delay="1">
-              <div className="lp-testimonial-track">
-                {TESTIMONIALS.map((t, i) => (
-                  <div
-                    key={i}
-                    className={`lp-testimonial-card ${i === activeTestimonial ? 'active' : ''}`}
-                    aria-hidden={i !== activeTestimonial}
-                  >
-                    <span className="lp-quote-mark">❝</span>
-                    <p className="lp-testimonial-quote">{t.quote}</p>
-                    <div className="lp-testimonial-author">
-                      <div className="lp-testimonial-avatar">{t.initial}</div>
-                      <div>
-                        <p className="lp-testimonial-name">{t.name}</p>
-                        <p className="lp-testimonial-role">{t.role}</p>
+                {/* 4 Distinct Numerical Metrics Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-2">
+                  <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-4 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
+                    <div className="flex items-center justify-between pb-1">
+                      <span className="font-['Fraunces',serif] text-3xl font-bold text-[#022454]">16+</span>
+                      <div className="w-8 h-8 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
+                        <span className="material-symbols-outlined text-[19px] text-[#D9A63C]">grid_view</span>
                       </div>
                     </div>
+                    <span className="text-[13px] font-bold text-[#16223F] mt-1">Divisional Charts</span>
+                    <span className="text-[11px] text-[#7b5800] font-semibold mt-0.5">Shodashvarga</span>
                   </div>
-                ))}
-              </div>
-              <div className="lp-testimonial-dots" role="tablist" aria-label="Testimonials navigation">
-                {TESTIMONIALS.map((_, i) => (
+
+                  <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-4 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
+                    <div className="flex items-center justify-between pb-1">
+                      <span className="font-['Fraunces',serif] text-3xl font-bold text-[#022454]">10</span>
+                      <div className="w-8 h-8 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
+                        <span className="material-symbols-outlined text-[19px] text-[#D9A63C]">timeline</span>
+                      </div>
+                    </div>
+                    <span className="text-[13px] font-bold text-[#16223F] mt-1">Life Sections</span>
+                    <span className="text-[11px] text-[#7b5800] font-semibold mt-0.5">Dasha &amp; Gochara</span>
+                  </div>
+
+                  <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-4 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
+                    <div className="flex items-center justify-between pb-1">
+                      <span className="font-['Fraunces',serif] text-3xl font-bold text-[#022454]">3</span>
+                      <div className="w-8 h-8 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
+                        <span className="material-symbols-outlined text-[19px] text-[#D9A63C]">menu_book</span>
+                      </div>
+                    </div>
+                    <span className="text-[13px] font-bold text-[#16223F] mt-1">Wisdom Streams</span>
+                    <span className="text-[11px] text-[#7b5800] font-semibold mt-0.5">Parashari, Jaimini, KP</span>
+                  </div>
+
+                  <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-4 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
+                    <div className="flex items-center justify-between pb-1">
+                      <span className="font-['Fraunces',serif] text-3xl font-bold text-[#022454]">âˆž</span>
+                      <div className="w-8 h-8 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
+                        <span className="material-symbols-outlined text-[19px] text-[#D9A63C]">cyclone</span>
+                      </div>
+                    </div>
+                    <span className="text-[13px] font-bold text-[#16223F] mt-1">Cosmic Insights</span>
+                    <span className="text-[11px] text-[#7b5800] font-semibold mt-0.5">Real-Time Transit</span>
+                  </div>
+                </div>
+
+                {/* Primary Action Triggers */}
+                <div className="flex flex-wrap items-center gap-4 pt-2">
                   <button
-                    key={i}
-                    role="tab"
-                    aria-selected={i === activeTestimonial}
-                    aria-label={`Testimonial ${i + 1}`}
-                    className={`lp-testimonial-dot ${i === activeTestimonial ? 'active' : ''}`}
-                    onClick={() => setActiveTestimonial(i)}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+                    type="button"
+                    onClick={() => formRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                    className="bg-[#1F3A6B] hover:bg-[#022454] text-[#F0DFAF] border-2 border-[#D9A63C] px-7 py-3 text-base font-semibold rounded-lg shadow-md hover:shadow-xl transition-all flex items-center gap-2 group cursor-pointer"
+                  >
+                    <span>Begin Reading</span>
+                    <span className="text-[#D9A63C] text-[16px] group-hover:rotate-45 transition-transform">âœ¦</span>
+                  </button>
 
-      {/* ════════════════════════════════════════════════════════════
-           BIRTH FORM SECTION (logged-in only)
-         ════════════════════════════════════════════════════════════ */}
-      {user && (
-        <section
-          ref={formRef}
-          className="lp-birth-section"
-          id="birthFormSection"
-          aria-label="Birth details form"
-        >
-          <div className="lp-section-inner lp-section-narrow">
+                  <a
+                    href="#matrix-showcase"
+                    className="bg-[#FFFDF6] hover:bg-[#FBF5E5] text-[#1F3A6B] px-6 py-3 text-base font-semibold rounded-lg border border-[#E8DFC9] shadow-xs transition-colors"
+                  >
+                    See Features
+                  </a>
 
-            <header className="lp-section-header animate-up" data-reveal>
-              <span className="lp-section-kicker">Your Cosmic Blueprint</span>
-              <h2 className="lp-section-title">Enter Your Birth Details</h2>
-              <p className="lp-section-sub">
-                Precise birth data unlocks the most accurate planetary interpretations.
-              </p>
-            </header>
-
-            <div className="lp-birth-card animate-up" data-reveal data-delay="1">
-
-              {error && (
-                <div className="lp-error-banner" style={{ marginBottom: 24 }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>error</span>
-                  <span>{error}</span>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/chat')}
+                    className="text-[#7b5800] hover:text-[#022454] text-base font-bold flex items-center gap-1 px-3 py-2 transition-colors cursor-pointer bg-transparent border-none"
+                  >
+                    <span>AI Astrologer</span>
+                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  </button>
                 </div>
-              )}
 
-              {loading ? (
-                <div className="lp-loading-state">
-                  <div className="lp-spinner">
-                    <span className="material-symbols-outlined" style={{ fontSize: 40 }}>progress_activity</span>
+                {/* Scholarly Precision Vignettes */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                  <div className="bg-[#FFFDF6]/95 backdrop-blur-sm p-4 rounded-xl border border-[#E8DFC9] shadow-xs flex items-center gap-3.5 hover:border-[#D9A63C]/60 transition-colors">
+                    <img
+                      className="w-16 h-16 object-cover rounded-lg border border-[#E0CF9B] shadow-inner flex-shrink-0"
+                      alt="Astrolabe instrument"
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsTPjbxC2jaxDd7MDTA-gjZcHjv9xJGmI4jSgRiDborVO9mPaF5hXueNQx7Vl-V2FhOSzJaBCwaSo9_ZFPD8oaEWVahqIhX50uNwcHtXGlpjGI7jVJPg0vUphXTw5kWdC3HTWPddC5KRsrjFmbv_S311WfjHnqxYRZxkBkxM2waV2MAlwE6XyGF4qyQ5euw1ZzaHz-mG0MfpU0EGM7epg0izqedjl6yRteWKXSWnzlLVIxaUKt41CM"
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm text-[#16223F] font-bold">Astronomical Rigor</span>
+                      <p className="text-xs text-[#4A567A] line-clamp-2 mt-0.5">
+                        NASA JPL Swiss Ephemeris micro-precision synchronized to fractional planetary seconds.
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="lp-loading-title">{t('home.form.calculatingDestiny')}</h3>
-                  <p className="lp-loading-text">{t('home.form.aligningMatrix')}</p>
+
+                  <div className="bg-[#FFFDF6]/95 backdrop-blur-sm p-4 rounded-xl border border-[#E8DFC9] shadow-xs flex items-center gap-3.5 hover:border-[#D9A63C]/60 transition-colors">
+                    <img
+                      className="w-16 h-16 object-cover rounded-lg border border-[#E0CF9B] shadow-inner flex-shrink-0"
+                      alt="Sanskrit horoscope parchment"
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9tszpsjCgTvARsv0tmoCVv6PBTKhP-N10Y9TSDyfSERJkvcidv0PMmb2yvrsQV3sLJ8lFDdmIjXD45aR0go8Tv1J2EwYVsVDqK6MQIwmXSiWvXFgTDR4D_6OMRMqHLWUaVD929ujdilEiLjK3lD1NUZo3grK3OESTYn94TQxXr7TzYBeYslKF-cpJLffdunvcr6j_AatYumY0N1o121WyuFepFNTWi8QLazMKxJWwgrkVDh2ConyK"
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm text-[#16223F] font-bold">Vimshottari Dasha</span>
+                      <p className="text-xs text-[#4A567A] line-clamp-2 mt-0.5">
+                        120-year multi-tier planetary periods traced through Antardasha and Pratyantardasha.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div>
-                  {/* Saved charts */}
-                  {userCharts.length > 0 && (
-                    <div className="lp-saved-charts">
-                      <h3 className="lp-saved-title">{t('home.form.savedBlueprints')}</h3>
-                      <div className="lp-saved-grid">
-                        {userCharts.map((chart) => (
-                          <div
-                            key={chart.chart_id}
-                            onClick={() => navigate(`/dashboard/${chart.chart_id}`)}
-                            className="lp-saved-card"
+
+                {/* Saved Astrological Profiles Shelf */}
+                {userCharts && userCharts.length > 0 && (
+                  <div className="p-4 bg-[#FFFDF6] border border-[#E8DFC9] rounded-xl shadow-xs">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#022454] flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[16px] text-[#D9A63C]">folder_shared</span>
+                        <span>Your Saved Astrological Profiles</span>
+                      </span>
+                      <span className="text-[11px] text-[#4A567A] font-semibold">{userCharts.length} Charts</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {userCharts.map((chart) => (
+                        <button
+                          key={chart.chart_id}
+                          type="button"
+                          onClick={() => navigate(`/dashboard/${chart.chart_id}`)}
+                          className="p-2.5 text-left bg-[#FBF6EA] hover:bg-[#FAF5E6] border border-[#E8D5A7] hover:border-[#D9A63C] rounded-lg transition-all flex flex-col gap-0.5 cursor-pointer shadow-2xs"
+                        >
+                          <span className="font-semibold text-xs text-[#0E1A37] truncate">{chart.full_name}</span>
+                          <span className="text-[10px] text-[#4A567A]">
+                            {chart.ascendant_sign || 'Libra'} Asc Â· {chart.date_of_birth}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* RIGHT HERO COLUMN: Janma Kundali Generator Form Card */}
+              <div className="lg:col-span-5 lg:sticky lg:top-24" id="birth-form-card" ref={formRef}>
+                <div className="hero-card-glow bg-[#FFFDF6]/95 backdrop-blur-md p-6 sm:p-8 rounded-2xl border-2 border-[#E5DEC7] relative border-[#D9A63C]/50 shadow-md">
+                  
+                  {/* Corner Decorative Accents */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#FBF5E5] border border-[#E0CF9B] text-[#7b5800] font-mono text-[11px] font-bold"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#D9A63C]" />
+                    <span>COORD â€¢ J108</span>
+                  </div>
+
+                  {/* Form Header */}
+                  <div className="flex flex-col gap-1.5 pb-6 border-b border-[#EAE3D2]">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[18px] text-[#D9A63C]">auto_awesome</span>
+                      <span className="text-[12px] uppercase tracking-widest text-[#7b5800] font-bold">
+                        Janma Kundali Generator
+                      </span>
+                    </div>
+                    <h2 className="font-['Fraunces',serif] text-2xl font-bold text-[#022454] tracking-tight">
+                      Cast Celestial Chart
+                    </h2>
+                    <p className="text-[13px] text-[#4A567A] leading-relaxed">
+                      Enter birth coordinates to compute exact ascendant degrees, nakshatra pada, and planetary vargas.
+                    </p>
+
+                    {/* Vault Sync / Profile Creation Indicator */}
+                    <div className="mt-2 p-2.5 bg-[#FBF6EA] border border-[#D9A63C]/30 rounded-xl flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#D9A63C] animate-pulse"></span>
+                        <span className="text-[#16223F] font-medium">
+                          {isAuthenticated ? (
+                            <span>Active: <strong>{user?.name || user?.email}</strong></span>
+                          ) : (
+                            <span>Auto-save to Vault</span>
+                          )}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthModalMode(isAuthenticated ? 'profile' : 'register');
+                          setShowAuthModal(true);
+                        }}
+                        className="text-[#7b5800] hover:text-[#022454] font-bold text-xs underline cursor-pointer bg-transparent border-none p-0"
+                      >
+                        {isAuthenticated ? 'Manage Profile →' : 'Sign In / Register →'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className="my-3 p-3 bg-[#FFDAD6] border border-[#BA1A1A]/30 text-[#93000A] text-xs rounded-lg flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[16px]">error</span>
+                      <span>{error}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-5 pt-6">
+                    {/* Full Name */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm text-[#16223F] font-semibold" htmlFor="full_name">
+                          Full Name
+                        </label>
+                        <span className="text-[11px] text-[#7b5800] font-medium uppercase tracking-wider">Mandatory</span>
+                      </div>
+                      <div className="relative flex items-center">
+                        <input
+                          id="full_name"
+                          name="full_name"
+                          type="text"
+                          required
+                          value={formData.full_name}
+                          onChange={handleChange}
+                          placeholder="e.g. Anandita Sen"
+                          className="w-full h-11 px-3.5 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] placeholder-[#4A567A]/60 text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors"
+                        />
+                        <span className="material-symbols-outlined absolute right-3 text-[20px] text-[#4A567A] pointer-events-none">
+                          badge
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Date & Time Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm text-[#16223F] font-semibold" htmlFor="date_of_birth">
+                          Date of Birth
+                        </label>
+                        <input
+                          id="date_of_birth"
+                          name="date_of_birth"
+                          type="date"
+                          required
+                          value={formData.date_of_birth}
+                          onChange={handleChange}
+                          className="w-full h-11 px-3.5 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm text-[#16223F] font-semibold" htmlFor="time_of_birth">
+                          Time of Birth
+                        </label>
+                        <input
+                          id="time_of_birth"
+                          name="time_of_birth"
+                          type="time"
+                          required
+                          step="60"
+                          value={formData.time_of_birth}
+                          onChange={handleChange}
+                          className="w-full h-11 px-3.5 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Birth Time Confidence */}
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-sm text-[#16223F] font-semibold">Birth Time Confidence</span>
+                      <div className="grid grid-cols-3 gap-1.5 bg-[#E8EEF8]/60 p-1.5 rounded-lg border border-[#D8E1F0]">
+                        {['exact', 'approximate', 'unknown'].map((conf) => (
+                          <button
+                            key={conf}
+                            type="button"
+                            onClick={() => setFormData((p) => ({ ...p, birth_time_confidence: conf }))}
+                            className={`py-2 text-center text-xs font-semibold rounded-md capitalize transition-all cursor-pointer ${
+                              formData.birth_time_confidence === conf
+                                ? 'bg-[#1F3A6B] text-[#F0DFAF] font-bold shadow-xs'
+                                : 'text-[#4A567A] hover:text-[#16223F]'
+                            }`}
                           >
-                            <div className="lp-saved-icon">
-                              <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#c9952a', fontVariationSettings: "'FILL' 1" }}>stars</span>
-                            </div>
-                            <div className="lp-saved-info">
-                              <span className="lp-saved-name">{chart.full_name}</span>
-                              <span className="lp-saved-meta">{chart.date_of_birth} · {chart.city_of_birth}</span>
-                            </div>
-                            <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#c9952a', marginLeft: 'auto' }}>arrow_forward</span>
-                          </div>
+                            {conf}
+                          </button>
                         ))}
                       </div>
-
-                      {!showBirthForm && (
-                        <div className="flex justify-center mt-6">
-                          <button
-                            type="button"
-                            onClick={() => setShowBirthForm(true)}
-                            className="blueprint-button shimmer-button max-w-xs w-full flex items-center justify-center gap-2"
-                          >
-                            <span className="material-symbols-outlined">add_circle</span>
-                            {t('home.form.addNewMember')}
-                          </button>
-                        </div>
-                      )}
+                      <p className="text-[11px] text-[#4A567A] mt-0.5">
+                        For exact ascendant degrees (Â±2 deg), accurate birth minutes provide higher D9 resolution.
+                      </p>
                     </div>
-                  )}
 
-                  {/* Render the birth form if we don't have saved charts, OR if showBirthForm is true */}
-                  {(userCharts.length === 0 || showBirthForm) && (
-                    <div className="mt-8 animate-fade-in">
-                      {userCharts.length > 0 && (
-                        <div className="flex justify-between items-center mb-6 border-b border-outline-variant/15 pb-3">
-                          <h3 className="text-xs uppercase font-bold tracking-widest text-primary">{t('home.form.newCosmicMember')}</h3>
-                          <button
-                            type="button"
-                            onClick={() => setShowBirthForm(false)}
-                            className="text-xs text-outline hover:text-primary flex items-center gap-1 font-semibold cursor-pointer bg-transparent border-none"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">cancel</span>
-                            {t('dashboard.modal.cancel')}
-                          </button>
-                        </div>
-                      )}
-                      {renderBirthForm()}
+                    {/* Place of Birth */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm text-[#16223F] font-semibold" htmlFor="city_of_birth">
+                        Place of Birth
+                      </label>
+                      <div className="relative flex items-center">
+                        <input
+                          id="city_of_birth"
+                          name="city_of_birth"
+                          type="text"
+                          required
+                          value={formData.city_of_birth}
+                          onChange={handleChange}
+                          placeholder="Varanasi, India"
+                          className="w-full h-11 pl-3.5 pr-10 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] placeholder-[#4A567A]/60 text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors"
+                        />
+                        <span className="material-symbols-outlined absolute right-3 text-[20px] text-[#D9A63C] pointer-events-none">
+                          location_on
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-[#4A567A]">Geo-coordinates: Lat 25.3176Â° N, Long 82.9739Â° E</span>
                     </div>
-                  )}
+
+                    {/* Current City */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm text-[#16223F] font-semibold" htmlFor="current_city">
+                        Current City (for Gochara Transits)
+                      </label>
+                      <div className="relative flex items-center">
+                        <input
+                          id="current_city"
+                          name="current_city"
+                          type="text"
+                          value={formData.current_city}
+                          onChange={handleChange}
+                          placeholder="Bengaluru, India"
+                          className="w-full h-11 pl-3.5 pr-10 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] placeholder-[#4A567A]/60 text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors"
+                        />
+                        <span className="material-symbols-outlined absolute right-3 text-[20px] text-[#4A567A] pointer-events-none">
+                          my_location
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Interpretation Language */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm text-[#16223F] font-semibold" htmlFor="language-select">
+                        Interpretation Language
+                      </label>
+                      <div className="relative flex items-center">
+                        <select
+                          id="language-select"
+                          name="language"
+                          value={formData.language}
+                          onChange={handleChange}
+                          className="w-full h-11 px-3.5 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors appearance-none cursor-pointer"
+                        >
+                          <option value="english">English (IAST Romanized Diacritics)</option>
+                          <option value="hindi">à¤¹à¤¿à¤¨à¥à¤¦à¥€ (Devanagari Sanskritised)</option>
+                          <option value="bengali">à¦¬à¦¾à¦‚à¦²à¦¾ (Bengali Traditional Shloka)</option>
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 text-[20px] text-[#4A567A] pointer-events-none">
+                          expand_more
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Privacy Checkbox */}
+                    <div className="flex items-start gap-2.5 pt-1">
+                      <input
+                        defaultChecked
+                        id="privacy-check"
+                        type="checkbox"
+                        className="mt-0.5 rounded border-[#C4BFA8] text-[#022454] focus:ring-0 cursor-pointer"
+                      />
+                      <label htmlFor="privacy-check" className="text-xs text-[#4A567A] leading-snug cursor-pointer">
+                        Secure computation. Ephemeris calculations are processed privately without advertising profile tracking.
+                      </label>
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full h-12 bg-[#1F3A6B] hover:bg-[#022454] text-[#F0DFAF] border-2 border-[#D9A63C] text-base font-bold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <>
+                          <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
+                          <span>Computing Precision Sidereal Chartâ€¦</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-[20px] text-[#D9A63C]">auto_awesome</span>
+                          <span>Begin Reading</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Guarantee Badges */}
+                    <div className="flex items-center justify-center gap-6 pt-2 text-[#4A567A]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[17px] text-[#D9A63C]">verified</span>
+                        <span className="text-xs font-medium">D1 to D60 Varga</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[17px] text-[#D9A63C]">schedule</span>
+                        <span className="text-xs font-medium">Instant Calculation</span>
+                      </div>
+                    </div>
+                  </form>
                 </div>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════
-           FOOTER
-         ════════════════════════════════════════════════════════════ */}
-      <footer className="lp-footer">
-        <div className="lp-footer-yantra" aria-hidden="true">
-          <YantraSVG size={160} opacity={0.06} />
-        </div>
-
-        <div className="lp-section-inner">
-          <div className="lp-footer-inner">
-            {/* Brand */}
-            <div className="lp-footer-brand">
-              <div className="lp-footer-emblem">
-                <img src="/Trikal_Darshi_logo.png" alt="Trikal Darshi Logo" className="lp-footer-logo-img" />
               </div>
-              <span className="lp-footer-name">Trikal Darshi</span>
+
             </div>
+          </section>
 
-            <p className="lp-footer-tagline">Ancient Wisdom · Modern Precision</p>
+          {/* â”€â”€ SECTION 2: THE THREE CELESTIAL STREAMS (Exact 3-Column Section) â”€â”€ */}
+          <section className="relative z-10 border-t border-[#E8DFC9] bg-gradient-to-b from-[#FAF5E6] to-[#F5EEDC]/80 py-16 lg:py-20">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16">
+              <div className="text-center max-w-2xl mx-auto mb-12">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FBF5E5] border border-[#E0CF9B] text-[#7b5800] text-xs font-bold uppercase tracking-widest mb-3">
+                  <span className="text-[#D9A63C]">âœ¦</span> Integrated Jyotish Canon <span className="text-[#D9A63C]">âœ¦</span>
+                </div>
+                <h2 className="font-['Fraunces',serif] text-3xl sm:text-4xl font-bold text-[#022454] tracking-tight">
+                  The Three Celestial Streams
+                </h2>
+                <p className="text-base text-[#4A567A] mt-3">
+                  Synthesizing authoritative classical traditions into one unified computational engine without shortcuts.
+                </p>
+              </div>
 
-            {/* Discipline pills */}
-            <div className="lp-footer-pills">
-              {['Vedic Jyotish', 'Lal Kitab', 'Numerology'].map((item) => (
-                <span key={item} className="lp-footer-pill">{item}</span>
-              ))}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                {/* Stream 1: Parashari Vargas */}
+                <div className="bg-[#FFFDF6] p-6 sm:p-7 rounded-2xl border-2 border-[#E5DEC7] hover:border-[#D9A63C] shadow-md flex flex-col justify-between transition-all group">
+                  <div>
+                    <div className="w-12 h-12 rounded-xl bg-[#1F3A6B] text-[#F0DFAF] flex items-center justify-center border border-[#D9A63C]/40 shadow-sm mb-5 group-hover:scale-110 transition-transform">
+                      <span className="material-symbols-outlined text-[24px]">account_tree</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#7b5800]">
+                        Stream I â€¢ Classical Foundation
+                      </span>
+                    </div>
+                    <h3 className="font-['Fraunces',serif] text-xl font-bold text-[#022454] mb-3">
+                      Parashari Vargas &amp; Dasha
+                    </h3>
+                    <p className="text-sm text-[#4A567A] leading-relaxed mb-6">
+                      Complete 16 divisional charts (Shodashvarga) computed from D1 Rashi through D60 Shashtiamsha. Multi-tier Vimshottari mahadashas with exact sandhi transitions.
+                    </p>
+                  </div>
+                  <div className="pt-4 border-t border-[#EAE3D2] flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[#16223F]">16 Vargas â€¢ Vimshottari</span>
+                    <span className="text-[#D9A63C] text-sm font-bold">âœ¦ Standard</span>
+                  </div>
+                </div>
+
+                {/* Stream 2: Lal Kitab Farmaan */}
+                <div className="bg-[#FFFDF6] p-6 sm:p-7 rounded-2xl border-2 border-[#D9A63C]/50 hover:border-[#D9A63C] shadow-md flex flex-col justify-between transition-all group bg-gradient-to-b from-[#FFFDF6] to-[#FFF9ED]">
+                  <div>
+                    <div className="w-12 h-12 rounded-xl bg-[#7b5800] text-[#F0DFAF] flex items-center justify-center border border-[#D9A63C] shadow-sm mb-5 group-hover:scale-110 transition-transform">
+                      <span className="material-symbols-outlined text-[24px]">balance</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#7b5800]">
+                        Stream II â€¢ Remedial Hermeneutics
+                      </span>
+                    </div>
+                    <h3 className="font-['Fraunces',serif] text-xl font-bold text-[#022454] mb-3">
+                      Lal Kitab &amp; Farmaan
+                    </h3>
+                    <p className="text-sm text-[#4A567A] leading-relaxed mb-6">
+                      Pragmatic planetary debts (Rin) analysis and non-ritualistic, practical environmental adjustments. Diagnostic insight into dormant houses and blind planetary aspects.
+                    </p>
+                  </div>
+                  <div className="pt-4 border-t border-[#EAE3D2] flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[#16223F]">Rin Analysis â€¢ Practical Upay</span>
+                    <span className="text-[#7b5800] font-bold text-xs bg-[#F0DFAF]/60 px-2 py-0.5 rounded">Remedy Engine</span>
+                  </div>
+                </div>
+
+                {/* Stream 3: Vedic Numerology & KP System */}
+                <div className="bg-[#FFFDF6] p-6 sm:p-7 rounded-2xl border-2 border-[#E5DEC7] hover:border-[#D9A63C] shadow-md flex flex-col justify-between transition-all group">
+                  <div>
+                    <div className="w-12 h-12 rounded-xl bg-[#1F3A6B] text-[#F0DFAF] flex items-center justify-center border border-[#D9A63C]/40 shadow-sm mb-5 group-hover:scale-110 transition-transform">
+                      <span className="material-symbols-outlined text-[24px]">pin</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#7b5800]">
+                        Stream III â€¢ Micro-Sublords
+                      </span>
+                    </div>
+                    <h3 className="font-['Fraunces',serif] text-xl font-bold text-[#022454] mb-3">
+                      KP Stellar &amp; Numerology
+                    </h3>
+                    <p className="text-sm text-[#4A567A] leading-relaxed mb-6">
+                      Placidus cuspal divisions married with Krishnamurti Paddhati sub-lord filters. Ank Jyotish concordance linking psychic numbers with resonant planetary vibratory rates.
+                    </p>
+                  </div>
+                  <div className="pt-4 border-t border-[#EAE3D2] flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[#16223F]">Sub-Lord Filters â€¢ Placidus</span>
+                    <span className="text-[#D9A63C] text-sm font-bold">âœ¦ Precision</span>
+                  </div>
+                </div>
+              </div>
             </div>
+          </section>
 
-            <div className="lp-footer-divider" aria-hidden="true">
-              <div className="lp-footer-line" />
-              <span className="lp-footer-diamond">✦</span>
-              <div className="lp-footer-line" />
+          {/* â”€â”€ SECTION 3: KUNDLI D1 MATRIX & EPHEMERIS SHOWCASE (2-Column) â”€â”€ */}
+          <section className="relative z-10 py-16 lg:py-20 border-t border-[#E8DFC9] bg-[#FBF6EA]" id="matrix-showcase">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+                
+                {/* Left Sub-column: Interactive Signature Yantra Kundali Graphic */}
+                <div className="lg:col-span-6">
+                  <div className="bg-[#FFFDF6] p-6 sm:p-8 rounded-2xl border-2 border-[#E5DEC7] shadow-lg relative">
+                    <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#EAE3D2]">
+                      <div className="flex flex-col">
+                        <span className="font-['Fraunces',serif] text-xl font-bold text-[#022454]">Janma Lagna D1 Matrix</span>
+                        <span className="text-xs text-[#4A567A]">Kendra (Angular) â€¢ Trikona (Trinal) Coordinate Axis</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2.5 py-1 bg-[#F0DFAF] text-[#16223F] text-xs rounded-md font-semibold border border-[#D9A63C]/40">Sidereal Lahiri</span>
+                        <span className="px-2.5 py-1 bg-[#E8EEF8] text-[#022454] text-xs rounded-md font-semibold border border-[#CBD9EE]">True Chitra Node</span>
+                      </div>
+                    </div>
+
+                    {/* Yantra Kundali Canvas (North Indian Style) */}
+                    <div className="relative w-full aspect-square max-w-[420px] mx-auto bg-[#FAF8FF] rounded-xl border border-[#D5CDBC] p-2 shadow-inner">
+                      <svg className="w-full h-full drop-shadow-xs select-none" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="10" y="10" width="380" height="380" fill="none" stroke="#1F3A6B" strokeWidth="1.8" />
+                        <circle cx="200" cy="200" r="130" fill="none" opacity="0.4" stroke="#D9A63C" strokeDasharray="3 3" strokeWidth="1" />
+                        <circle cx="200" cy="200" r="170" fill="none" opacity="0.25" stroke="#1F3A6B" strokeWidth="0.75" />
+                        <line x1="10" y1="10" x2="390" y2="390" opacity="0.85" stroke="#1F3A6B" strokeWidth="1.2" />
+                        <line x1="390" y1="10" x2="10" y2="390" opacity="0.85" stroke="#1F3A6B" strokeWidth="1.2" />
+                        <polygon points="200,10 390,200 200,390 10,200" fill="none" stroke="#1F3A6B" strokeWidth="1.5" />
+                        <polygon points="200,10 295,105 200,200 105,105" fill="#F0DFAF" fillOpacity="0.35" />
+                        <polygon points="10,200 105,105 200,200 105,295" fill="#F0DFAF" fillOpacity="0.2" />
+                        <polygon points="200,200 295,295 200,390 105,295" fill="#F0DFAF" fillOpacity="0.3" />
+                        <polygon points="200,200 295,105 390,200 295,295" fill="#F0DFAF" fillOpacity="0.2" />
+                        
+                        <text x="200" y="42" fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="700" textAnchor="middle">I â€¢ LAGNA</text>
+                        <text x="200" y="88" fill="#022454" fontFamily="Fraunces, serif" fontSize="16" fontWeight="700" textAnchor="middle">Mesha (Ar 14Â°)</text>
+                        <text x="200" y="110" fill="#1F3A6B" fontFamily="Inter, sans-serif" fontSize="11" fontWeight="600" textAnchor="middle">Ju â™ƒ (Guru) [Exalted]</text>
+                        <text x="200" y="128" fill="#4A567A" fontFamily="Inter, sans-serif" fontSize="9" textAnchor="middle">Ashwini â€¢ Pada 2</text>
+                        
+                        <text x="110" y="42" fill="#4A567A" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="600" textAnchor="middle">II</text>
+                        <text x="105" y="70" fill="#16223F" fontFamily="Fraunces, serif" fontSize="13" fontWeight="600" textAnchor="middle">Ve â™€ 08Â°</text>
+                        
+                        <text x="290" y="42" fill="#4A567A" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="600" textAnchor="middle">XII</text>
+                        <text x="295" y="70" fill="#16223F" fontFamily="Fraunces, serif" fontSize="13" fontWeight="600" textAnchor="middle">Me â˜¿ (R) 21Â°</text>
+                        
+                        <text x="60" y="196" fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="700" textAnchor="middle">IV</text>
+                        <text x="115" y="198" fill="#022454" fontFamily="Fraunces, serif" fontSize="14" fontWeight="700" textAnchor="middle">Mo â˜½ 04Â°22'</text>
+                        <text x="115" y="216" fill="#4A567A" fontFamily="Inter, sans-serif" fontSize="9" textAnchor="middle">Rohini (Sva)</text>
+                        
+                        <text x="200" y="375" fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="700" textAnchor="middle">VII â€¢ ASTAM</text>
+                        <text x="200" y="315" fill="#022454" fontFamily="Fraunces, serif" fontSize="14" fontWeight="700" textAnchor="middle">Su â˜‰ 28Â°10'</text>
+                        <text x="200" y="333" fill="#BA1A1A" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="600" textAnchor="middle">Sa â™„ (Deb.) 02Â°</text>
+                        
+                        <text x="340" y="196" fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="700" textAnchor="middle">X</text>
+                        <text x="285" y="198" fill="#022454" fontFamily="Fraunces, serif" fontSize="14" fontWeight="700" textAnchor="middle">Ma â™‚ 19Â°45'</text>
+                        <text x="285" y="216" fill="#4A567A" fontFamily="Inter, sans-serif" fontSize="9" textAnchor="middle">Digbala Peak</text>
+                        
+                        <text x="335" y="295" fill="#16223F" fontFamily="Fraunces, serif" fontSize="12" fontWeight="600" textAnchor="middle">IX â€¢ Ra â˜Š</text>
+                        <text x="65" y="295" fill="#16223F" fontFamily="Fraunces, serif" fontSize="12" fontWeight="600" textAnchor="middle">V â€¢ Ke â˜‹</text>
+                        
+                        <circle cx="200" cy="200" r="5" fill="#D9A63C" />
+                        <circle cx="200" cy="200" r="15" fill="none" stroke="#D9A63C" strokeWidth="1" />
+                      </svg>
+
+                      {/* Chart Footnote Pill */}
+                      <div className="absolute bottom-4 left-4 right-4 bg-[#FFFDF6]/95 backdrop-blur-sm p-2.5 rounded-lg border border-[#E5DEC7] flex items-center justify-between shadow-xs">
+                        <span className="text-xs text-[#16223F] font-semibold">
+                          Bhavartha: <span className="text-[#4A567A] font-normal">Hamsa Yoga active via Guru in Kendra</span>
+                        </span>
+                        <span className="text-xs text-[#7b5800] hover:text-[#022454] font-bold cursor-pointer">
+                          Inspect 16 Vargas â†’
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Corner Gold Accents */}
+                    <div aria-hidden="true" className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-[#D9A63C]" />
+                    <div aria-hidden="true" className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-[#D9A63C]" />
+                    <div aria-hidden="true" className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-[#D9A63C]" />
+                    <div aria-hidden="true" className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-[#D9A63C]" />
+                  </div>
+                </div>
+
+                {/* Right Sub-column: Detailed Explanation */}
+                <div className="lg:col-span-6 flex flex-col gap-6">
+                  <div className="inline-flex items-center gap-2 self-start px-3.5 py-1 rounded-full bg-[#E8EEF8] border border-[#CBD9EE] text-[#1F3A6B] text-xs font-bold uppercase tracking-wider">
+                    <span className="material-symbols-outlined text-[16px] text-[#D9A63C]">schema</span>
+                    Mathematical Precision
+                  </div>
+                  
+                  <h2 className="font-['Fraunces',serif] text-3xl sm:text-4xl font-bold text-[#022454] tracking-tight">
+                    Authentic Kundli Mathematics, Rendered With Zero Approximation.
+                  </h2>
+                  
+                  <p className="text-base text-[#4A567A] leading-relaxed">
+                    Every calculation executes true geocentric sidereal positions via Chitrapaksha Ayanamsa. We map planetary speeds, retrograde stations, and fractional shadbala power metrics to deliver actionable horary and lifetime counsel.
+                  </p>
+
+                  <div className="space-y-4 pt-2">
+                    <div className="flex items-start gap-4 p-4 rounded-xl bg-[#FFFDF6] border border-[#E8DFC9]">
+                      <div className="w-8 h-8 rounded-lg bg-[#FBF5E5] border border-[#E0CF9B] text-[#7b5800] flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="material-symbols-outlined text-[18px]">adjust</span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-[#16223F]">Fractional Navamsha (D9) Resolution</h4>
+                        <p className="text-xs text-[#4A567A] mt-0.5">
+                          Identifies the subtle dharmic destiny and matrimonial alignment hidden within each 3Â°20' arc of the zodiac.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4 p-4 rounded-xl bg-[#FFFDF6] border border-[#E8DFC9]">
+                      <div className="w-8 h-8 rounded-lg bg-[#E8EEF8] border border-[#CBD9EE] text-[#1F3A6B] flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="material-symbols-outlined text-[18px]">flare</span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-[#16223F]">Full Shadbala &amp; Ashtakavarga Bindus</h4>
+                        <p className="text-xs text-[#4A567A] mt-0.5">
+                          Evaluates directional, positional, temporal, and motional strength alongside 337 Sarvashtakavarga benefic dots.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => formRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                      className="inline-flex items-center gap-2 bg-[#1F3A6B] hover:bg-[#022454] text-[#F0DFAF] text-sm font-semibold px-6 py-3 rounded-lg border border-[#D9A63C] shadow-xs transition-all cursor-pointer"
+                    >
+                      <span>Generate Your Free D1 &amp; D9 Chart</span>
+                      <span className="material-symbols-outlined text-[16px] text-[#D9A63C]">arrow_forward</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
             </div>
+          </section>
 
-            <p className="lp-footer-copy">© 2025 Trikal Darshi · All Rights Reserved</p>
+          {/* â”€â”€ SECTION 4: TESTIMONIALS (Voices of Inquiry) â”€â”€ */}
+          <section className="relative z-10 py-16 lg:py-20 border-t border-[#E8DFC9] bg-gradient-to-b from-[#FBF6EA] to-[#F5EEDC]">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
+                <div>
+                  <div className="flex items-center gap-2 text-[#7B5800] text-xs font-bold uppercase tracking-widest mb-2">
+                    <span className="text-[#D9A63C]">âœ¦</span> Voices of Inquiry
+                  </div>
+                  <h2 className="font-['Fraunces',serif] text-3xl sm:text-4xl font-bold text-[#022454] tracking-tight">
+                    Practitioner Testimonies
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#4A567A]">
+                  <span className="w-2 h-2 rounded-full bg-[#D9A63C]"></span>
+                  <span>Verified Jyotish Scholars &amp; Astrologers</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                {/* Card 1 */}
+                <div className="bg-[#FFFDF6] p-6 sm:p-7 rounded-2xl border-2 border-[#E5DEC7] shadow-xs flex flex-col justify-between hover:border-[#D9A63C] transition-all">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex text-[#D9A63C]">
+                        {[...Array(5)].map((_, i) => (
+                          <span key={i} className="material-symbols-outlined text-[18px]">star</span>
+                        ))}
+                      </div>
+                      <span className="text-[#7B5800] font-['Fraunces',serif] text-3xl leading-none">â€œ</span>
+                    </div>
+                    <p className="font-['Inter',sans-serif] text-sm text-[#16223F] italic leading-relaxed">
+                      The mathematical fidelity of the Navamsha and Dashamsha tables is unmatched. No fluffâ€”pure classical Jyotish computed flawlessly.
+                    </p>
+                  </div>
+                  <div className="pt-5 mt-4 border-t border-[#EAE3D2]">
+                    <span className="text-sm text-[#16223F] font-bold block">Dr. A. Sharma</span>
+                    <span className="text-xs text-[#4A567A] block mt-0.5">Varanasi Sanskrit Vishwavidyalaya</span>
+                  </div>
+                </div>
+
+                {/* Card 2 */}
+                <div className="bg-gradient-to-b from-[#FFFDF6] to-[#FFF9EE] p-6 sm:p-7 rounded-2xl border-2 border-[#D9A63C]/40 shadow-xs flex flex-col justify-between hover:border-[#D9A63C] transition-all">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex text-[#D9A63C]">
+                        {[...Array(5)].map((_, i) => (
+                          <span key={i} className="material-symbols-outlined text-[18px]">star</span>
+                        ))}
+                      </div>
+                      <span className="text-[#7B5800] font-['Fraunces',serif] text-3xl leading-none">â€œ</span>
+                    </div>
+                    <p className="font-['Inter',sans-serif] text-sm text-[#16223F] italic leading-relaxed">
+                      Finally an interface honoring the dignified scholarship of Bhrigu Samhita. The transit calculations match my manual ephemeris logs.
+                    </p>
+                  </div>
+                  <div className="pt-5 mt-4 border-t border-[#EAE3D2]">
+                    <span className="text-sm text-[#16223F] font-bold block">Rohit Mukherjee</span>
+                    <span className="text-xs text-[#4A567A] block mt-0.5">Senior Horary Astrologer, Kolkata</span>
+                  </div>
+                </div>
+
+                {/* Card 3 */}
+                <div className="bg-[#FFFDF6] p-6 sm:p-7 rounded-2xl border-2 border-[#E5DEC7] shadow-xs flex flex-col justify-between hover:border-[#D9A63C] transition-all">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex text-[#D9A63C]">
+                        {[...Array(5)].map((_, i) => (
+                          <span key={i} className="material-symbols-outlined text-[18px]">star</span>
+                        ))}
+                      </div>
+                      <span className="text-[#7B5800] font-['Fraunces',serif] text-3xl leading-none">â€œ</span>
+                    </div>
+                    <p className="font-['Inter',sans-serif] text-sm text-[#16223F] italic leading-relaxed">
+                      The triad remedy synthesis based on classical texts gives clear clarity to seekers without inducing superstitions. Truly an observatory.
+                    </p>
+                  </div>
+                  <div className="pt-5 mt-4 border-t border-[#EAE3D2]">
+                    <span className="text-sm text-[#16223F] font-bold block">Priya Venkat</span>
+                    <span className="text-xs text-[#4A567A] block mt-0.5">Jyotish Acharya, Chennai</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* â”€â”€ SECTION 5: LIVE EPHEMERIS CLOCK BANNER â”€â”€ */}
+          <section className="relative z-10 border-t border-[#E8DFC9] bg-[#FFFDF6] py-6">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16">
+              <div className="p-4 rounded-xl bg-gradient-to-r from-[#EBF2FA] via-[#FFFDF6] to-[#FFF6DC] border border-[#E0D8C3] shadow-xs flex flex-col lg:flex-row items-center justify-between gap-4 text-[#4A567A]">
+                <div className="flex items-center gap-3">
+                  <span className="w-3 h-3 rounded-full bg-[#D9A63C] animate-pulse shadow-xs"></span>
+                  <span className="text-sm text-[#022454] font-bold">Live Celestial Clock:</span>
+                  <span className="text-xs sm:text-sm text-[#16223F]">
+                    Sun in Aquarius (Kumbha 05Â° 12'), Moon in Aries (Mesha 19Â° 44'), Jupiter Retrograde in Taurus
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="uppercase tracking-wider text-[#4A567A]">Ayanamsa: Chitrapaksha (Lahiri)</span>
+                  <span className="text-[#D9A63C]">âœ¦</span>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/panchang')}
+                    className="text-[#022454] font-bold hover:text-[#7B5800] underline underline-offset-2 cursor-pointer"
+                  >
+                    View Daily Panchang â†’
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      {/* â”€â”€ ORGANIZED SCHOLARLY FOOTER â”€â”€ */}
+      <footer className="w-full bg-[#12244A] text-[#F0DFAF] border-t border-[#D9A63C]/30 py-12">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+          <div className="flex flex-col gap-2 max-w-md">
+            <div className="flex items-center justify-center md:justify-start gap-2">
+              <span className="material-symbols-outlined text-[#D9A63C] text-[20px]">flare</span>
+              <span className="font-['Fraunces',serif] text-lg font-bold text-[#FFFDF6] tracking-tight">TRIKAL DARSHI</span>
+              <span className="text-[#D9A63C]">âœ¦</span>
+              <span className="text-xs text-[#F0DFAF] uppercase tracking-widest font-sans">à¤¤à¥à¤°à¤¿à¤•à¤¾à¤² à¤¦à¤°à¥à¤¶à¥€</span>
+            </div>
+            <p className="text-xs text-[#F0DFAF]/75 leading-relaxed">
+              Vedic precision computing, Kundali delineations, and celestial timelines anchored in traditional Jyotish Shastra. Micro-arc precision ephemeris engine.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-[#F0DFAF]/90">
+            <button type="button" onClick={() => navigate('/dashboard')} className="hover:text-[#D9A63C] transition-colors cursor-pointer">
+              Soul Dashboard
+            </button>
+            <button type="button" onClick={() => navigate('/panchang')} className="hover:text-[#D9A63C] transition-colors cursor-pointer">
+              Daily Panchang
+            </button>
+            <button type="button" onClick={() => navigate('/ask-ai')} className="hover:text-[#D9A63C] transition-colors cursor-pointer">
+              AskAI Jyotish Guide
+            </button>
+            <button type="button" onClick={() => navigate('/charts')} className="hover:text-[#D9A63C] transition-colors cursor-pointer">
+              Saved Ephemeris Charts
+            </button>
+          </div>
+
+          <div className="text-xs text-[#F0DFAF]/60">
+            Â© {new Date().getFullYear()} Trikal Darshi. All planetary coordinates verified.
           </div>
         </div>
       </footer>
     </div>
   );
 }
+
+
+

@@ -211,7 +211,7 @@ def _sync_collect_tab_text(tab_number: int, tab_prompt: str, chart_data: dict = 
     """
     Fully synchronous function that:
       1. Retrieves enhanced RAG context (k=5 chunks, 4000 char cap)
-      2. Calls the LLM (Gemini primary → OpenRouter fallback cascade)
+      2. Calls the LLM cascade (Gemini -> Groq Llama 70B -> Groq Qwen 32B -> OpenRouter -> Groq GPT-OSS 120B -> Groq Llama 8B)
       3. Accumulates and returns all tokens as a single string
 
     Designed to run inside asyncio.to_thread() so it never blocks
@@ -219,9 +219,11 @@ def _sync_collect_tab_text(tab_number: int, tab_prompt: str, chart_data: dict = 
     concurrently while the event loop stays free for HTTP requests.
     """
     from rag.retriever import search_for_tab, format_rag_context, get_context_for_tab
-    from rag.pipeline import (
-        SYSTEM_PROMPT, _stream_primary, _stream_fallback,
-        _yield_tokens, FALLBACK_MODELS,
+    from rag.pipeline import SYSTEM_PROMPT, _yield_tokens, get_cached_client, _is_rate_limit
+    from services.llm_providers import (
+        cascade_for_language,
+        is_tier_available,
+        effective_max_tokens,
     )
     from dotenv import load_dotenv
     load_dotenv(override=True)
@@ -269,40 +271,44 @@ def _sync_collect_tab_text(tab_number: int, tab_prompt: str, chart_data: dict = 
         {"role": "user",   "content": enriched_prompt},
     ]
 
-    # ── Try primary (Gemini) ──────────────────────────────────────────────────
-    try:
-        stream = _stream_primary(messages)
-        text = ""
-        for token in _yield_tokens(stream):
-            text += token
-        if text:
-            logger.info(f"[bg_gen] Tab {tab_number} primary model succeeded ({len(text)} chars)")
-            return text, f"primary/{os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')}"
-    except Exception as primary_err:
-        logger.warning(
-            f"[bg_gen] Primary model failed for Tab {tab_number}: {primary_err}. Trying fallbacks..."
-        )
+    # ── Multi-Provider Cascade Execution ──────────────────────────────────────
+    tiers = cascade_for_language(language)
+    for tier in tiers:
+        tier_name = tier["name"]
+        if not is_tier_available(tier):
+            continue
 
-    # ── Fallback cascade (OpenRouter) ─────────────────────────────────────────
-    env_model = os.getenv("OPENROUTER_MODEL", "").strip()
-    fallback_models = []
-    if env_model:
-        fallback_models.append(env_model)
-    for m in FALLBACK_MODELS:
-        if m not in fallback_models:
-            fallback_models.append(m)
+        model_name = tier["model"]
+        max_tokens = effective_max_tokens(tier)
+        logger.info(f"[bg_gen] Tab {tab_number} attempting tier: {tier_name} ({model_name})")
 
-    for fb_model in fallback_models:
+        extra_body = {}
+        if "reasoning_format" in tier:
+            extra_body["reasoning_format"] = tier["reasoning_format"]
+        elif "openrouter" in tier["base_url"].lower():
+            extra_body["reasoning"] = {"exclude": True}
+
         try:
-            stream = _stream_fallback(messages, fb_model)
+            client = get_cached_client(tier)
+            create_kwargs = {
+                "model": model_name,
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": max_tokens,
+                "stream": True,
+            }
+            if extra_body:
+                create_kwargs["extra_body"] = extra_body
+
+            stream = client.chat.completions.create(**create_kwargs)
             text = ""
             for token in _yield_tokens(stream):
                 text += token
             if text:
-                logger.info(f"[bg_gen] Tab {tab_number} fallback {fb_model} succeeded ({len(text)} chars)")
-                return text, f"fallback/{fb_model}"
+                logger.info(f"[bg_gen] Tab {tab_number} tier {tier_name} succeeded ({len(text)} chars)")
+                return text, f"background/{model_name}"
         except Exception as fb_err:
-            logger.warning(f"[bg_gen] Fallback {fb_model} failed for Tab {tab_number}: {fb_err}")
+            logger.warning(f"[bg_gen] Tier {tier_name} failed for Tab {tab_number}: {fb_err}")
 
     logger.error(f"[bg_gen] All models failed for Tab {tab_number} — returning empty string.")
     return "", "failed"

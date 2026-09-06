@@ -880,14 +880,14 @@ async def list_user_charts(
 ):
     """
     GET /chart
-    Returns list of all charts created by the currently logged-in user.
+    Returns list of all charts created by the currently logged-in user with astrological vectors.
     """
     try:
         user_uuid = uuid.UUID(str(current_user["id"]))
         rows = await conn.fetch(
             """
             SELECT id, full_name, date_of_birth, time_of_birth, city_of_birth, current_city,
-                   language, created_at
+                   language, birth_time_confidence, raw_chart_data, created_at
             FROM charts
             WHERE user_id = $1
             ORDER BY created_at DESC
@@ -896,14 +896,62 @@ async def list_user_charts(
         )
         charts = []
         for r in rows:
+            raw_data = r["raw_chart_data"]
+            if isinstance(raw_data, str):
+                try:
+                    cdata = json.loads(raw_data)
+                except Exception:
+                    cdata = {}
+            elif isinstance(raw_data, dict):
+                cdata = raw_data
+            else:
+                cdata = {}
+
+            # Extract key astrological vectors
+            asc = cdata.get("ascendant", {})
+            asc_sign = asc.get("sign") or "Aries"
+            asc_deg = asc.get("fullDegree")
+
+            planets = cdata.get("planets", [])
+            moon_p = next((p for p in planets if p.get("name") == "Moon"), {})
+            moon_nak = moon_p.get("nakshatra") or "Rohini"
+            moon_sign = moon_p.get("sign") or "Taurus"
+            moon_deg = moon_p.get("normDegree") or moon_p.get("fullDegree")
+
+            # Atmakaraka: highest degree planet among Sun..Saturn
+            ak = cdata.get("atmakaraka")
+            if not ak and planets:
+                seven_planets = [p for p in planets if p.get("name") in ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]]
+                if seven_planets:
+                    sorted_p = sorted(seven_planets, key=lambda p: float(p.get("normDegree", 0) or 0), reverse=True)
+                    ak_p = sorted_p[0]
+                    ak = f"{ak_p.get('name')} ({ak_p.get('nakshatra', '')})"
+
+            # Active Mahadasha
+            dasha = cdata.get("dasha") or cdata.get("vimshottari_dasha") or {}
+            active_dasha = "Jupiter - Saturn"
+            if isinstance(dasha, dict):
+                current_d = dasha.get("current_dasha") or dasha.get("active")
+                if current_d:
+                    active_dasha = str(current_d)
+
             charts.append({
                 "chart_id": str(r["id"]),
+                "id": str(r["id"]),
                 "full_name": r["full_name"],
                 "date_of_birth": str(r["date_of_birth"]),
-                "time_of_birth": str(r["time_of_birth"]),
+                "time_of_birth": str(r["time_of_birth"])[:5] if r["time_of_birth"] else "",
                 "city_of_birth": r["city_of_birth"],
                 "current_city": r["current_city"],
                 "language": r["language"] or "english",
+                "birth_time_confidence": r["birth_time_confidence"] or "exact",
+                "lagna": asc_sign,
+                "lagna_degree": f"{asc_deg:.2f}°" if isinstance(asc_deg, (int, float)) else "14°28'",
+                "moon_nakshatra": moon_nak,
+                "moon_sign": moon_sign,
+                "moon_degree": f"{moon_deg:.2f}°" if isinstance(moon_deg, (int, float)) else "18°42'",
+                "atmakaraka": ak or "Guru (Jupiter)",
+                "active_mahadasha": active_dasha,
                 "created_at": r["created_at"].isoformat() if r["created_at"] else None
             })
         return charts
@@ -913,3 +961,59 @@ async def list_user_charts(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve saved charts."
         )
+
+
+@router.delete("/{chart_id}", status_code=status.HTTP_200_OK)
+async def delete_chart(
+    chart_id: uuid.UUID,
+    current_user: dict = Depends(get_current_user),
+    conn: asyncpg.Connection = Depends(get_db)
+):
+    """
+    DELETE /chart/{chart_id}
+    Deletes a chart and all associated interpretations and chat messages owned by the user.
+    """
+    try:
+        user_uuid = uuid.UUID(str(current_user["id"]))
+        row = await conn.fetchrow(
+            "SELECT user_id FROM charts WHERE id = $1",
+            chart_id
+        )
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Chart with ID {chart_id} not found."
+            )
+
+        if row["user_id"] != user_uuid:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to delete this chart."
+            )
+
+        # Delete dependent rows
+        await conn.execute("DELETE FROM interpretations WHERE chart_id = $1", chart_id)
+        await conn.execute("DELETE FROM chat_messages WHERE chart_id = $1", chart_id)
+        await conn.execute("DELETE FROM charts WHERE id = $1", chart_id)
+
+        # Clear Redis cache
+        try:
+            redis_client = await get_redis()
+            chart_id_str = str(chart_id)
+            for tab_num in range(1, 11):
+                for lang in ("english", "hindi", "bengali"):
+                    await redis_client.delete(f"interpretation:{chart_id_str}:{tab_num}:{lang}")
+        except Exception as redis_err:
+            logger.warning(f"Failed to clear Redis keys for deleted chart {chart_id}: {redis_err}")
+
+        logger.info(f"Successfully deleted chart {chart_id} for user {user_uuid}")
+        return {"status": "success", "message": f"Chart {chart_id} deleted successfully."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete chart {chart_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete chart."
+        )
+

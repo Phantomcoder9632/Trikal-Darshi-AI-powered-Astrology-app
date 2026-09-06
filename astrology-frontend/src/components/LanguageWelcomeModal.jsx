@@ -118,35 +118,35 @@ export default function LanguageWelcomeModal({ onSelect }) {
         aria-label="Language selection"
       >
         <div
-          className="relative w-full max-w-md rounded-2xl overflow-hidden shadow-xl"
+          className="relative w-full max-w-md rounded-2xl overflow-hidden shadow-2xl"
           style={{
-            background: '#ffffff',
-            border: '1px solid rgba(211, 196, 176, 0.55)',
-            boxShadow: '0 10px 40px rgba(124, 88, 0, 0.08), 0 20px 50px rgba(0,0,0,0.12)',
+            background: '#FFFDF6',
+            border: '1px solid rgba(31, 58, 107, 0.2)',
+            boxShadow: '0 10px 40px rgba(14, 26, 55, 0.12), 0 20px 50px rgba(0,0,0,0.15)',
             animation: 'slideUp 0.35s cubic-bezier(0.34, 1.3, 0.64, 1)',
           }}
         >
           {/* Gold theme accent top bar */}
-          <div className="h-[3px] w-full bg-gradient-to-r from-transparent via-[#7c5800] to-transparent opacity-85" />
+          <div className="h-[3px] w-full bg-gradient-to-r from-transparent via-[#D9A63C] to-transparent opacity-90" />
 
-          {/* Aesthetic Vedic stars / yantra lines */}
-          <div className="absolute top-4 right-6 text-[#7c5800] opacity-25 text-2xl select-none">✦</div>
-          <div className="absolute top-7 right-14 text-[#7c5800] opacity-15 text-sm select-none">✦</div>
-          <div className="absolute top-5 left-6 text-[#7c5800] opacity-15 text-lg select-none">✦</div>
+          {/* Aesthetic Vedic stars */}
+          <div className="absolute top-4 right-6 text-[#D9A63C] opacity-35 text-2xl select-none">✦</div>
+          <div className="absolute top-7 right-14 text-[#D9A63C] opacity-20 text-sm select-none">✦</div>
+          <div className="absolute top-5 left-6 text-[#D9A63C] opacity-20 text-lg select-none">✦</div>
 
           <div className="px-6 pt-7 pb-6">
 
             {/* Header */}
             <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-3 bg-[#7c5800]/8 border border-[#7c5800]/15">
-                <span className="material-symbols-outlined text-[#7c5800] text-[24px]">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-3 bg-[#1F3A6B]/8 border border-[#D9A63C]/30">
+                <span className="material-symbols-outlined text-[#1F3A6B] text-[24px]">
                   language
                 </span>
               </div>
-              <h2 className="text-lg font-bold text-[#1a1c1b] tracking-wide mb-1 font-headline-md uppercase">
+              <h2 className="text-lg font-bold text-[#022454] tracking-wide mb-1 font-['Fraunces',serif] uppercase">
                 Choose Language / भाषा चुनें
               </h2>
-              <p className="text-[11.5px] text-[#4f4536]/75 font-medium leading-relaxed">
+              <p className="text-[11.5px] text-[#4A567A] font-medium leading-relaxed">
                 AI readings & UI will configure in your preferred language.<br />पठन और यूआई आपकी पसंदीदा भाषा में कॉन्फ़िगर होंगे।
               </p>
             </div>
@@ -162,40 +162,36 @@ export default function LanguageWelcomeModal({ onSelect }) {
                     onClick={() => handleSelectLanguage(lang.value)}
                     className={`w-full text-left rounded-xl px-4 py-3 flex items-center gap-3.5 transition-all duration-150 cursor-pointer group relative ${
                       isActive
-                        ? `ring-1.5 ${lang.borderActive} ${lang.bgActive}`
-                        : 'bg-[#f9f9f6]/95 hover:bg-[#7c5800]/4 border border-outline-variant/35 hover:border-outline/50'
+                        ? 'border-2 border-[#D9A63C] bg-[#FBF5E5]'
+                        : 'bg-[#FBF6EA] hover:bg-[#F5EEDD] border border-[#1F3A6B]/15'
                     }`}
                     style={{
-                      boxShadow: isActive ? '0 2px 10px rgba(124, 88, 0, 0.05)' : 'none',
+                      boxShadow: isActive ? '0 2px 10px rgba(217, 166, 60, 0.15)' : 'none',
                     }}
                     aria-pressed={isActive}
                   >
                     {/* Icon wrapper */}
-                    <div className={`shrink-0 flex items-center justify-center w-10.5 h-10.5 rounded-lg bg-gradient-to-br ${lang.gradient} border border-outline-variant/20 ${lang.iconColor}`}>
+                    <div className={`shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br ${lang.gradient} border border-[#1F3A6B]/15 ${lang.iconColor}`}>
                       {lang.icon}
                     </div>
 
                     {/* Text block */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-[13.5px] font-bold text-[#1a1c1b]">{lang.native}</span>
-                        <span className="text-[10px] text-[#817563] font-semibold">({lang.label})</span>
+                        <span className="text-[13.5px] font-bold text-[#0E1A37]">{lang.native}</span>
+                        <span className="text-[10px] text-[#4A567A] font-semibold">({lang.label})</span>
                       </div>
-                      <span className="text-[11px] text-[#4f4536]/80 mt-0.5 block font-medium">{lang.desc}</span>
+                      <span className="text-[11px] text-[#4A567A] mt-0.5 block font-medium">{lang.desc}</span>
                     </div>
 
                     {/* Checkbox indicator */}
-                    <div className={`shrink-0 w-4.5 h-4.5 rounded-full border-1.5 flex items-center justify-center transition-all duration-150 ${
-                      isActive 
-                        ? `${lang.borderActive.replace('border-', 'bg-').replace('border-', 'border-')} border-transparent` 
-                        : 'border-[#817563]/40'
-                    }`}
-                    style={{
-                      backgroundColor: isActive ? 'var(--color-primary, #7c5800)' : 'transparent'
-                    }}
+                    <div
+                      className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                        isActive ? 'border-[#1F3A6B] bg-[#1F3A6B]' : 'border-[#4A567A]/40 bg-transparent'
+                      }`}
                     >
                       {isActive && (
-                        <span className="material-symbols-outlined text-white text-[11px] font-bold" style={{ fontVariationSettings: "'wght' 700" }}>
+                        <span className="material-symbols-outlined text-[#FFFDF6] text-[12px] font-bold">
                           done
                         </span>
                       )}
@@ -210,32 +206,29 @@ export default function LanguageWelcomeModal({ onSelect }) {
               type="button"
               onClick={handleConfirm}
               disabled={confirming}
-              className="w-full py-3 rounded-xl font-bold text-[12px] tracking-widest uppercase transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer border-none text-white bg-[#7c5800] hover:bg-[#8a6010] active:scale-[0.99] disabled:opacity-50"
-              style={{
-                boxShadow: confirming ? 'none' : '0 2px 12px rgba(124, 88, 0, 0.15)',
-              }}
+              className="w-full py-3 rounded-xl font-bold text-[12px] tracking-widest uppercase transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer border border-[#D9A63C] text-[#FFFDF6] bg-[#1F3A6B] hover:bg-[#12244A] active:scale-[0.99] disabled:opacity-50 shadow-md hover:shadow-lg"
             >
               {confirming ? (
                 <>
                   <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                  <span>Configuring...</span>
+                  <span>Configuring…</span>
                 </>
               ) : (
                 <>
                   <span>Continue / आगे बढ़ें</span>
-                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                  <span className="material-symbols-outlined text-[16px] text-[#D9A63C]">arrow_forward</span>
                 </>
               )}
             </button>
 
             {/* Bottom help text */}
-            <p className="text-center text-[10px] text-[#817563] mt-2.5 font-medium">
-              You can change language anytime from settings / आप इसे कभी भी बदल सकते हैं
+            <p className="text-center text-[10px] text-[#4A567A] mt-2.5 font-medium">
+              You can change language anytime from the top bar
             </p>
           </div>
 
           {/* Bottom decorative gold line */}
-          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[#7c5800]/15 to-transparent" />
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[#D9A63C]/30 to-transparent" />
         </div>
       </div>
 

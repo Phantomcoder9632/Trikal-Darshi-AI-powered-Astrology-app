@@ -5,6 +5,8 @@ import './styles/theme.css';
 // Pages
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
+import ChatPage from './pages/ChatPage';
+import SavedChartsPage from './pages/SavedChartsPage';
 import { useAuth } from './context/AuthContext';
 import LanguageWelcomeModal, { useFirstVisit } from './components/LanguageWelcomeModal';
 import i18n, { backendLangToI18n } from './i18n';
@@ -14,8 +16,8 @@ function ProtectedRoute({ children }) {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0d0e12] flex items-center justify-center">
-        <span className="material-symbols-outlined text-primary text-[48px] animate-spin">
+      <div className="min-h-screen bg-[#FBF6EA] flex items-center justify-center">
+        <span className="material-symbols-outlined text-[#D9A63C] text-[48px] animate-spin">
           hourglass_empty
         </span>
       </div>
@@ -57,6 +59,13 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/charts" element={<SavedChartsPage />} />
+          <Route path="/saved-charts" element={<SavedChartsPage />} />
+          <Route path="/account" element={<SavedChartsPage />} />
+          <Route path="/profile" element={<SavedChartsPage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/chat/:chartId" element={<ChatPage />} />
+          <Route path="/dashboard" element={<Navigate to="/dashboard/mock-arjun-chart-108" replace />} />
           <Route
             path="/dashboard/:chartId"
             element={

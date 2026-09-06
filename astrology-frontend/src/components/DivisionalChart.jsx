@@ -53,7 +53,7 @@ const HOUSE_COORDS = {
 };
 
 function getPlanetStyle(planetName, signNum, isRetrograde) {
-  if (isRetrograde) return { color: "#5d5c73", glow: false, suffix: "(R)" };
+  if (isRetrograde) return { color: "#4A567A", glow: false, suffix: "(R)" };
 
   const exaltedSigns = {
     Sun: 1, Moon: 2, Mars: 10, Mercury: 6, Jupiter: 4,
@@ -69,13 +69,13 @@ function getPlanetStyle(planetName, signNum, isRetrograde) {
   };
 
   if (exaltedSigns[planetName] === signNum)
-    return { color: "#7c5800", glow: true, suffix: "(Ex)" };
+    return { color: "#7b5800", glow: true, suffix: "(Ex)" };
   if (debilitatedSigns[planetName] === signNum)
-    return { color: "#ba1a1a", glow: false, suffix: "(Deb)" };
+    return { color: "#BA1A1A", glow: false, suffix: "(Deb)" };
   if (ownSigns[planetName]?.includes(signNum))
-    return { color: "#166534", glow: false, suffix: "(Own)" };
+    return { color: "#1F3A6B", glow: false, suffix: "(Own)" };
 
-  return { color: "#1a1c1b", glow: false, suffix: "" };
+  return { color: "#0E1A37", glow: false, suffix: "" };
 }
 
 /**

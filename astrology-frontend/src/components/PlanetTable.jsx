@@ -28,10 +28,10 @@ function getDignityKey(planetName, signName) {
 
 function getDignityStyle(key) {
   switch (key) {
-    case 'exalted': return { dot: '#7c5800', bg: 'rgba(124,88,0,0.08)', border: 'rgba(124,88,0,0.25)', color: '#7c5800' };
-    case 'debil':   return { dot: '#ba1a1a', bg: 'rgba(186,26,26,0.08)', border: 'rgba(186,26,26,0.25)', color: '#ba1a1a' };
-    case 'own':     return { dot: '#166534', bg: 'rgba(22,101,52,0.08)',  border: 'rgba(22,101,52,0.25)',  color: '#166534' };
-    default:        return { dot: '#817563', bg: 'rgba(129,117,99,0.08)', border: 'rgba(211,196,176,0.4)', color: '#817563' };
+    case 'exalted': return { dot: '#7b5800', bg: 'rgba(217,166,60,0.18)', border: 'rgba(217,166,60,0.4)', color: '#7b5800' };
+    case 'debil':   return { dot: '#BA1A1A', bg: 'rgba(186,26,26,0.10)', border: 'rgba(186,26,26,0.3)', color: '#BA1A1A' };
+    case 'own':     return { dot: '#1F3A6B', bg: 'rgba(31,58,107,0.10)',  border: 'rgba(31,58,107,0.25)',  color: '#1F3A6B' };
+    default:        return { dot: '#4A567A', bg: 'rgba(74,86,122,0.08)', border: 'rgba(74,86,122,0.2)', color: '#4A567A' };
   }
 }
 

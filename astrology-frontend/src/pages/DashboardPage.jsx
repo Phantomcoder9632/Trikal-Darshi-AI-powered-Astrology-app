@@ -11,7 +11,6 @@ import ChartSidebar, { TAB_CHART_CONFIG } from '../components/ChartSidebar';
 import CosmicSummary from '../components/CosmicSummary';
 import TabNavigation, { TabContentCard } from '../components/TabNavigation';
 import RemedyCards from '../components/RemedyCards';
-import AskAI from '../components/AskAI';
 import LanguageSelect from '../components/LanguageSelect';
 
 // Helper: get 1-2 capital initials from a full name
@@ -398,116 +397,128 @@ export default function DashboardPage() {
     : chartData?.planets;
 
   return (
-    <div className="w-full min-h-screen bg-background text-on-background font-body-md yantra-bg flex flex-col selection:bg-primary-container/30">
+    <div className="w-full min-h-screen bg-[#FBF6EA] text-[#0E1A37] font-body-md flex flex-col selection:bg-[#F0DFAF]">
 
       {/* ── Sticky Header ────────────────────────────────────────────────── */}
-      <header className="dashboard-header">
-        <div className="dashboard-header-inner">
+      <header className="sticky top-0 z-50 w-full bg-[#FFFDF6]/95 backdrop-blur-md border-b border-[#E8D5A7]/70 shadow-xs">
+        <div className="max-w-[1580px] mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
 
           {/* Logo */}
           <button
             id="logoHomeBtn"
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 bg-transparent border-none p-0 cursor-pointer hover:opacity-90 transition-opacity"
+            className="flex items-center gap-3 bg-transparent border-none p-0 cursor-pointer hover:opacity-90 transition-opacity"
             aria-label="Go to home page"
           >
-            <div className="dashboard-logo-emblem flex items-center justify-center">
-              <img src="/Trikal_Darshi_logo.png" alt="" className="dashboard-logo-img" />
+            <div className="w-9 h-9 rounded-lg bg-[#1F3A6B] text-[#FFFDF6] flex items-center justify-center font-['Fraunces',serif] text-lg font-bold shadow-xs border border-[#D9A63C]/40">
+              ✦
             </div>
-            <span className="font-wordmark text-[18px] sm:text-[20px] tracking-[0.15em] text-primary">
-              TRIKAL DARSHI
-            </span>
+            <div className="text-left">
+              <span className="font-['Fraunces',serif] text-base sm:text-lg font-bold tracking-tight text-[#022454] block">
+                TRIKAL DARSHI
+              </span>
+              <span className="text-[9.5px] text-[#7b5800] uppercase tracking-widest font-semibold block">
+                11 Soul Dimensions
+              </span>
+            </div>
           </button>
 
           {/* Right side */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
 
             {/* ── Background pre-gen progress pill ── */}
             {bgProgress && !bgProgress.is_complete && (
               <div
                 id="bgProgressPill"
-                className="hidden sm:flex items-center gap-2 bg-primary/8 border border-primary/20 px-3 py-1.5 rounded-full animate-pulse"
+                className="hidden sm:flex items-center gap-2 bg-[#FAF3E3] border border-[#D9A63C]/40 px-3 py-1.5 rounded-full"
                 title={`${bgProgress.completed_tabs.length} of ${bgProgress.total_tabs} sections pre-generated`}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
-                <span className="font-label-sm text-[9px] text-primary font-bold uppercase tracking-wider whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D9A63C] animate-ping" />
+                <span className="text-[10px] text-[#7b5800] font-bold uppercase tracking-wider whitespace-nowrap">
                   ✦ {t('dashboard.progress_badge', { count: bgProgress.completed_tabs.length })}
                 </span>
-                {/* Mini progress bar */}
-                <div className="w-16 h-1 rounded-full bg-primary/15 overflow-hidden">
+                <div className="w-14 h-1 rounded-full bg-[#1F3A6B]/15 overflow-hidden">
                   <div
-                    className="h-full bg-primary rounded-full transition-all duration-700"
+                    className="h-full bg-[#1F3A6B] rounded-full transition-all duration-700"
                     style={{ width: `${bgProgress.percent}%` }}
                   />
                 </div>
               </div>
             )}
 
-            {/* All done badge (briefly shown) */}
+            {/* All done badge */}
             {bgProgress && bgProgress.is_complete && (
               <div
                 id="bgCompletePill"
-                className="hidden sm:flex items-center gap-1.5 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full"
+                className="hidden sm:flex items-center gap-1.5 bg-[#FFFDF6] border border-[#1F3A6B]/15 px-3 py-1 rounded-full text-[#1F3A6B]"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                <span className="font-label-sm text-[9px] text-green-700 font-bold uppercase tracking-wider whitespace-nowrap">
-                  {t('dashboard.all_sections_ready')}
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D9A63C]" />
+                <span className="text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
+                  All 11 Chapters Ready
                 </span>
               </div>
             )}
 
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={() => navigate(`/chat/${chartId}`)}
+                aria-label="Ask AI Astrologer"
+                title="Consult AI Astrologer"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#1F3A6B] hover:bg-[#022454] text-[#FFFDF6] border border-[#D9A63C] transition-all cursor-pointer text-xs font-semibold shadow-xs"
+              >
+                <span className="material-symbols-outlined text-[16px] text-[#D9A63C]">
+                  auto_awesome
+                </span>
+                <span className="hidden sm:inline">Ask AI Jyotishi</span>
+              </button>
 
-
-            {/* Action icons */}
-            <div className="flex items-center gap-3">
               <button
                 onClick={logout}
                 aria-label="Log Out"
                 title="Log Out"
-                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-500/10 hover:text-red-500 text-on-surface-variant transition-colors cursor-pointer bg-transparent border-none"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#BA1A1A]/10 hover:text-[#BA1A1A] text-[#4A567A] transition-colors cursor-pointer bg-transparent border border-transparent hover:border-[#BA1A1A]/20"
               >
-                <span className="material-symbols-outlined text-[20px]">
+                <span className="material-symbols-outlined text-[18px]">
                   logout
                 </span>
               </button>
             </div>
 
-            {/* Name + Avatar Chip */}
-            <div
-              className="header-avatar-chip cursor-pointer hover:bg-outline-variant/15 transition-all rounded-lg p-1.5"
+            {/* Profile Drawer Avatar Trigger */}
+            <button
+              type="button"
+              className="flex items-center gap-2 bg-[#FFFDF6] hover:bg-[#F5EEDD] border border-[#E8D5A7] rounded-lg p-1.5 transition-all cursor-pointer text-left"
               onClick={() => setShowDrawer(true)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  setShowDrawer(true);
-                }
-              }}
-              title="Open Cosmic Profile Menu"
+              title="Open Profile Drawer"
             >
-              <div className="header-avatar-initials" aria-hidden="true">
-                {getInitials(chartData?.full_name)}
+              <div className="w-6 h-6 rounded bg-[#1F3A6B] text-[#FFFDF6] text-[10px] font-bold flex items-center justify-center">
+                {getInitials(chartData?.full_name || 'Arjun Sharma')}
               </div>
-              <div className="hidden sm:flex flex-col">
-                <span className="header-name-text" title={chartData?.full_name || 'Seeker'}>
-                  {chartData?.full_name || 'Seeker'}
-                </span>
-                <div className="header-dasha-pill">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
-                  <span>{currentDashaText}</span>
-                </div>
-              </div>
-            </div>
+              <span className="hidden md:inline-block text-xs font-semibold text-[#0E1A37] max-w-[100px] truncate">
+                {chartData?.full_name || 'Profile'}
+              </span>
+              <span className="material-symbols-outlined text-[16px] text-[#4A567A]">
+                menu
+              </span>
+            </button>
           </div>
         </div>
       </header>
 
       {/* ── Main Content ──────────────────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-[1650px] mx-auto px-4 sm:px-8 md:px-10 py-5 flex flex-col">
+      <main className="flex-1 w-full max-w-[1580px] mx-auto px-4 sm:px-6 lg:px-10 py-6 flex flex-col">
 
-        {/* ── Tab Navigation Headers (Steady & Full Width) ── */}
-        <div className="animate-up delay-2">
+        {/* ── Cosmic Summary (5 Metric Chips + Soul Folio Progress Card) ── */}
+        <CosmicSummary
+          chartData={chartData}
+          bgProgress={bgProgress}
+          onGenerateFullReport={generateMissingTabs}
+          isGeneratingAll={Object.values(tabLoading).some(Boolean)}
+        />
+
+        {/* ── Tab Navigation Headers (11 Numbered Tabs Bar) ── */}
+        <div className="w-full">
           <TabNavigation
             chartId={chartId}
             activeTab={activeTab}
@@ -515,92 +526,66 @@ export default function DashboardPage() {
             interpretations={interpretations}
             tabLoadingState={tabLoading}
             chartData={chartData}
+            onGenerateMissingTabs={generateMissingTabs}
           />
         </div>
 
-        {/* Mobile Toggle Button for Sidebar */}
-        {[1, 4, 5, 6, 7, 9, 10, 'education'].includes(activeTab) && (
-          <div className="md:hidden no-print mb-2 mt-1">
-            <button
-              onClick={() => setShowMobileSidebar(!showMobileSidebar)}
-              className="w-full py-3 px-4 bg-primary-container/10 border border-primary-container/30 hover:bg-primary-container/20 rounded-xl text-primary font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                {showMobileSidebar ? 'visibility_off' : 'grid_view'}
-              </span>
-              {showMobileSidebar ? 'Hide Kundali Chart & Positions' : 'Show Kundali Chart & Positions'}
-            </button>
-          </div>
-        )}
+        {/* 2-Column Grid Layout: 5 Cols (Left Sidebar & Chart) : 7 Cols (Right Reading Exegesis) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start mt-2">
 
-        {/* Two-column grid */}
-        <div className="dashboard-grid mt-4">
-
-          {/* ── Left sidebar ────────────────────────────────────────────── */}
-          <aside
-            className={`dashboard-sidebar flex flex-col gap-4 ${
-              [1, 4, 5, 6, 7, 9, 10, 'education'].includes(activeTab)
-                ? (showMobileSidebar ? 'sidebar-visible' : 'sidebar-visible-desktop-only')
-                : 'sidebar-hidden'
-            }`}
-          >
-            {/* Chart viewer */}
+          {/* ── Left Column: Chart, Varga Selector & Diagnostics (~5 cols) ── */}
+          <div className="lg:col-span-5 flex flex-col gap-6">
             <ChartSidebar
               activeTab={activeTab}
               chartData={chartData}
               activeChartIdx={activeChartIdx}
               setActiveChartIdx={setActiveChartIdx}
+              onOpenEditModal={handleOpenEdit}
             />
-          </aside>
+          </div>
 
-          {/* ── Right content ────────────────────────────────────────────── */}
-          <div className="dashboard-content flex flex-col gap-4">
+          {/* ── Right Column: Calm Reading Layer & Dignities (~7 cols) ── */}
+          <div className="lg:col-span-7 flex flex-col gap-6">
 
-            {/* Tab Content Card */}
-            <div className="animate-up delay-4 flex flex-col gap-4">
-              <TabContentCard
-                chartId={chartId}
-                activeTab={activeTab}
-                interpretations={interpretations}
-                tabLoadingState={tabLoading}
-                chartData={chartData}
-                onGenerateMissingTabs={generateMissingTabs}
-              />
+            {/* Tab Content Card (Editorial Chapter Layout) */}
+            <TabContentCard
+              chartId={chartId}
+              activeTab={activeTab}
+              interpretations={interpretations}
+              tabLoadingState={tabLoading}
+              chartData={chartData}
+              onGenerateMissingTabs={generateMissingTabs}
+            />
 
-
-
-              {/* Tab error banner */}
-              {tabError[activeTab] && (
-                <div className="flex flex-col items-center gap-3 bg-error/5 border border-error/20 rounded-2xl p-5 text-center">
-                  <span
-                    className="material-symbols-outlined text-error text-[28px]"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    error
-                  </span>
-                  <p className="text-error text-sm font-medium">{tabError[activeTab]}</p>
-                  <button
-                    id={`retryTabBtn-${activeTab}`}
-                    onClick={() => {
-                      setInterpretations((prev) => {
-                        const copy = { ...prev };
-                        delete copy[activeTab];
-                        return copy;
-                      });
-                    }}
-                    className="bg-error/10 border border-error/30 rounded-xl text-error hover:bg-error/20 px-5 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
-                  >
-                    Retry Stream
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Remedy cards — shown only on Tab 8 */}
-            {activeTab === 8 && !tabLoading[8] && interpretations[8] && (
-              <div className="animate-up">
-                <RemedyCards remedyText={interpretations[8]} />
+            {/* Tab error banner */}
+            {tabError[activeTab] && (
+              <div className="flex flex-col items-center gap-3 bg-error/5 border border-error/20 rounded-2xl p-5 text-center">
+                <span
+                  className="material-symbols-outlined text-error text-[28px]"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  error
+                </span>
+                <p className="text-error text-sm font-medium">{tabError[activeTab]}</p>
+                <button
+                  id={`retryTabBtn-${activeTab}`}
+                  onClick={() => {
+                    setInterpretations((prev) => {
+                      const copy = { ...prev };
+                      delete copy[activeTab];
+                      return copy;
+                    });
+                  }}
+                  className="bg-error/10 border border-error/30 rounded-xl text-error hover:bg-error/20 px-5 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  Retry Stream
+                </button>
               </div>
+            )}
+
+            {/* Remedy cards — shown additionally on Tab 8 */}
+            {activeTab === 8 && !tabLoading[8] && interpretations[8] && (
+              <RemedyCards remedyText={interpretations[8]} />
             )}
           </div>
         </div>
@@ -811,6 +796,17 @@ export default function DashboardPage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Section 4.5: Ephemeris Standard */}
+          <div className="space-y-2 p-3 bg-[#FFFDF6] border border-[#1F3A6B]/15 rounded-lg text-xs">
+            <div className="flex items-center gap-1.5 text-[#7b5800] font-bold uppercase tracking-wider text-[10px]">
+              <span className="material-symbols-outlined text-[14px]">science</span>
+              <span>Ephemeris Standard</span>
+            </div>
+            <p className="text-[11px] text-[#4A567A] leading-relaxed">
+              NASA JPL Swiss Ephemeris calculations locked to <strong>Lahiri True Chitrapaksha Ayanamsa (24° 11' 42")</strong>.
+            </p>
           </div>
 
           {/* Section 5: Logout */}
@@ -1032,8 +1028,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Ask AI Chatbot */}
-      <AskAI />
+      {/* Slide-over Profile Drawer is handled above */}
     </div>
   );
 }

@@ -206,31 +206,31 @@ export default function RemedyCards({ remedyText }) {
     {
       key: 'track1',
       content: track1,
-      borderColor: 'border-t-primary',
+      borderColor: 'border-l-4 border-l-[#D9A63C] border-t-0',
       icon: 'spa',
-      iconColor: 'text-primary',
+      iconColor: 'text-[#7b5800]',
       title: t('dashboard_components.remedies_panel.vedic'),
-      titleColor: 'text-primary',
+      titleColor: 'text-[#022454]',
       accentClass: 'remedy-label-gold',
     },
     {
       key: 'track2',
       content: track2,
-      borderColor: 'border-t-error',
+      borderColor: 'border-l-4 border-l-[#BA1A1A] border-t-0',
       icon: 'whatshot',
-      iconColor: 'text-error',
+      iconColor: 'text-[#BA1A1A]',
       title: t('dashboard_components.remedies_panel.lalkitab'),
-      titleColor: 'text-error',
+      titleColor: 'text-[#BA1A1A]',
       accentClass: 'remedy-label-red',
     },
     {
       key: 'track3',
       content: track3,
-      borderColor: 'border-t-[#5d5c73]',
+      borderColor: 'border-l-4 border-l-[#1F3A6B] border-t-0',
       icon: 'all_inclusive',
-      iconColor: 'text-[#5d5c73]',
+      iconColor: 'text-[#1F3A6B]',
       title: t('dashboard_components.remedies_panel.numerology'),
-      titleColor: 'text-[#5d5c73]',
+      titleColor: 'text-[#1F3A6B]',
       accentClass: 'remedy-label-slate',
     }
   ];
@@ -238,39 +238,39 @@ export default function RemedyCards({ remedyText }) {
   return (
     <div className="w-full mt-6">
       <div className="text-center mb-6">
-        <h3 className="font-headline-md text-base md:text-lg font-bold text-primary tracking-widest uppercase flex items-center justify-center gap-3">
-          <span className="w-6 h-[1px] bg-primary/30"></span>
+        <h3 className="font-['Fraunces',serif] text-base md:text-lg font-bold text-[#022454] tracking-widest uppercase flex items-center justify-center gap-3">
+          <span className="w-6 h-[1px] bg-[#1F3A6B]/30"></span>
           {t('dashboard_components.remedies_panel.title')}
-          <span className="w-6 h-[1px] bg-primary/30"></span>
+          <span className="w-6 h-[1px] bg-[#1F3A6B]/30"></span>
         </h3>
-        <p className="text-on-surface-variant text-xs font-accent-italic italic mt-2">
+        <p className="text-[#4A567A] text-xs italic mt-1 font-serif">
           {t('dashboard_components.remedies_panel.sub')}
         </p>
       </div>
 
-      <div className="flex flex-col gap-6 w-full">
+      <div className="flex flex-col gap-4 w-full">
         {TRACKS.map((track) => {
           if (!track.content) return null;
           return (
             <div
               key={track.key}
-              className={`bg-surface border-t-4 ${track.borderColor} border-x border-b border-outline-variant/30 rounded-xl p-5 shadow-sm flex flex-col hover:translate-y-[-2px] transition-all duration-300`}
+              className={`bg-[#FFFDF6] ${track.borderColor} border border-[#1F3A6B]/12 rounded-lg p-5 shadow-xs flex flex-col hover:translate-y-[-1px] transition-all duration-200`}
             >
               {/* Track header */}
-              <div className="flex items-center gap-2 border-b border-outline-variant/15 pb-3 mb-4">
+              <div className="flex items-center gap-2 border-b border-[#1F3A6B]/10 pb-2.5 mb-3">
                 <span
                   className={`material-symbols-outlined ${track.iconColor} text-[18px]`}
                   style={{ fontVariationSettings: "'FILL' 1" }}
                 >
                   {track.icon}
                 </span>
-                <h4 className={`font-label-sm text-xs font-bold ${track.titleColor} uppercase tracking-wider`}>
+                <h4 className={`text-xs font-bold ${track.titleColor} uppercase tracking-wider`}>
                   {track.title}
                 </h4>
               </div>
 
               {/* Track body */}
-              <div className="prose-remedy flex-1">
+              <div className="prose-remedy flex-1 text-xs text-[#0E1A37] leading-relaxed">
                 {formatRemedyText(track.content, track.accentClass)}
               </div>
             </div>

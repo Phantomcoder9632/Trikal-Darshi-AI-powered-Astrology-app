@@ -250,13 +250,12 @@ async def get_all_interpretations(
         chart_id,
         language
     )
+    # Keys are the numeric tab numbers (1-11). The old behavior returned tab 11
+    # under the string key 'education', which the frontend never looked up, so
+    # the Education chapter was re-streamed (a fresh LLM generation) on every
+    # dashboard mount instead of being served from cache.
     result = {}
     for row in rows:
-        tab_num = row["tab_number"]
-        content = row["content"]
-        if tab_num == 11:
-            result['education'] = content
-        else:
-            result[tab_num] = content
+        result[row["tab_number"]] = row["content"]
     return result
 

@@ -907,16 +907,19 @@ async def list_user_charts(
             else:
                 cdata = {}
 
-            # Extract key astrological vectors
+            # Extract key astrological vectors. The ephemeris engine writes the
+            # ascendant's absolute longitude as 'full_degree' (snake_case) while
+            # the AstrologyAPI path uses camelCase 'fullDegree' — accept both so
+            # real calculated degrees are always shown instead of dummy values.
             asc = cdata.get("ascendant", {})
-            asc_sign = asc.get("sign") or "Aries"
-            asc_deg = asc.get("fullDegree")
+            asc_sign = asc.get("sign") or ""
+            asc_deg = asc.get("full_degree") or asc.get("fullDegree")
 
             planets = cdata.get("planets", [])
             moon_p = next((p for p in planets if p.get("name") == "Moon"), {})
-            moon_nak = moon_p.get("nakshatra") or "Rohini"
-            moon_sign = moon_p.get("sign") or "Taurus"
-            moon_deg = moon_p.get("normDegree") or moon_p.get("fullDegree")
+            moon_nak = moon_p.get("nakshatra") or ""
+            moon_sign = moon_p.get("sign") or ""
+            moon_deg = moon_p.get("normDegree") or moon_p.get("norm_degree") or moon_p.get("fullDegree") or moon_p.get("full_degree")
 
             # Atmakaraka: highest degree planet among Sun..Saturn
             ak = cdata.get("atmakaraka")
@@ -929,9 +932,14 @@ async def list_user_charts(
 
             # Active Mahadasha
             dasha = cdata.get("dasha") or cdata.get("vimshottari_dasha") or {}
-            active_dasha = "Jupiter - Saturn"
+            active_dasha = ""
             if isinstance(dasha, dict):
-                current_d = dasha.get("current_dasha") or dasha.get("active")
+                current_d = dasha.get("current_dasha") or dasha.get("active") or dasha.get("mahadasha")
+                if current_d and not isinstance(current_d, str):
+                    # Some engines return a dict like {mahadasha: ..., antardasha: ...}
+                    md = current_d.get("mahadasha") or current_d.get("lord") or ""
+                    ad = current_d.get("antardasha") or current_d.get("sub_lord") or ""
+                    current_d = f"{md} - {ad}".strip(" -")
                 if current_d:
                     active_dasha = str(current_d)
 
@@ -946,11 +954,11 @@ async def list_user_charts(
                 "language": r["language"] or "english",
                 "birth_time_confidence": r["birth_time_confidence"] or "exact",
                 "lagna": asc_sign,
-                "lagna_degree": f"{asc_deg:.2f}°" if isinstance(asc_deg, (int, float)) else "14°28'",
+                "lagna_degree": f"{asc_deg:.2f}°" if isinstance(asc_deg, (int, float)) else None,
                 "moon_nakshatra": moon_nak,
                 "moon_sign": moon_sign,
-                "moon_degree": f"{moon_deg:.2f}°" if isinstance(moon_deg, (int, float)) else "18°42'",
-                "atmakaraka": ak or "Guru (Jupiter)",
+                "moon_degree": f"{moon_deg:.2f}°" if isinstance(moon_deg, (int, float)) else None,
+                "atmakaraka": ak,
                 "active_mahadasha": active_dasha,
                 "created_at": r["created_at"].isoformat() if r["created_at"] else None
             })

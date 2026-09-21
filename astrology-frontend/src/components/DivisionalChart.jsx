@@ -87,7 +87,7 @@ function getPlanetStyle(planetName, signNum, isRetrograde) {
  *   natalData  {object}  — For D1 rendering mode (uses ascendant + planets directly)
  *   compact    {boolean} — If true, renders at reduced size (for sidebyside layout)
  */
-export default React.memo(function DivisionalChart({ chartData, chartType = "D1", natalData = null, compact = false }) {
+export default React.memo(function DivisionalChart({ chartData, chartType = "D1", natalData = null, compact = false, largeText = false }) {
   const { t } = useTranslation();
 
   // ── Determine ascendant sign and planets ──────────────────────────────────
@@ -213,14 +213,14 @@ export default React.memo(function DivisionalChart({ chartData, chartType = "D1"
               <g key={houseNum}>
                 <text
                   x={coord.cx} y={coord.labelY}
-                  fill="#7c5800" fontSize="11" textAnchor="middle"
+                  fill="#7c5800" fontSize={largeText ? '14' : '11'} textAnchor="middle"
                   fontWeight="700" fontFamily="Cinzel"
                   style={{ userSelect: 'none' }}
                 >
                   {rashiNum}
                 </text>
                 {planetsInHouse.map((p, index) => {
-                  const offsetStep = 14;
+                  const offsetStep = largeText ? 17 : 14;
                   const totalOffset = (planetsInHouse.length - 1) * offsetStep;
                   const py = coord.cy - (totalOffset / 2) + (index * offsetStep);
                   return (
@@ -228,7 +228,7 @@ export default React.memo(function DivisionalChart({ chartData, chartType = "D1"
                       key={p.name}
                       x={coord.cx} y={py}
                       fill={p.color}
-                      fontSize="11" fontWeight="700" fontFamily="Inter"
+                      fontSize={largeText ? '14' : '11'} fontWeight="700" fontFamily="Inter"
                       textAnchor="middle"
                       filter={p.glow ? `url(#gold-glow-${chartType})` : undefined}
                       style={{ transition: 'all 0.3s ease', userSelect: 'none' }}

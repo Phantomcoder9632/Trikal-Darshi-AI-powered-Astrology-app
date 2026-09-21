@@ -613,21 +613,21 @@ body {
 
 .prose-interpretation {
   font-family: "Inter", sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.85;
   color: #1a1c1b;
 }
 
 @media (min-width: 768px) {
   .prose-interpretation {
-    font-size: 15px;
+    font-size: 17px;
   }
 }
 
 .prose-interpretation .prose-section-header {
   display: block;
   font-family: "Cinzel", serif;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: #7c5800;
   text-transform: uppercase;
@@ -646,7 +646,7 @@ body {
   font-weight: 700;
   color: #7c5800;
   text-transform: uppercase;
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.06em;
   margin-right: 6px;
 }
@@ -686,7 +686,7 @@ body {
   margin-left: 20px;
   line-height: 1.75;
   color: #4f4536;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .prose-interpretation .prose-sub-bullet::before {
@@ -712,7 +712,7 @@ body {
   top: 0;
   font-weight: 700;
   color: #c9952a;
-  font-size: 13px;
+  font-size: 15px;
   font-family: "Cinzel", serif;
   min-width: 22px;
 }
@@ -725,14 +725,14 @@ body {
   border-radius: 0 8px 8px 0;
   font-family: "Crimson Text", serif;
   font-style: italic;
-  font-size: 15px;
+  font-size: 17px;
   color: #5d5c73;
   line-height: 1.7;
 }
 
 @media (min-width: 768px) {
   .prose-interpretation .prose-blockquote {
-    font-size: 16px;
+    font-size: 18px;
     padding: 12px 20px;
   }
 }

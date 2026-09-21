@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getUserCharts, deleteChart } from '../services/api';
-import { MOCK_CHARTS_LIST } from '../services/mockData';
 
 export default function SavedChartsPage() {
   const navigate = useNavigate();
@@ -10,26 +9,28 @@ export default function SavedChartsPage() {
 
   const [charts, setCharts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all'); // all | family | prashna
   const [deletingId, setDeletingId] = useState(null); // id of chart with open delete popover
   const [isDeleting, setIsDeleting] = useState(false);
   const [statusNotice, setStatusNotice] = useState(null);
 
-  // Load user charts from backend
+  // Load user charts from backend. An empty account shows the real empty
+  // state below — sample personas are never injected into a private vault.
   const loadCharts = async () => {
     setLoading(true);
     try {
       const data = await getUserCharts();
-      if (Array.isArray(data) && data.length > 0) {
-        setCharts(data);
-      } else {
-        // Fallback to sample list if empty in mock/initial state
-        setCharts(MOCK_CHARTS_LIST);
-      }
+      setCharts(Array.isArray(data) ? data : []);
+      setLoadError('');
     } catch (err) {
       console.error('Failed to load user charts:', err);
-      setCharts(MOCK_CHARTS_LIST);
+      setCharts([]);
+      setLoadError(
+        err.response?.data?.detail ||
+          'Could not reach the astrological calculation server. Your saved charts could not be loaded.'
+      );
     } finally {
       setLoading(false);
     }
@@ -150,7 +151,7 @@ export default function SavedChartsPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/dashboard/mock-arjun-chart-108')}
+              onClick={() => (charts.length > 0 ? navigate(`/dashboard/${charts[0].chart_id || charts[0].id}`) : navigate('/'))}
               className="px-3.5 py-1.5 rounded-lg text-[#5D6B88] hover:text-[#16223F] hover:bg-[#F4EEDA] transition-colors cursor-pointer"
             >
               Soul Dashboard
@@ -161,6 +162,14 @@ export default function SavedChartsPage() {
               className="px-3.5 py-1.5 rounded-lg text-[#5D6B88] hover:text-[#16223F] hover:bg-[#F4EEDA] transition-colors cursor-pointer"
             >
               AskAI Guide
+            </button>
+            {/* Profile Nav Item */}
+            <button
+              type="button"
+              onClick={() => navigate('/profile')}
+              className="px-3.5 py-1.5 rounded-lg text-[#5D6B88] hover:text-[#16223F] hover:bg-[#F4EEDA] transition-colors cursor-pointer"
+            >
+              Profile
             </button>
             {/* Active Nav Item */}
             <button
@@ -183,13 +192,15 @@ export default function SavedChartsPage() {
               <span>Calculate Kundali</span>
             </button>
 
-            {/* User Avatar Pill */}
-            <div
-              className="w-8 h-8 rounded-full bg-[#1F3A6B] text-[#F0DFAF] flex items-center justify-center font-['Fraunces',serif] text-xs font-bold ring-2 ring-[#D9A63C]/40 cursor-pointer shadow-xs"
+            {/* User Avatar Pill — links to the profile page */}
+            <button
+              type="button"
+              onClick={() => navigate('/profile')}
+              className="w-8 h-8 rounded-full bg-[#1F3A6B] text-[#F0DFAF] flex items-center justify-center font-['Fraunces',serif] text-xs font-bold ring-2 ring-[#D9A63C]/40 cursor-pointer shadow-xs hover:scale-105 transition-transform"
               title={user?.email || 'Active Profile'}
             >
-              {user?.name ? user.name.slice(0, 2).toUpperCase() : 'AS'}
-            </div>
+              {user?.name ? user.name.slice(0, 2).toUpperCase() : '—'}
+            </button>
           </div>
         </div>
       </header>
@@ -284,7 +295,7 @@ export default function SavedChartsPage() {
                     : 'bg-[#FBF6EA] hover:bg-[#F4EEDA] text-[#5D6B88] border border-[#D9A63C]/30'
                 }`}
               >
-                Direct Family ({charts.filter((c) => c.relationship || c.category === 'family').length || 3})
+                Direct Family ({charts.filter((c) => c.relationship || c.category === 'family').length})
               </button>
               <button
                 type="button"
@@ -295,7 +306,7 @@ export default function SavedChartsPage() {
                     : 'bg-[#FBF6EA] hover:bg-[#F4EEDA] text-[#5D6B88] border border-[#D9A63C]/30'
                 }`}
               >
-                Horary / Prashna (1)
+                Horary / Prashna ({charts.filter((c) => c.category === 'prashna' || c.birth_time_confidence === 'unknown').length})
               </button>
             </div>
           </div>
@@ -312,6 +323,42 @@ export default function SavedChartsPage() {
 
         {/* SAVED CHARTS LIST */}
         <div className="space-y-4">
+          {loadError && !loading && (
+            <div className="bg-[#FFF4F2] border border-[#BA1A1A]/30 rounded-2xl p-6 text-center">
+              <span className="material-symbols-outlined text-[36px] text-[#BA1A1A] mb-2">cloud_off</span>
+              <h3 className="font-['Fraunces',serif] text-lg font-bold text-[#93000A]">Connection Issue</h3>
+              <p className="text-xs text-[#93000A]/90 max-w-md mx-auto mt-1 mb-4">{loadError}</p>
+              <button
+                type="button"
+                onClick={loadCharts}
+                className="inline-flex items-center gap-2 bg-[#BA1A1A] hover:bg-[#93000A] text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">refresh</span>
+                <span>Retry Connection</span>
+              </button>
+            </div>
+          )}
+
+          {!loading && !loadError && charts.length === 0 && (
+            <div className="bg-[#FFFDF6] border border-[#D9A63C]/30 rounded-2xl p-12 text-center">
+              <span className="material-symbols-outlined text-[48px] text-[#D9A63C] mb-3">auto_stories</span>
+              <h3 className="font-['Fraunces',serif] text-lg font-bold text-[#16223F]">No Saved Charts Yet</h3>
+              <p className="text-xs text-[#5D6B88] max-w-sm mx-auto mt-1 mb-5">
+                You have not created any birth charts yet. Cast your first Janma Kundali to archive it in your vault.
+              </p>
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/')}
+                  className="inline-flex items-center gap-2 bg-[#1F3A6B] text-[#F0DFAF] text-xs font-semibold px-5 py-2.5 rounded-xl border border-[#D9A63C]/40 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px] text-[#D9A63C]">add_circle</span>
+                  <span>Create Your Birth Chart</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="bg-[#FFFDF6] border border-[#D9A63C]/30 rounded-2xl p-12 text-center">
               <span className="material-symbols-outlined text-[36px] text-[#D9A63C] animate-spin mb-3">
@@ -364,7 +411,7 @@ export default function SavedChartsPage() {
                           <polygon points="50,2 98,50 50,98 2,50" />
                         </svg>
                         <span className="absolute text-[8px] font-mono font-bold text-[#8C6718] bg-[#FFFDF6] px-0.5 rounded border border-[#D9A63C]/40">
-                          {chart.division_badge || (idx === 0 ? 'D10' : idx === 1 ? 'D9' : idx === 2 ? 'D1' : 'D7')}
+                          {chart.division_badge || 'D1'}
                         </span>
                       </div>
 
@@ -385,15 +432,15 @@ export default function SavedChartsPage() {
                                 : 'bg-amber-50 text-amber-900 border-amber-300'
                             }`}
                           >
-                            {chart.relationship || (isPrimary ? 'Self (Primary)' : idx === 1 ? 'Spouse' : idx === 2 ? 'Father' : 'Family')}
+                            {chart.relationship || (isPrimary ? 'Self (Primary)' : 'Self')}
                           </span>
                         </div>
                         <p className="text-xs text-[#5D6B88] font-mono mt-1 flex items-center space-x-1.5 flex-wrap">
-                          <span>{chart.date_of_birth || '18 Nov 1988'}</span>
+                          <span>{chart.date_of_birth || '—'}</span>
                           <span>•</span>
-                          <span>{chart.time_of_birth || '06:42 AM'}</span>
+                          <span>{chart.time_of_birth || '—'}</span>
                           <span>•</span>
-                          <span>{chart.city_of_birth || 'Varanasi, India'}</span>
+                          <span>{chart.city_of_birth || '—'}</span>
                         </p>
                       </div>
                     </div>
@@ -405,10 +452,10 @@ export default function SavedChartsPage() {
                           Lagna (Ascendant)
                         </span>
                         <span className="font-medium text-[#16223F] mt-0.5 block truncate">
-                          {chart.lagna || 'Scorpio (Vrishchika)'}
+                          {chart.lagna || '—'}
                         </span>
                         <span className="font-mono text-[11px] text-[#8C6718]">
-                          {chart.lagna_degree || '14°28\''}
+                          {chart.lagna_degree || '—'}
                         </span>
                       </div>
                       <div>
@@ -416,10 +463,10 @@ export default function SavedChartsPage() {
                           Moon Nakshatra
                         </span>
                         <span className="font-medium text-[#16223F] mt-0.5 block truncate">
-                          {chart.moon_nakshatra || 'Rohini (Taurus)'}
+                          {chart.moon_nakshatra || '—'}
                         </span>
                         <span className="font-mono text-[11px] text-[#8C6718]">
-                          {chart.moon_degree || '18°42\' (Exalted)'}
+                          {chart.moon_degree || '—'}
                         </span>
                       </div>
                       <div>
@@ -427,18 +474,16 @@ export default function SavedChartsPage() {
                           Atmakaraka
                         </span>
                         <span className="font-medium text-[#16223F] mt-0.5 block truncate">
-                          {chart.atmakaraka || 'Guru (Jupiter)'}
-                        </span>
-                        <span className="font-mono text-[11px] text-[#5D6B88]">Punarvasu</span>
+                          {chart.atmakaraka || '—'}
+                        </span>                          <span className="font-mono text-[11px] text-[#5D6B88]">Jaimini Karaka</span>
                       </div>
                       <div>
                         <span className="block text-[10px] uppercase font-mono tracking-wider text-[#8E9BB5]">
                           Active Mahadasha
                         </span>
                         <span className="font-medium text-[#1F3A6B] mt-0.5 block font-semibold truncate">
-                          {chart.active_mahadasha || 'Jupiter - Saturn'}
-                        </span>
-                        <span className="font-mono text-[11px] text-emerald-700">Sub-period Active</span>
+                          {chart.active_mahadasha || '—'}
+                        </span>                          <span className="font-mono text-[11px] text-emerald-700">Vimshottari Period</span>
                       </div>
                     </div>
 
@@ -561,7 +606,7 @@ export default function SavedChartsPage() {
             <button type="button" onClick={() => navigate('/')} className="hover:text-[#16223F] transition-colors cursor-pointer">
               Observatory
             </button>
-            <button type="button" onClick={() => navigate('/dashboard/mock-arjun-chart-108')} className="hover:text-[#16223F] transition-colors cursor-pointer">
+            <button type="button" onClick={() => navigate('/charts')} className="hover:text-[#16223F] transition-colors cursor-pointer">
               Soul Dashboard
             </button>
             <button type="button" onClick={() => navigate('/chat')} className="hover:text-[#16223F] transition-colors cursor-pointer">

@@ -4,18 +4,25 @@ rag/pipeline.py
 Streaming inference pipeline: RAG context retrieval + Unified LLM Cascade.
 
 Provider Cascade Order (defined in services/llm_providers.py):
-    1. gemini-primary       (gemini-2.5-flash)
-    2. groq-llama70b        (llama-3.3-70b-versatile)
-    3. groq-qwen32b         (qwen/qwen3-32b, reasoning_format: "hidden")
-    4. openrouter-safetynet (meta-llama/llama-3.3-70b-instruct:free)
-    5. groq-gptoss120b      (openai/gpt-oss-120b, reasoning_format: "hidden")
-    6. groq-llama8b         (llama-3.1-8b-instant)
+    1. cloudflare-primary      (@cf/meta/llama-3.3-70b-instruct-fp8-fast, Workers AI edge)
+    2. gemini-primary          (gemini-2.5-flash)
+    3. groq-llama70b           (llama-3.3-70b-versatile)
+    4. groq-qwen32b            (qwen/qwen3-32b, reasoning_format: "hidden")
+    5. openrouter-safetynet    (meta-llama/llama-3.3-70b-instruct:free)
+    6. groq-gptoss120b         (openai/gpt-oss-120b, reasoning_format: "hidden")
+    7. groq-llama8b            (llama-3.1-8b-instant)
+    8. cloudflare-deepseek32b  (@cf/deepseek-ai/deepseek-r1-distill-qwen-32b — promoted to
+                                the front for Hindi/Bengali requests by cascade_for_language)
+
+Cloudflare Workers AI exposes an OpenAI-compatible /chat/completions endpoint, so it
+flows through the same OpenAI client; its base_url embeds the account ID which is
+interpolated from CLOUDFLARE_ACCOUNT_ID by resolve_tier_base_url().
 
 Auto-fallback triggers on:
-    - HTTP 429 (rate limit exceeded)
+    - HTTP 429 (rate limit exceeded) / Cloudflare neuron quota exhaustion
     - groq.RateLimitError / OpenAI RateLimitError
     - Short/truncated response (< 1000 characters for reports)
-    - Any tier failure or missing API key
+    - Any tier failure or missing API key/account id
 """
 
 from __future__ import annotations
@@ -27,6 +34,7 @@ from typing import AsyncGenerator, Dict, Any, Optional
 
 import groq as groq_sdk
 from openai import OpenAI
+import httpx
 from dotenv import load_dotenv
 
 from rag.retriever import get_context_for_tab
@@ -35,6 +43,7 @@ from services.llm_providers import (
     effective_max_tokens,
     cascade_for_language,
     is_tier_available,
+    resolve_tier_base_url,
 )
 
 load_dotenv(override=True)
@@ -187,11 +196,26 @@ TAB_TASKS: Dict[int, str] = {
 # ---------------------------------------------------------------------------
 
 def _is_rate_limit(exc: Exception) -> bool:
-    """Return True if the exception looks like a 429 / rate-limit error."""
+    """Return True if the exception looks like a 429 / rate-limit error.
+    Covers Cloudflare Workers AI quota signals ("exceeded neuron quota",
+    HTTP 429 with Workers AI credit limits) alongside Groq/OpenAI ones."""
     if isinstance(exc, groq_sdk.RateLimitError):
         return True
+    # OpenAI SDK surfaces HTTP status codes on APIStatusError subclasses
+    status = getattr(exc, "status_code", None)
+    if status == 429:
+        return True
     msg = str(exc).lower()
-    return "rate_limit" in msg or "429" in msg or "quota" in msg or "tpd" in msg or "tpm" in msg or "rpm" in msg
+    return (
+        "rate_limit" in msg
+        or "429" in msg
+        or "quota" in msg
+        or "neuron" in msg
+        or "exceeded" in msg and "credit" in msg
+        or "tpd" in msg
+        or "tpm" in msg
+        or "rpm" in msg
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -215,8 +239,19 @@ def get_cached_client(tier: Dict[str, Any], is_chat: bool = False) -> OpenAI:
             if chat_key and not chat_key.startswith("your_"):
                 api_key = chat_key
 
+        base_url = resolve_tier_base_url(tier)
+
+        # Optional env overrides for locked-down/corporate networks:
+        #   CLOUDFLARE_BASE_URL  — point Cloudflare tiers at a proxy/gateway that
+        #                          mirrors the OpenAI-compatible /ai/v1 path, or a
+        #                          pre-provisioned URL with the account ID baked in.
+        #   LLM_CA_BUNDLE        — PEM bundle that includes the local TLS-inspecting
+        #                          gateway's root CA, so verification succeeds.
+        if "cloudflare" in tier_name:
+            base_url = os.environ.get("CLOUDFLARE_BASE_URL", base_url)
+
         headers = {}
-        if "openrouter" in tier["base_url"].lower():
+        if "openrouter" in base_url.lower():
             headers = {
                 "HTTP-Referer": "https://trikalmdarshi.app",
                 "X-Title": "Trikal Darshi",
@@ -224,10 +259,14 @@ def get_cached_client(tier: Dict[str, Any], is_chat: bool = False) -> OpenAI:
 
         _CLIENT_CACHE[cache_key] = OpenAI(
             api_key=api_key,
-            base_url=tier["base_url"],
+            base_url=base_url,
             default_headers=headers if headers else None,
             max_retries=0,
             timeout=60.0,
+            http_client=httpx.Client(
+                verify=os.environ.get("LLM_CA_BUNDLE") or True,
+                timeout=60.0,
+            ),
         )
 
     return _CLIENT_CACHE[cache_key]

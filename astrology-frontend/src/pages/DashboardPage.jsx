@@ -12,11 +12,84 @@ import CosmicSummary from '../components/CosmicSummary';
 import TabNavigation, { TabContentCard } from '../components/TabNavigation';
 import RemedyCards from '../components/RemedyCards';
 import LanguageSelect from '../components/LanguageSelect';
+import { ShimmerSkeleton } from '../components/StatusBanners';
 
 // Helper: get 1-2 capital initials from a full name
 function getInitials(name) {
   if (!name) return '?';
   return name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+}
+
+/**
+ * Classical mathematical summary computed from the ephemeris chart — no AI.
+ * Shown while the AI narrative is streaming in, or when AI is unavailable,
+ * so the user always sees REAL planetary facts instead of a blank page.
+ */
+function ClassicalFactsCard({ chartData }) {
+  const asc = chartData?.ascendant || {};
+  const dasha = chartData?.dasha || {};
+  const planets = Array.isArray(chartData?.planets) ? chartData.planets : [];
+  const moon = planets.find((p) => p.name === 'Moon');
+  const mangal = planets.find((p) => p.name === 'Mars');
+
+  const houseOf = (p) => (p?.house ? `House ${p.house}` : '');
+
+  return (
+    <div className="bg-[#FFFDF6] border border-[#E8D5A7]/70 rounded-2xl p-5">
+      <div className="flex items-center justify-between pb-2 mb-3 border-b border-[#E8D5A7]/50">
+        <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#7b5800] flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[16px] text-[#D9A63C]">calculate</span>
+          Classical Planetary Facts
+        </span>
+        <span className="text-[10px] text-[#535E73] italic">Computed by Swiss Ephemeris · no AI</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+        {asc.sign && (
+          <div className="bg-[#FAF5E8]/70 border border-[#E8D5A7]/50 rounded-lg p-2.5">
+            <span className="text-[10px] uppercase tracking-wider text-[#535E73] font-bold block">Lagna (Ascendant)</span>
+            <span className="font-semibold text-[#16223F]">{asc.sign}</span>
+            {asc.degree !== undefined && (
+              <span className="font-mono text-[11px] text-[#7b5800] ml-1">
+                {Math.floor(asc.degree)}°{Math.round((asc.degree % 1) * 60)}'
+              </span>
+            )}
+            {asc.nakshatra && <span className="text-[10px] text-[#535E73] block">{asc.nakshatra} nakshatra</span>}
+          </div>
+        )}
+        {(dasha.mahadasha || dasha.current_dasha) && (
+          <div className="bg-[#FAF5E8]/70 border border-[#E8D5A7]/50 rounded-lg p-2.5">
+            <span className="text-[10px] uppercase tracking-wider text-[#535E73] font-bold block">Current Dasha</span>
+            <span className="font-semibold text-[#16223F]">
+              {dasha.mahadasha || dasha.current_dasha}
+              {dasha.antardasha ? ` – ${dasha.antardasha}` : ''}
+            </span>
+            <span className="text-[10px] text-[#535E73] block">Vimshottari period of transformation & focus</span>
+          </div>
+        )}
+        {moon?.sign && (
+          <div className="bg-[#FAF5E8]/70 border border-[#E8D5A7]/50 rounded-lg p-2.5">
+            <span className="text-[10px] uppercase tracking-wider text-[#535E73] font-bold block">Chandra Rashi</span>
+            <span className="font-semibold text-[#16223F]">Moon in {moon.sign}</span>
+            {moon.nakshatra && <span className="text-[10px] text-[#535E73] block">{moon.nakshatra}{moon.nakshatra_pada ? ` (Pada ${moon.nakshatra_pada})` : ''}</span>}
+          </div>
+        )}
+        {mangal && (
+          <div className="bg-[#FAF5E8]/70 border border-[#E8D5A7]/50 rounded-lg p-2.5">
+            <span className="text-[10px] uppercase tracking-wider text-[#535E73] font-bold block">Mangal Position</span>
+            <span className="font-semibold text-[#16223F]">Mars in {mangal.sign}</span>
+            <span className="text-[10px] text-[#535E73] block">
+              {[1, 4, 7, 8, 12].includes(mangal.house)
+                ? 'Classical Kuja Dosha houses — consult remedies chapter'
+                : 'Not in classical Kuja Dosha houses'}
+            </span>
+          </div>
+        )}
+      </div>
+      <p className="text-[10px] text-[#7b5800] mt-3 italic">
+        ✦ Full AI narrative is streaming above. Classical planetary facts are shown here as a reliable reference.
+      </p>
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -38,6 +111,11 @@ export default function DashboardPage() {
   // Background pre-generation progress
   const [bgProgress, setBgProgress] = useState(null);
   const pollIntervalRef = useRef(null);
+
+  // Offline reading state — set when data came from the localStorage cache of
+  // the user's REAL chart (backend unreachable). Never fabricated data.
+  const [offlineSince, setOfflineSince] = useState(null);
+  const [offlineInterpSince, setOfflineInterpSince] = useState(null);
 
   // Edit details modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -216,12 +294,22 @@ export default function DashboardPage() {
         setTabError({});
         const data = await getChart(chartId);
         setChartData(data);
+        if (data?.__offline) {
+          setOfflineSince(data.__offline_since);
+        } else {
+          setOfflineSince(null);
+        }
         
         try {
           const chartLang = data?.language || 'english';
           i18n.changeLanguage(backendLangToI18n(chartLang));
           const interpretationsData = await getAllInterpretations(chartId, chartLang);
           setInterpretations(interpretationsData || {});
+          if (interpretationsData?.__offline) {
+            setOfflineInterpSince(
+              interpretationsData.__offline_since || data?.__offline_since || new Date().toISOString()
+            );
+          }
         } catch (interpErr) {
           console.warn('Failed to load interpretations on mount:', interpErr);
         }
@@ -243,7 +331,7 @@ export default function DashboardPage() {
   // ── 2. Stream interpretation for active tab ─────────────────────────────
   useEffect(() => {
     if (!chartId || loadingChart || chartError) return;
-    if (typeof activeTab !== 'number' && activeTab !== 'education') return;
+    if (typeof activeTab !== 'number' && activeTab !== 11) return;
     if (interpretations[activeTab]) return; // already loaded
 
     const streamTab = async () => {
@@ -251,7 +339,7 @@ export default function DashboardPage() {
       setTabError((prev) => ({ ...prev, [activeTab]: '' }));
       setInterpretations((prev) => ({ ...prev, [activeTab]: '' }));
 
-      const targetTabNumber = activeTab === 'education' ? 11 : activeTab;
+      const targetTabNumber = activeTab === 11 ? 11 : activeTab;
 
       try {
         const chartLang = chartData?.language || 'english';
@@ -305,7 +393,7 @@ export default function DashboardPage() {
   }, [chartId, loadingChart, chartError]);
 
   const generateMissingTabs = async () => {
-    const allTabsToCheck = [1, 4, 'education', 5, 6, 7, 9, 10, 2, 3, 8];
+    const allTabsToCheck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
     const missingTabs = allTabsToCheck.filter(
       (tabId) => !interpretations[tabId] && !tabLoading[tabId]
     );
@@ -315,7 +403,7 @@ export default function DashboardPage() {
       setTabError((prev) => ({ ...prev, [tabId]: '' }));
       setInterpretations((prev) => ({ ...prev, [tabId]: '' }));
 
-      const targetTabNumber = tabId === 'education' ? 11 : tabId;
+      const targetTabNumber = tabId;
 
       try {
         const chartLang = chartData?.language || 'english';
@@ -399,6 +487,18 @@ export default function DashboardPage() {
   return (
     <div className="w-full min-h-screen bg-[#FBF6EA] text-[#0E1A37] font-body-md flex flex-col selection:bg-[#F0DFAF]">
 
+      {/* ── Offline reading banner (real cached data, honestly labeled) ── */}
+      {(offlineSince || offlineInterpSince) && (
+        <div className="bg-[#F4EEDA] border-b border-[#D9A63C]/40 text-[#7b5800] text-[11px] font-semibold px-4 py-2 flex flex-wrap items-center justify-center gap-2">
+          <span className="material-symbols-outlined text-[14px]">offline_bolt</span>
+          <span>
+            Showing your saved offline reading (calculated{' '}
+            {new Date(offlineSince || offlineInterpSince).toLocaleString()}). Connect to the internet to generate new AI chapters
+            or refresh planetary data.
+          </span>
+        </div>
+      )}
+
       {/* ── Sticky Header ────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 w-full bg-[#FFFDF6]/95 backdrop-blur-md border-b border-[#E8D5A7]/70 shadow-xs">
         <div className="max-w-[1580px] mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
@@ -474,6 +574,17 @@ export default function DashboardPage() {
               </button>
 
               <button
+                onClick={() => navigate('/profile')}
+                aria-label="Open Profile Page"
+                title="Your Profile"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#F4EEDA] text-[#4A567A] hover:text-[#1F3A6B] transition-colors cursor-pointer bg-transparent border border-transparent hover:border-[#D9A63C]/40"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  person
+                </span>
+              </button>
+
+              <button
                 onClick={logout}
                 aria-label="Log Out"
                 title="Log Out"
@@ -493,7 +604,7 @@ export default function DashboardPage() {
               title="Open Profile Drawer"
             >
               <div className="w-6 h-6 rounded bg-[#1F3A6B] text-[#FFFDF6] text-[10px] font-bold flex items-center justify-center">
-                {getInitials(chartData?.full_name || 'Arjun Sharma')}
+                {getInitials(chartData?.full_name || user?.name || 'Profile')}
               </div>
               <span className="hidden md:inline-block text-xs font-semibold text-[#0E1A37] max-w-[100px] truncate">
                 {chartData?.full_name || 'Profile'}
@@ -509,16 +620,29 @@ export default function DashboardPage() {
       {/* ── Main Content ──────────────────────────────────────────────────── */}
       <main className="flex-1 w-full max-w-[1580px] mx-auto px-4 sm:px-6 lg:px-10 py-6 flex flex-col">
 
-        {/* ── Cosmic Summary (5 Metric Chips + Soul Folio Progress Card) ── */}
-        <CosmicSummary
-          chartData={chartData}
-          bgProgress={bgProgress}
-          onGenerateFullReport={generateMissingTabs}
-          isGeneratingAll={Object.values(tabLoading).some(Boolean)}
-        />
+        {/* ── Upper Zone: Cosmic Summary (2×3 detail grid) + Chart Viewer, side by side ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          <div className="lg:col-span-7">
+            <CosmicSummary
+              chartData={chartData}
+              bgProgress={bgProgress}
+              onGenerateFullReport={generateMissingTabs}
+              isGeneratingAll={Object.values(tabLoading).some(Boolean)}
+            />
+          </div>
+          <div className="lg:col-span-5">
+            <ChartSidebar
+              activeTab={activeTab}
+              chartData={chartData}
+              activeChartIdx={activeChartIdx}
+              setActiveChartIdx={setActiveChartIdx}
+              onOpenEditModal={handleOpenEdit}
+            />
+          </div>
+        </div>
 
         {/* ── Tab Navigation Headers (11 Numbered Tabs Bar) ── */}
-        <div className="w-full">
+        <div className="w-full mt-6">
           <TabNavigation
             chartId={chartId}
             activeTab={activeTab}
@@ -530,22 +654,8 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* 2-Column Grid Layout: 5 Cols (Left Sidebar & Chart) : 7 Cols (Right Reading Exegesis) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start mt-2">
-
-          {/* ── Left Column: Chart, Varga Selector & Diagnostics (~5 cols) ── */}
-          <div className="lg:col-span-5 flex flex-col gap-6">
-            <ChartSidebar
-              activeTab={activeTab}
-              chartData={chartData}
-              activeChartIdx={activeChartIdx}
-              setActiveChartIdx={setActiveChartIdx}
-              onOpenEditModal={handleOpenEdit}
-            />
-          </div>
-
-          {/* ── Right Column: Calm Reading Layer & Dignities (~7 cols) ── */}
-          <div className="lg:col-span-7 flex flex-col gap-6">
+        {/* Full-width Reading Exegesis below */}
+        <div className="flex flex-col gap-6 mt-2">
 
             {/* Tab Content Card (Editorial Chapter Layout) */}
             <TabContentCard
@@ -557,7 +667,7 @@ export default function DashboardPage() {
               onGenerateMissingTabs={generateMissingTabs}
             />
 
-            {/* Tab error banner */}
+            {/* Tab error banner — with classical mathematical facts while AI unavailable */}
             {tabError[activeTab] && (
               <div className="flex flex-col items-center gap-3 bg-error/5 border border-error/20 rounded-2xl p-5 text-center">
                 <span
@@ -583,11 +693,16 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* Classical facts fallback — real ephemeris data, no AI needed.
+                Shown while the AI narrative is queued/unavailable. */}
+            {(tabError[activeTab] || (tabLoading[activeTab] && !interpretations[activeTab])) && chartData && (
+              <ClassicalFactsCard chartData={chartData} />
+            )}
+
             {/* Remedy cards — shown additionally on Tab 8 */}
             {activeTab === 8 && !tabLoading[8] && interpretations[8] && (
               <RemedyCards remedyText={interpretations[8]} />
             )}
-          </div>
         </div>
       </main>
 

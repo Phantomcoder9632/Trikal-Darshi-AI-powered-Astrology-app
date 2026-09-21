@@ -18,12 +18,23 @@ from rag.pipeline import (
     _yield_tokens,
 )
 
+# Model names come from the cascade itself so tests survive env-driven model changes
+CF_MODEL = next(t["model"] for t in LLM_CASCADE if t["name"] == "cloudflare-primary")
+GEMINI_MODEL = next(t["model"] for t in LLM_CASCADE if t["name"] == "gemini-primary")
+GROQ70B_MODEL = next(t["model"] for t in LLM_CASCADE if t["name"] == "groq-llama70b")
+QWEN_MODEL = next(t["model"] for t in LLM_CASCADE if t["name"] == "groq-qwen32b")
+OPENROUTER_MODEL = next(t["model"] for t in LLM_CASCADE if t["name"] == "openrouter-safetynet")
+
 
 class TestLLMProvidersAndCascade(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
-        # Reset environment mocks for clean state
+        # Reset environment mocks for clean state.
+        # Cloudflare keys are set fake so Tier 1 (cloudflare-primary) participates
+        # in fall-through tests without any real network call (client is mocked).
         self.env_patcher = patch.dict(os.environ, {
+            "CLOUDFLARE_API_TOKEN": "fake_cf_token",
+            "CLOUDFLARE_ACCOUNT_ID": "fake_cf_account",
             "GEMINI_API_KEY": "fake_gemini_key",
             "GROQ_API_KEY": "fake_groq_key",
             "OPENROUTER_API_KEY": "fake_openrouter_key",
@@ -41,21 +52,26 @@ class TestLLMProvidersAndCascade(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(effective_max_tokens(large_tier), TARGET_MAX_OUTPUT_TOKENS)
 
     def test_cascade_for_language_hindi_bengali(self):
-        """Test Hindi and Bengali re-order groq-qwen32b to the top."""
+        """Test English keeps Cloudflare Llama-70B on top; Hindi/Bengali promote
+        the Cloudflare DeepSeek-R1 distill to the front."""
         en_cascade = cascade_for_language("english")
-        self.assertEqual(en_cascade[0]["name"], "gemini-primary")
-        self.assertEqual(en_cascade[1]["name"], "groq-llama70b")
-        self.assertEqual(en_cascade[2]["name"], "groq-qwen32b")
+        self.assertEqual(en_cascade[0]["name"], "cloudflare-primary")
+        self.assertEqual(en_cascade[1]["name"], "gemini-primary")
+        self.assertEqual(en_cascade[2]["name"], "groq-llama70b")
+        self.assertEqual(en_cascade[3]["name"], "groq-qwen32b")
+        self.assertEqual(len(en_cascade), len(LLM_CASCADE))
 
         hi_cascade = cascade_for_language("hi")
-        self.assertEqual(hi_cascade[0]["name"], "groq-qwen32b")
+        self.assertEqual(hi_cascade[0]["name"], "cloudflare-deepseek32b")
+        self.assertEqual(hi_cascade[1]["name"], "cloudflare-primary")
         self.assertEqual(len(hi_cascade), len(LLM_CASCADE))
 
         bn_cascade = cascade_for_language("bengali")
-        self.assertEqual(bn_cascade[0]["name"], "groq-qwen32b")
+        self.assertEqual(bn_cascade[0]["name"], "cloudflare-deepseek32b")
 
     def test_is_tier_available(self):
-        """Test missing or placeholder API keys are correctly flagged as unavailable."""
+        """Test missing or placeholder API keys are correctly flagged as unavailable,
+        and that Cloudflare tiers additionally require CLOUDFLARE_ACCOUNT_ID."""
         tier = {"api_key_env": "TEST_KEY_ENV"}
         with patch.dict(os.environ, {"TEST_KEY_ENV": ""}):
             self.assertFalse(is_tier_available(tier))
@@ -63,6 +79,29 @@ class TestLLMProvidersAndCascade(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(is_tier_available(tier))
         with patch.dict(os.environ, {"TEST_KEY_ENV": "sk-valid-key"}):
             self.assertTrue(is_tier_available(tier))
+
+        # Cloudflare tier with a valid token but NO account id -> unavailable
+        cf_tier = {
+            "name": "cloudflare-primary",
+            "api_key_env": "CLOUDFLARE_API_TOKEN",
+            "base_url": "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1",
+        }
+        with patch.dict(os.environ, {"CLOUDFLARE_API_TOKEN": "tok", "CLOUDFLARE_ACCOUNT_ID": ""}):
+            self.assertFalse(is_tier_available(cf_tier))
+        with patch.dict(os.environ, {"CLOUDFLARE_API_TOKEN": "", "CLOUDFLARE_ACCOUNT_ID": "acct"}):
+            self.assertFalse(is_tier_available(cf_tier))
+        with patch.dict(os.environ, {"CLOUDFLARE_API_TOKEN": "tok", "CLOUDFLARE_ACCOUNT_ID": "acct"}):
+            self.assertTrue(is_tier_available(cf_tier))
+
+    def test_is_rate_limit_cloudflare_signals(self):
+        """Cloudflare neuron-quota / 429 signals classify as rate limits."""
+        self.assertTrue(_is_rate_limit(Exception("429 Too Many Requests")))
+        self.assertTrue(_is_rate_limit(Exception("rate_limit_exceeded (TPM limit)")))
+        self.assertTrue(_is_rate_limit(Exception("exceeded neuron quota for this month")))
+        # Status-code based detection (OpenAI SDK APIStatusError shape)
+        err = SimpleNamespace(status_code=429, __str__=lambda self: "cf error")
+        self.assertTrue(_is_rate_limit(err))
+        self.assertFalse(_is_rate_limit(Exception("connection reset by peer")))
 
     def _mock_chunk(self, text):
         chunk = MagicMock()
@@ -72,19 +111,16 @@ class TestLLMProvidersAndCascade(unittest.IsolatedAsyncioTestCase):
         return chunk
 
     async def test_rate_limit_fallthrough_to_tier3(self):
-        """Mock tiers 1 and 2 raising rate-limit 429 exceptions; assert tier 3 succeeds."""
-        # Tier 1: gemini-primary (fails 429)
-        # Tier 2: groq-llama70b (fails 429)
-        # Tier 3: groq-qwen32b (succeeds)
+        """Tiers 1 (Cloudflare, neuron quota) and 2 (Gemini, 429) fail; tier 3 (Groq 70B) succeeds."""
         tier3_content = "X" * 1200  # >= 1000 chars
 
         def mock_create(*args, **kwargs):
             model = kwargs.get("model")
-            if model == "gemini-2.5-flash":
+            if model == CF_MODEL:
+                raise Exception("429: exceeded neuron quota for this account")
+            elif model == GEMINI_MODEL:
                 raise Exception("429 ResourceExhausted: rate limit exceeded")
-            elif model == "llama-3.3-70b-versatile":
-                raise Exception("rate_limit_exceeded (TPM limit)")
-            elif model == "qwen/qwen3-32b":
+            elif model == GROQ70B_MODEL:
                 return [self._mock_chunk(tier3_content[:600]), self._mock_chunk(tier3_content[600:])]
             raise Exception("Unexpected model")
 
@@ -99,18 +135,18 @@ class TestLLMProvidersAndCascade(unittest.IsolatedAsyncioTestCase):
 
             full_text = "".join(chunks)
             self.assertEqual(full_text, tier3_content)
-            self.assertEqual(model_info.get("model"), "groq-qwen32b/qwen/qwen3-32b")
+            self.assertEqual(model_info.get("model"), f"groq-llama70b/{GROQ70B_MODEL}")
 
     async def test_short_output_rejection_falls_through(self):
-        """Test that a response under 1000 characters from tier 1 is rejected and falls through to tier 2."""
+        """A < 1000-char response from Tier 1 (Cloudflare) is rejected and falls through to Tier 2 (Gemini)."""
         short_output = "This is a short answer under 1000 chars."
         valid_output = "Valid deep analysis... " + ("A" * 1100)
 
         def mock_create(*args, **kwargs):
             model = kwargs.get("model")
-            if model == "gemini-2.5-flash":
+            if model == CF_MODEL:
                 return [self._mock_chunk(short_output)]
-            elif model == "llama-3.3-70b-versatile":
+            elif model == GEMINI_MODEL:
                 return [self._mock_chunk(valid_output)]
             raise Exception("Unexpected model")
 
@@ -125,7 +161,7 @@ class TestLLMProvidersAndCascade(unittest.IsolatedAsyncioTestCase):
 
             full_text = "".join(chunks)
             self.assertEqual(full_text, valid_output)
-            self.assertEqual(model_info.get("model"), "groq-llama70b/llama-3.3-70b-versatile")
+            self.assertEqual(model_info.get("model"), f"gemini-primary/{GEMINI_MODEL}")
 
     async def test_all_providers_exhausted_raises_error(self):
         """Test AllProvidersExhaustedError is raised when every tier in the cascade fails."""
@@ -139,8 +175,10 @@ class TestLLMProvidersAndCascade(unittest.IsolatedAsyncioTestCase):
 
     async def test_missing_api_keys_skipped_cleanly(self):
         """Test tiers with missing env vars are skipped without raising errors."""
-        # Unset GEMINI and GROQ, leaving only OPENROUTER
+        # Unset Cloudflare, GEMINI and GROQ, leaving only OPENROUTER
         with patch.dict(os.environ, {
+            "CLOUDFLARE_API_TOKEN": "",
+            "CLOUDFLARE_ACCOUNT_ID": "",
             "GEMINI_API_KEY": "",
             "GROQ_API_KEY": "",
             "OPENROUTER_API_KEY": "sk-valid-openrouter",
@@ -157,7 +195,7 @@ class TestLLMProvidersAndCascade(unittest.IsolatedAsyncioTestCase):
 
                 full_text = "".join(chunks)
                 self.assertEqual(full_text, valid_output)
-                self.assertEqual(model_info.get("model"), "openrouter-safetynet/meta-llama/llama-3.3-70b-instruct:free")
+                self.assertEqual(model_info.get("model"), f"openrouter-safetynet/{OPENROUTER_MODEL}")
 
 
 if __name__ == "__main__":

@@ -7,8 +7,10 @@ import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import ChatPage from './pages/ChatPage';
 import SavedChartsPage from './pages/SavedChartsPage';
+import ProfilePage from './pages/ProfilePage';
 import { useAuth } from './context/AuthContext';
 import LanguageWelcomeModal, { useFirstVisit } from './components/LanguageWelcomeModal';
+import { ConnectionBanner } from './components/StatusBanners';
 import i18n, { backendLangToI18n } from './i18n';
 
 function ProtectedRoute({ children }) {
@@ -56,16 +58,29 @@ export default function App() {
       )}
 
       <Router>
+        {/* Honest connection-lost banner with one-click retry */}
+        <ConnectionBanner />
+
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/charts" element={<SavedChartsPage />} />
           <Route path="/saved-charts" element={<SavedChartsPage />} />
           <Route path="/account" element={<SavedChartsPage />} />
-          <Route path="/profile" element={<SavedChartsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/chat/:chartId" element={<ChatPage />} />
-          <Route path="/dashboard" element={<Navigate to="/dashboard/mock-arjun-chart-108" replace />} />
+          {/* No mock ID here: real users land on their vault; unauthenticated
+              users are bounced home. The old redirect injected a mock chart ID
+              that the backend rejects with 422. */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Navigate to="/charts" replace />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard/:chartId"
             element={

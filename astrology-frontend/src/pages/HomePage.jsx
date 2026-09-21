@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { backendLangToI18n } from '../i18n';
 import AuthModal from '../components/AuthModal';
+import { CalculationMilestones } from '../components/StatusBanners';
 
 // Cosmic Stardust & Twinkling Celestial Canvas matching exact Stitch script
 function HeroStarCanvas() {
@@ -107,12 +108,12 @@ export default function HomePage() {
       user?.preferred_language ||
       'english';
     return {
-      full_name: 'Anandita Sen',
-      date_of_birth: '1994-08-18',
-      time_of_birth: '06:42',
+      full_name: '',
+      date_of_birth: '',
+      time_of_birth: '',
       birth_time_confidence: 'exact',
-      city_of_birth: 'Varanasi, India',
-      current_city: 'Bengaluru, India',
+      city_of_birth: '',
+      current_city: '',
       language: savedLang,
     };
   });
@@ -122,9 +123,15 @@ export default function HomePage() {
   const [userCharts, setUserCharts] = useState([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     async function loadCharts() {
+      // Only fetch charts for signed-in users — guests never see profiles.
+      if (!isAuthenticated) {
+        setUserCharts([]);
+        return;
+      }
       try {
         const data = await getUserCharts();
         setUserCharts(data || []);
@@ -133,7 +140,7 @@ export default function HomePage() {
       }
     }
     loadCharts();
-  }, [user]);
+  }, [user, isAuthenticated]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -144,13 +151,14 @@ export default function HomePage() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.full_name || !formData.date_of_birth || !formData.time_of_birth || !formData.city_of_birth) {
-      setError('Please fill in all required birth parameters marked with *');
-      return;
-    }
+  /**
+   * The actual chart cast — runs only once authenticated. Guests are routed
+   * through the auth modal first (see handleSubmit); on successful sign-in or
+   * registration the pending generation starts automatically.
+   */
+  const runGeneration = async () => {
     setLoading(true);
+    setSubmitting(true);
     setError('');
     try {
       const result = await generateChart(formData);
@@ -164,7 +172,25 @@ export default function HomePage() {
       setError(err.response?.data?.detail || err.message || 'An error occurred during calculations.');
     } finally {
       setLoading(false);
+      setSubmitting(false);
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.full_name || !formData.date_of_birth || !formData.time_of_birth || !formData.city_of_birth) {
+      setError('Please fill in all required birth parameters marked with *');
+      return;
+    }
+    if (!isAuthenticated) {
+      // Gated flow: the visitor's birth details stay in `formData`; opening
+      // the register modal is the next step. runGeneration fires automatically
+      // via onAuthSuccess once they create their profile (or sign in).
+      setAuthModalMode('register');
+      setShowAuthModal(true);
+      return;
+    }
+    runGeneration();
   };
 
   return (
@@ -175,6 +201,8 @@ export default function HomePage() {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         initialMode={authModalMode}
+        onAuthSuccess={runGeneration}
+        pendingNote="Your birth details are saved — create your profile and the calculation will begin automatically."
       />
 
       {/* ── TOP NAVIGATION BAR ── */}
@@ -213,7 +241,7 @@ export default function HomePage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/dashboard/mock-arjun-chart-108')}
+              onClick={() => navigate('/charts')}
               className="px-3.5 py-1.5 rounded text-xs text-[#4A567A] hover:text-[#022454] hover:bg-[#FFFDF6] transition-colors cursor-pointer"
             >
               Soul Dashboard
@@ -232,6 +260,15 @@ export default function HomePage() {
             >
               Saved Charts
             </button>
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={() => navigate('/profile')}
+                className="px-3.5 py-1.5 rounded text-xs text-[#4A567A] hover:text-[#022454] hover:bg-[#FFFDF6] transition-colors cursor-pointer"
+              >
+                Profile
+              </button>
+            )}
           </nav>
 
           {/* Right Actions: Language, Sign In / Profile, CTA */}
@@ -279,8 +316,13 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => {
-                setAuthModalMode(isAuthenticated ? 'profile' : 'login');
-                setShowAuthModal(true);
+                if (isAuthenticated) {
+                  // Full profile page (identity, Kundali generator, vault link)
+                  navigate('/profile');
+                } else {
+                  setAuthModalMode('login');
+                  setShowAuthModal(true);
+                }
               }}
               className="w-9 h-9 rounded-full bg-[#1F3A6B] text-[#F0DFAF] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs cursor-pointer text-xs font-bold hover:scale-105 transition-transform"
               title={isAuthenticated ? `Profile: ${user?.name || user?.email}` : 'Sign In / Register Profile'}
@@ -295,7 +337,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* â”€â”€ MAIN CONTENT â”€â”€ */}
+      {/* ── MAIN CONTENT ── */}
       <main className="w-full pt-16 min-h-screen">
         
         {/* Starfield SVG Pattern Ground */}
@@ -317,7 +359,7 @@ export default function HomePage() {
             </svg>
           </div>
 
-          {/* â”€â”€ SECTION 1: HERO CONTAINER WITH CELESTIAL ASTROLABE â”€â”€ */}
+          {/* ── SECTION 1: HERO CONTAINER WITH CELESTIAL ASTROLABE ── */}
           <section className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 pt-8 pb-16 lg:pt-12 lg:pb-20">
             {/* Dynamic Animated Atmospheric Canvas & Astrolabe Layer */}
             <div aria-hidden="true" className="absolute inset-0 pointer-events-none overflow-hidden -z-10 select-none">
@@ -350,16 +392,16 @@ export default function HomePage() {
                   <circle cx="153" cy="747" fill="#1F3A6B" opacity="0.8" r="4" />
                   <circle cx="747" cy="747" fill="#D9A63C" opacity="0.8" r="4" />
                   <text fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="11" fontWeight="700" letterSpacing="0.2em" opacity="0.85" textAnchor="middle" x="450" y="58">
-                    0Â° ARIES â€¢ MESHA â™ˆ
+                    0° ARIES • MESHA ♈
                   </text>
                   <text fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="11" fontWeight="700" letterSpacing="0.2em" opacity="0.85" textAnchor="middle" x="450" y="852">
-                    180Â° LIBRA â€¢ TULA â™Ž
+                    180° LIBRA • TULA ♎
                   </text>
                   <text fill="#022454" fontFamily="Inter, sans-serif" fontSize="11" fontWeight="700" letterSpacing="0.2em" opacity="0.85" textAnchor="middle" transform="rotate(-90 58 450)" x="58" y="450">
-                    270Â° CAPRICORN â€¢ MAKARA â™‘
+                    270° CAPRICORN • MAKARA ♑
                   </text>
                   <text fill="#022454" fontFamily="Inter, sans-serif" fontSize="11" fontWeight="700" letterSpacing="0.2em" opacity="0.85" textAnchor="middle" transform="rotate(90 842 450)" x="842" y="450">
-                    90Â° CANCER â€¢ KARKA â™‹
+                    90° CANCER • KARKA ♋
                   </text>
                 </svg>
                 <svg
@@ -412,13 +454,13 @@ export default function HomePage() {
               <div className="flex items-center gap-2 text-[#4A567A]">
                 <span className="material-symbols-outlined text-[18px] text-[#D9A63C]">explore</span>
                 <span className="text-[12px] uppercase tracking-widest text-[#022454] font-bold">Kala-Chakra Observatory</span>
-                <span className="text-[#D9A63C]">âœ¦</span>
+                <span className="text-[#D9A63C]">✦</span>
                 <span className="text-[12px] text-[#4A567A]">Sidereal Lahiri Ephemeris</span>
               </div>
               <div className="flex items-center gap-3 text-[12px]">
-                <span className="text-[#4A567A]">Ayanamsa: <strong className="text-[#16223F]">24Â° 11' 42"</strong></span>
-                <span className="text-[#D9A63C]">âœ¦</span>
-                <span className="text-[#022454] font-semibold">Bá¹›hat ParÄÅ›ara HorÄÅ›Ästra Standard</span>
+                <span className="text-[#4A567A]">Ayanamsa: <strong className="text-[#16223F]">24° 11' 42"</strong></span>
+                <span className="text-[#D9A63C]">✦</span>
+                <span className="text-[#022454] font-semibold">Bṛhat Parāśara Horāśāstra Standard</span>
               </div>
             </div>
 
@@ -432,12 +474,12 @@ export default function HomePage() {
                   <div className="flex flex-wrap items-center gap-2 self-start">
                     <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#FBF5E5] border-2 border-[#D9A63C]/60 text-[#7b5800] shadow-md">
                       <span className="font-['Fraunces',serif] text-sm font-bold text-[#022454] tracking-tight">TRIKAL DARSHI</span>
-                      <span className="text-[#D9A63C] text-[13px]">âœ¦</span>
-                      <span className="text-[11px] font-semibold tracking-wider uppercase">à¤¤à¥à¤°à¤¿à¤•à¤¾à¤² à¤¦à¤°à¥à¤¶à¥€</span>
+                      <span className="text-[#D9A63C] text-[13px]">✦</span>
+                      <span className="text-[11px] font-semibold tracking-wider uppercase">त्रिकाल दर्शी</span>
                     </div>
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFFDF6]/95 border border-[#D9A63C]/40 text-[#022454] shadow-xs">
                       <span className="w-2 h-2 rounded-full bg-[#D9A63C] animate-pulse" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#7b5800]">âœ¦ Kala-Chakra Engine â€¢ Sidereal 0.02Â° Precision</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#7b5800]">✦ Kala-Chakra Engine • Sidereal 0.02° Precision</span>
                     </div>
                   </div>
 
@@ -510,7 +552,7 @@ export default function HomePage() {
 
                   <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-4 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
                     <div className="flex items-center justify-between pb-1">
-                      <span className="font-['Fraunces',serif] text-3xl font-bold text-[#022454]">âˆž</span>
+                      <span className="font-['Fraunces',serif] text-3xl font-bold text-[#022454]">∞</span>
                       <div className="w-8 h-8 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
                         <span className="material-symbols-outlined text-[19px] text-[#D9A63C]">cyclone</span>
                       </div>
@@ -528,7 +570,7 @@ export default function HomePage() {
                     className="bg-[#1F3A6B] hover:bg-[#022454] text-[#F0DFAF] border-2 border-[#D9A63C] px-7 py-3 text-base font-semibold rounded-lg shadow-md hover:shadow-xl transition-all flex items-center gap-2 group cursor-pointer"
                   >
                     <span>Begin Reading</span>
-                    <span className="text-[#D9A63C] text-[16px] group-hover:rotate-45 transition-transform">âœ¦</span>
+                    <span className="text-[#D9A63C] text-[16px] group-hover:rotate-45 transition-transform">✦</span>
                   </button>
 
                   <a
@@ -579,8 +621,9 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Saved Astrological Profiles Shelf */}
-                {userCharts && userCharts.length > 0 && (
+                {/* Saved Astrological Profiles Shelf — ONLY for signed-in users.
+                    Guests must never see sample personas as if they were theirs. */}
+                {isAuthenticated && userCharts && userCharts.length > 0 && (
                   <div className="p-4 bg-[#FFFDF6] border border-[#E8DFC9] rounded-xl shadow-xs">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-bold uppercase tracking-wider text-[#022454] flex items-center gap-1.5">
@@ -599,7 +642,7 @@ export default function HomePage() {
                         >
                           <span className="font-semibold text-xs text-[#0E1A37] truncate">{chart.full_name}</span>
                           <span className="text-[10px] text-[#4A567A]">
-                            {chart.ascendant_sign || 'Libra'} Asc Â· {chart.date_of_birth}
+                            {chart.ascendant_sign || chart.lagna || ''} Asc · {chart.date_of_birth}
                           </span>
                         </button>
                       ))}
@@ -618,7 +661,7 @@ export default function HomePage() {
                     className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#FBF5E5] border border-[#E0CF9B] text-[#7b5800] font-mono text-[11px] font-bold"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D9A63C]" />
-                    <span>COORD â€¢ J108</span>
+                    <span>COORD • J108</span>
                   </div>
 
                   {/* Form Header */}
@@ -635,30 +678,6 @@ export default function HomePage() {
                     <p className="text-[13px] text-[#4A567A] leading-relaxed">
                       Enter birth coordinates to compute exact ascendant degrees, nakshatra pada, and planetary vargas.
                     </p>
-
-                    {/* Vault Sync / Profile Creation Indicator */}
-                    <div className="mt-2 p-2.5 bg-[#FBF6EA] border border-[#D9A63C]/30 rounded-xl flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-[#D9A63C] animate-pulse"></span>
-                        <span className="text-[#16223F] font-medium">
-                          {isAuthenticated ? (
-                            <span>Active: <strong>{user?.name || user?.email}</strong></span>
-                          ) : (
-                            <span>Auto-save to Vault</span>
-                          )}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAuthModalMode(isAuthenticated ? 'profile' : 'register');
-                          setShowAuthModal(true);
-                        }}
-                        className="text-[#7b5800] hover:text-[#022454] font-bold text-xs underline cursor-pointer bg-transparent border-none p-0"
-                      >
-                        {isAuthenticated ? 'Manage Profile →' : 'Sign In / Register →'}
-                      </button>
-                    </div>
                   </div>
 
                   {error && (
@@ -667,6 +686,8 @@ export default function HomePage() {
                       <span>{error}</span>
                     </div>
                   )}
+
+                  {submitting && <CalculationMilestones />}
 
                   <form onSubmit={handleSubmit} className="flex flex-col gap-5 pt-6">
                     {/* Full Name */}
@@ -685,7 +706,7 @@ export default function HomePage() {
                           required
                           value={formData.full_name}
                           onChange={handleChange}
-                          placeholder="e.g. Anandita Sen"
+                          placeholder="e.g. Rahul Sharma"
                           className="w-full h-11 px-3.5 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] placeholder-[#4A567A]/60 text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors"
                         />
                         <span className="material-symbols-outlined absolute right-3 text-[20px] text-[#4A567A] pointer-events-none">
@@ -747,7 +768,7 @@ export default function HomePage() {
                         ))}
                       </div>
                       <p className="text-[11px] text-[#4A567A] mt-0.5">
-                        For exact ascendant degrees (Â±2 deg), accurate birth minutes provide higher D9 resolution.
+                        For exact ascendant degrees (±2 deg), accurate birth minutes provide higher D9 resolution.
                       </p>
                     </div>
 
@@ -764,14 +785,14 @@ export default function HomePage() {
                           required
                           value={formData.city_of_birth}
                           onChange={handleChange}
-                          placeholder="Varanasi, India"
+                          placeholder="e.g. Varanasi, India"
                           className="w-full h-11 pl-3.5 pr-10 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] placeholder-[#4A567A]/60 text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors"
                         />
                         <span className="material-symbols-outlined absolute right-3 text-[20px] text-[#D9A63C] pointer-events-none">
                           location_on
                         </span>
                       </div>
-                      <span className="text-[11px] text-[#4A567A]">Geo-coordinates: Lat 25.3176Â° N, Long 82.9739Â° E</span>
+                      <span className="text-[11px] text-[#4A567A]">Geo-coordinates are resolved automatically by the backend geocoder.</span>
                     </div>
 
                     {/* Current City */}
@@ -786,7 +807,7 @@ export default function HomePage() {
                           type="text"
                           value={formData.current_city}
                           onChange={handleChange}
-                          placeholder="Bengaluru, India"
+                          placeholder="e.g. Bengaluru, India"
                           className="w-full h-11 pl-3.5 pr-10 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] placeholder-[#4A567A]/60 text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors"
                         />
                         <span className="material-symbols-outlined absolute right-3 text-[20px] text-[#4A567A] pointer-events-none">
@@ -809,8 +830,8 @@ export default function HomePage() {
                           className="w-full h-11 px-3.5 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors appearance-none cursor-pointer"
                         >
                           <option value="english">English (IAST Romanized Diacritics)</option>
-                          <option value="hindi">à¤¹à¤¿à¤¨à¥à¤¦à¥€ (Devanagari Sanskritised)</option>
-                          <option value="bengali">à¦¬à¦¾à¦‚à¦²à¦¾ (Bengali Traditional Shloka)</option>
+                          <option value="hindi">हिन्दी (Devanagari Sanskritised)</option>
+                          <option value="bengali">বাংলা (Bengali Traditional Shloka)</option>
                         </select>
                         <span className="material-symbols-outlined absolute right-3 text-[20px] text-[#4A567A] pointer-events-none">
                           expand_more
@@ -837,12 +858,12 @@ export default function HomePage() {
                       disabled={loading}
                       className="w-full h-12 bg-[#1F3A6B] hover:bg-[#022454] text-[#F0DFAF] border-2 border-[#D9A63C] text-base font-bold rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer disabled:opacity-50"
                     >
-                      {loading ? (
-                        <>
-                          <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-                          <span>Computing Precision Sidereal Chartâ€¦</span>
-                        </>
-                      ) : (
+                    {loading ? (
+                      <>
+                        <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
+                        <span>Computing Precision Sidereal Chart…</span>
+                      </>
+                    ) : (
                         <>
                           <span className="material-symbols-outlined text-[20px] text-[#D9A63C]">auto_awesome</span>
                           <span>Begin Reading</span>
@@ -868,12 +889,12 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* â”€â”€ SECTION 2: THE THREE CELESTIAL STREAMS (Exact 3-Column Section) â”€â”€ */}
+          {/* ── SECTION 2: THE THREE CELESTIAL STREAMS (Exact 3-Column Section) ── */}
           <section className="relative z-10 border-t border-[#E8DFC9] bg-gradient-to-b from-[#FAF5E6] to-[#F5EEDC]/80 py-16 lg:py-20">
             <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16">
               <div className="text-center max-w-2xl mx-auto mb-12">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FBF5E5] border border-[#E0CF9B] text-[#7b5800] text-xs font-bold uppercase tracking-widest mb-3">
-                  <span className="text-[#D9A63C]">âœ¦</span> Integrated Jyotish Canon <span className="text-[#D9A63C]">âœ¦</span>
+                  <span className="text-[#D9A63C]">✦</span> Integrated Jyotish Canon <span className="text-[#D9A63C]">✦</span>
                 </div>
                 <h2 className="font-['Fraunces',serif] text-3xl sm:text-4xl font-bold text-[#022454] tracking-tight">
                   The Three Celestial Streams
@@ -892,7 +913,7 @@ export default function HomePage() {
                     </div>
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-[#7b5800]">
-                        Stream I â€¢ Classical Foundation
+                        Stream I • Classical Foundation
                       </span>
                     </div>
                     <h3 className="font-['Fraunces',serif] text-xl font-bold text-[#022454] mb-3">
@@ -903,8 +924,8 @@ export default function HomePage() {
                     </p>
                   </div>
                   <div className="pt-4 border-t border-[#EAE3D2] flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#16223F]">16 Vargas â€¢ Vimshottari</span>
-                    <span className="text-[#D9A63C] text-sm font-bold">âœ¦ Standard</span>
+                    <span className="text-xs font-semibold text-[#16223F]">16 Vargas • Vimshottari</span>
+                    <span className="text-[#D9A63C] text-sm font-bold">✦ Standard</span>
                   </div>
                 </div>
 
@@ -916,7 +937,7 @@ export default function HomePage() {
                     </div>
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-[#7b5800]">
-                        Stream II â€¢ Remedial Hermeneutics
+                        Stream II • Remedial Hermeneutics
                       </span>
                     </div>
                     <h3 className="font-['Fraunces',serif] text-xl font-bold text-[#022454] mb-3">
@@ -927,7 +948,7 @@ export default function HomePage() {
                     </p>
                   </div>
                   <div className="pt-4 border-t border-[#EAE3D2] flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#16223F]">Rin Analysis â€¢ Practical Upay</span>
+                    <span className="text-xs font-semibold text-[#16223F]">Rin Analysis • Practical Upay</span>
                     <span className="text-[#7b5800] font-bold text-xs bg-[#F0DFAF]/60 px-2 py-0.5 rounded">Remedy Engine</span>
                   </div>
                 </div>
@@ -940,7 +961,7 @@ export default function HomePage() {
                     </div>
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-[#7b5800]">
-                        Stream III â€¢ Micro-Sublords
+                        Stream III • Micro-Sublords
                       </span>
                     </div>
                     <h3 className="font-['Fraunces',serif] text-xl font-bold text-[#022454] mb-3">
@@ -951,15 +972,15 @@ export default function HomePage() {
                     </p>
                   </div>
                   <div className="pt-4 border-t border-[#EAE3D2] flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#16223F]">Sub-Lord Filters â€¢ Placidus</span>
-                    <span className="text-[#D9A63C] text-sm font-bold">âœ¦ Precision</span>
+                    <span className="text-xs font-semibold text-[#16223F]">Sub-Lord Filters • Placidus</span>
+                    <span className="text-[#D9A63C] text-sm font-bold">✦ Precision</span>
                   </div>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* â”€â”€ SECTION 3: KUNDLI D1 MATRIX & EPHEMERIS SHOWCASE (2-Column) â”€â”€ */}
+          {/* ── SECTION 3: KUNDLI D1 MATRIX & EPHEMERIS SHOWCASE (2-Column) ── */}
           <section className="relative z-10 py-16 lg:py-20 border-t border-[#E8DFC9] bg-[#FBF6EA]" id="matrix-showcase">
             <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
@@ -970,7 +991,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#EAE3D2]">
                       <div className="flex flex-col">
                         <span className="font-['Fraunces',serif] text-xl font-bold text-[#022454]">Janma Lagna D1 Matrix</span>
-                        <span className="text-xs text-[#4A567A]">Kendra (Angular) â€¢ Trikona (Trinal) Coordinate Axis</span>
+                        <span className="text-xs text-[#4A567A]">Kendra (Angular) • Trikona (Trinal) Coordinate Axis</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="px-2.5 py-1 bg-[#F0DFAF] text-[#16223F] text-xs rounded-md font-semibold border border-[#D9A63C]/40">Sidereal Lahiri</span>
@@ -992,31 +1013,31 @@ export default function HomePage() {
                         <polygon points="200,200 295,295 200,390 105,295" fill="#F0DFAF" fillOpacity="0.3" />
                         <polygon points="200,200 295,105 390,200 295,295" fill="#F0DFAF" fillOpacity="0.2" />
                         
-                        <text x="200" y="42" fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="700" textAnchor="middle">I â€¢ LAGNA</text>
-                        <text x="200" y="88" fill="#022454" fontFamily="Fraunces, serif" fontSize="16" fontWeight="700" textAnchor="middle">Mesha (Ar 14Â°)</text>
-                        <text x="200" y="110" fill="#1F3A6B" fontFamily="Inter, sans-serif" fontSize="11" fontWeight="600" textAnchor="middle">Ju â™ƒ (Guru) [Exalted]</text>
-                        <text x="200" y="128" fill="#4A567A" fontFamily="Inter, sans-serif" fontSize="9" textAnchor="middle">Ashwini â€¢ Pada 2</text>
+                        <text x="200" y="42" fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="700" textAnchor="middle">I • LAGNA</text>
+                        <text x="200" y="88" fill="#022454" fontFamily="Fraunces, serif" fontSize="16" fontWeight="700" textAnchor="middle">Mesha (Ar 14°)</text>
+                        <text x="200" y="110" fill="#1F3A6B" fontFamily="Inter, sans-serif" fontSize="11" fontWeight="600" textAnchor="middle">Ju ♃ (Guru) [Exalted]</text>
+                        <text x="200" y="128" fill="#4A567A" fontFamily="Inter, sans-serif" fontSize="9" textAnchor="middle">Ashwini • Pada 2</text>
                         
                         <text x="110" y="42" fill="#4A567A" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="600" textAnchor="middle">II</text>
-                        <text x="105" y="70" fill="#16223F" fontFamily="Fraunces, serif" fontSize="13" fontWeight="600" textAnchor="middle">Ve â™€ 08Â°</text>
+                        <text x="105" y="70" fill="#16223F" fontFamily="Fraunces, serif" fontSize="13" fontWeight="600" textAnchor="middle">Ve ♀ 08°</text>
                         
                         <text x="290" y="42" fill="#4A567A" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="600" textAnchor="middle">XII</text>
-                        <text x="295" y="70" fill="#16223F" fontFamily="Fraunces, serif" fontSize="13" fontWeight="600" textAnchor="middle">Me â˜¿ (R) 21Â°</text>
+                        <text x="295" y="70" fill="#16223F" fontFamily="Fraunces, serif" fontSize="13" fontWeight="600" textAnchor="middle">Me ☿ (R) 21°</text>
                         
                         <text x="60" y="196" fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="700" textAnchor="middle">IV</text>
-                        <text x="115" y="198" fill="#022454" fontFamily="Fraunces, serif" fontSize="14" fontWeight="700" textAnchor="middle">Mo â˜½ 04Â°22'</text>
+                        <text x="115" y="198" fill="#022454" fontFamily="Fraunces, serif" fontSize="14" fontWeight="700" textAnchor="middle">Mo ☽ 04°22'</text>
                         <text x="115" y="216" fill="#4A567A" fontFamily="Inter, sans-serif" fontSize="9" textAnchor="middle">Rohini (Sva)</text>
                         
-                        <text x="200" y="375" fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="700" textAnchor="middle">VII â€¢ ASTAM</text>
-                        <text x="200" y="315" fill="#022454" fontFamily="Fraunces, serif" fontSize="14" fontWeight="700" textAnchor="middle">Su â˜‰ 28Â°10'</text>
-                        <text x="200" y="333" fill="#BA1A1A" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="600" textAnchor="middle">Sa â™„ (Deb.) 02Â°</text>
+                        <text x="200" y="375" fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="700" textAnchor="middle">VII • ASTAM</text>
+                        <text x="200" y="315" fill="#022454" fontFamily="Fraunces, serif" fontSize="14" fontWeight="700" textAnchor="middle">Su ☉ 28°10'</text>
+                        <text x="200" y="333" fill="#BA1A1A" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="600" textAnchor="middle">Sa ♄ (Deb.) 02°</text>
                         
                         <text x="340" y="196" fill="#7B5800" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="700" textAnchor="middle">X</text>
-                        <text x="285" y="198" fill="#022454" fontFamily="Fraunces, serif" fontSize="14" fontWeight="700" textAnchor="middle">Ma â™‚ 19Â°45'</text>
+                        <text x="285" y="198" fill="#022454" fontFamily="Fraunces, serif" fontSize="14" fontWeight="700" textAnchor="middle">Ma ♂ 19°45'</text>
                         <text x="285" y="216" fill="#4A567A" fontFamily="Inter, sans-serif" fontSize="9" textAnchor="middle">Digbala Peak</text>
                         
-                        <text x="335" y="295" fill="#16223F" fontFamily="Fraunces, serif" fontSize="12" fontWeight="600" textAnchor="middle">IX â€¢ Ra â˜Š</text>
-                        <text x="65" y="295" fill="#16223F" fontFamily="Fraunces, serif" fontSize="12" fontWeight="600" textAnchor="middle">V â€¢ Ke â˜‹</text>
+                        <text x="335" y="295" fill="#16223F" fontFamily="Fraunces, serif" fontSize="12" fontWeight="600" textAnchor="middle">IX • Ra ☊</text>
+                        <text x="65" y="295" fill="#16223F" fontFamily="Fraunces, serif" fontSize="12" fontWeight="600" textAnchor="middle">V • Ke ☋</text>
                         
                         <circle cx="200" cy="200" r="5" fill="#D9A63C" />
                         <circle cx="200" cy="200" r="15" fill="none" stroke="#D9A63C" strokeWidth="1" />
@@ -1028,7 +1049,7 @@ export default function HomePage() {
                           Bhavartha: <span className="text-[#4A567A] font-normal">Hamsa Yoga active via Guru in Kendra</span>
                         </span>
                         <span className="text-xs text-[#7b5800] hover:text-[#022454] font-bold cursor-pointer">
-                          Inspect 16 Vargas â†’
+                          Inspect 16 Vargas →
                         </span>
                       </div>
                     </div>
@@ -1064,7 +1085,7 @@ export default function HomePage() {
                       <div>
                         <h4 className="text-sm font-bold text-[#16223F]">Fractional Navamsha (D9) Resolution</h4>
                         <p className="text-xs text-[#4A567A] mt-0.5">
-                          Identifies the subtle dharmic destiny and matrimonial alignment hidden within each 3Â°20' arc of the zodiac.
+                          Identifies the subtle dharmic destiny and matrimonial alignment hidden within each 3°20' arc of the zodiac.
                         </p>
                       </div>
                     </div>
@@ -1098,13 +1119,13 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* â”€â”€ SECTION 4: TESTIMONIALS (Voices of Inquiry) â”€â”€ */}
+          {/* ── SECTION 4: TESTIMONIALS (Voices of Inquiry) ── */}
           <section className="relative z-10 py-16 lg:py-20 border-t border-[#E8DFC9] bg-gradient-to-b from-[#FBF6EA] to-[#F5EEDC]">
             <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
                 <div>
                   <div className="flex items-center gap-2 text-[#7B5800] text-xs font-bold uppercase tracking-widest mb-2">
-                    <span className="text-[#D9A63C]">âœ¦</span> Voices of Inquiry
+                    <span className="text-[#D9A63C]">✦</span> Voices of Inquiry
                   </div>
                   <h2 className="font-['Fraunces',serif] text-3xl sm:text-4xl font-bold text-[#022454] tracking-tight">
                     Practitioner Testimonies
@@ -1126,10 +1147,10 @@ export default function HomePage() {
                           <span key={i} className="material-symbols-outlined text-[18px]">star</span>
                         ))}
                       </div>
-                      <span className="text-[#7B5800] font-['Fraunces',serif] text-3xl leading-none">â€œ</span>
+                      <span className="text-[#7B5800] font-['Fraunces',serif] text-3xl leading-none">“</span>
                     </div>
                     <p className="font-['Inter',sans-serif] text-sm text-[#16223F] italic leading-relaxed">
-                      The mathematical fidelity of the Navamsha and Dashamsha tables is unmatched. No fluffâ€”pure classical Jyotish computed flawlessly.
+                      The mathematical fidelity of the Navamsha and Dashamsha tables is unmatched. No fluff—pure classical Jyotish computed flawlessly.
                     </p>
                   </div>
                   <div className="pt-5 mt-4 border-t border-[#EAE3D2]">
@@ -1147,7 +1168,7 @@ export default function HomePage() {
                           <span key={i} className="material-symbols-outlined text-[18px]">star</span>
                         ))}
                       </div>
-                      <span className="text-[#7B5800] font-['Fraunces',serif] text-3xl leading-none">â€œ</span>
+                      <span className="text-[#7B5800] font-['Fraunces',serif] text-3xl leading-none">“</span>
                     </div>
                     <p className="font-['Inter',sans-serif] text-sm text-[#16223F] italic leading-relaxed">
                       Finally an interface honoring the dignified scholarship of Bhrigu Samhita. The transit calculations match my manual ephemeris logs.
@@ -1168,7 +1189,7 @@ export default function HomePage() {
                           <span key={i} className="material-symbols-outlined text-[18px]">star</span>
                         ))}
                       </div>
-                      <span className="text-[#7B5800] font-['Fraunces',serif] text-3xl leading-none">â€œ</span>
+                      <span className="text-[#7B5800] font-['Fraunces',serif] text-3xl leading-none">“</span>
                     </div>
                     <p className="font-['Inter',sans-serif] text-sm text-[#16223F] italic leading-relaxed">
                       The triad remedy synthesis based on classical texts gives clear clarity to seekers without inducing superstitions. Truly an observatory.
@@ -1183,7 +1204,7 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* â”€â”€ SECTION 5: LIVE EPHEMERIS CLOCK BANNER â”€â”€ */}
+          {/* ── SECTION 5: LIVE EPHEMERIS CLOCK BANNER ── */}
           <section className="relative z-10 border-t border-[#E8DFC9] bg-[#FFFDF6] py-6">
             <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16">
               <div className="p-4 rounded-xl bg-gradient-to-r from-[#EBF2FA] via-[#FFFDF6] to-[#FFF6DC] border border-[#E0D8C3] shadow-xs flex flex-col lg:flex-row items-center justify-between gap-4 text-[#4A567A]">
@@ -1191,18 +1212,18 @@ export default function HomePage() {
                   <span className="w-3 h-3 rounded-full bg-[#D9A63C] animate-pulse shadow-xs"></span>
                   <span className="text-sm text-[#022454] font-bold">Live Celestial Clock:</span>
                   <span className="text-xs sm:text-sm text-[#16223F]">
-                    Sun in Aquarius (Kumbha 05Â° 12'), Moon in Aries (Mesha 19Â° 44'), Jupiter Retrograde in Taurus
+                    Sun in Aquarius (Kumbha 05° 12'), Moon in Aries (Mesha 19° 44'), Jupiter Retrograde in Taurus
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs">
                   <span className="uppercase tracking-wider text-[#4A567A]">Ayanamsa: Chitrapaksha (Lahiri)</span>
-                  <span className="text-[#D9A63C]">âœ¦</span>
+                  <span className="text-[#D9A63C]">✦</span>
                   <button
                     type="button"
                     onClick={() => navigate('/panchang')}
                     className="text-[#022454] font-bold hover:text-[#7B5800] underline underline-offset-2 cursor-pointer"
                   >
-                    View Daily Panchang â†’
+                    View Daily Panchang →
                   </button>
                 </div>
               </div>
@@ -1211,15 +1232,15 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* â”€â”€ ORGANIZED SCHOLARLY FOOTER â”€â”€ */}
+      {/* ── ORGANIZED SCHOLARLY FOOTER ── */}
       <footer className="w-full bg-[#12244A] text-[#F0DFAF] border-t border-[#D9A63C]/30 py-12">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
           <div className="flex flex-col gap-2 max-w-md">
             <div className="flex items-center justify-center md:justify-start gap-2">
               <span className="material-symbols-outlined text-[#D9A63C] text-[20px]">flare</span>
               <span className="font-['Fraunces',serif] text-lg font-bold text-[#FFFDF6] tracking-tight">TRIKAL DARSHI</span>
-              <span className="text-[#D9A63C]">âœ¦</span>
-              <span className="text-xs text-[#F0DFAF] uppercase tracking-widest font-sans">à¤¤à¥à¤°à¤¿à¤•à¤¾à¤² à¤¦à¤°à¥à¤¶à¥€</span>
+              <span className="text-[#D9A63C]">✦</span>
+              <span className="text-xs text-[#F0DFAF] uppercase tracking-widest font-sans">त्रिकाल दर्शी</span>
             </div>
             <p className="text-xs text-[#F0DFAF]/75 leading-relaxed">
               Vedic precision computing, Kundali delineations, and celestial timelines anchored in traditional Jyotish Shastra. Micro-arc precision ephemeris engine.
@@ -1242,7 +1263,7 @@ export default function HomePage() {
           </div>
 
           <div className="text-xs text-[#F0DFAF]/60">
-            Â© {new Date().getFullYear()} Trikal Darshi. All planetary coordinates verified.
+            © {new Date().getFullYear()} Trikal Darshi. All planetary coordinates verified.
           </div>
         </div>
       </footer>

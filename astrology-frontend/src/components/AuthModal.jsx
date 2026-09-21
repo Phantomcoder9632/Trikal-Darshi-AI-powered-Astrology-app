@@ -1,12 +1,35 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useGoogleLogin } from '@react-oauth/google';
 
-export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
-  const { user, isAuthenticated, loginWithEmail, registerWithEmail, logout, switchToMockUser } = useAuth();
+/**
+ * AuthModal — sign-in / registration dialog.
+ *
+ * `onAuthSuccess` (optional) fires immediately after ANY successful
+ * authentication (email login, email register, or Google). The landing page
+ * uses it to auto-start the pending chart calculation the moment the guest
+ * finishes creating their profile.
+ *
+ * `pendingNote` (optional) explains WHY the dialog opened (e.g. "your reading
+ * will begin automatically after you create your profile").
+ */
+export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSuccess, pendingNote }) {
+  const { user, isAuthenticated, login, loginWithEmail, registerWithEmail, logout } = useAuth();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'profile'
+
+  // Re-apply the requested mode each time the dialog opens — the component
+  // stays mounted while hidden, so `useState(initialMode)` alone would ignore
+  // mode changes made between openings (e.g. landing page forcing 'register').
+  React.useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      setErrorMsg('');
+      setSuccessMsg('');
+    }
+  }, [isOpen, initialMode]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -14,6 +37,30 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Google OAuth — access-token flow (backend /auth/google verifies it via the
+  // userinfo endpoint; avoids the GSI One Tap redirect freeze on mobile).
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setErrorMsg('');
+      setGoogleLoading(true);
+      try {
+        await login(tokenResponse.access_token, language);
+        setSuccessMsg('Signed in with Google successfully.');
+        if (onAuthSuccess) onAuthSuccess();
+        setTimeout(() => onClose(), 600);
+      } catch (err) {
+        console.error(err);
+        setErrorMsg(err.response?.data?.detail || 'Google sign-in failed. Please try again.');
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    onError: () => {
+      setErrorMsg('Google sign-in was cancelled or failed.');
+    },
+  });
 
   if (!isOpen) return null;
 
@@ -30,6 +77,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
         }
         await loginWithEmail(email, password);
         setSuccessMsg('Successfully authenticated with Trikal Darshi.');
+        if (onAuthSuccess) onAuthSuccess();
         setTimeout(() => {
           onClose();
         }, 600);
@@ -37,11 +85,15 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
         if (!email || !password) {
           throw new Error('Please fill in all required fields.');
         }
-        if (password.length < 6) {
-          throw new Error('Password must be at least 6 characters long.');
+        // Must match the backend policy in routes/auth.py (PASSWORD_REGEX):
+        // 8+ chars, at least one uppercase, one lowercase, one number.
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+        if (!passwordRegex.test(password)) {
+          throw new Error('Password must be at least 8 characters and contain an uppercase letter, a lowercase letter, and a number.');
         }
         await registerWithEmail(email, password, name, language);
         setSuccessMsg('Account and Vedic Profile created successfully.');
+        if (onAuthSuccess) onAuthSuccess();
         setTimeout(() => {
           onClose();
         }, 600);
@@ -110,6 +162,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           </div>
         )}
 
+        {/* Pending-action note — why this dialog opened (e.g. gated reading) */}
+        {pendingNote && !isAuthenticated && (
+          <div className="mb-4 p-3 bg-[#FBF5E5] border border-[#D9A63C]/40 text-[#7b5800] text-xs rounded-xl flex items-center gap-2">
+            <span className="material-symbols-outlined text-[16px] flex-shrink-0">auto_awesome</span>
+            <span>{pendingNote}</span>
+          </div>
+        )}
+
         {/* Authenticated User Profile View */}
         {isAuthenticated ? (
           <div className="space-y-4">
@@ -143,10 +203,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 <span>Saved Vault</span>
               </button>
               <button
-                type="button"
-                onClick={() => {
+                type="button"                  onClick={() => {
                   onClose();
-                  navigate('/dashboard/mock-arjun-chart-108');
+                  navigate('/charts');
                 }}
                 className="flex items-center justify-center gap-2 py-2.5 px-4 bg-[#F4EEDA] hover:bg-[#EAE2C8] text-[#16223F] text-xs font-semibold rounded-xl border border-[#D9A63C]/40 shadow-xs transition-colors cursor-pointer"
               >
@@ -202,6 +261,38 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
               >
                 Create Profile
               </button>
+            </div>
+
+            {/* Google OAuth — access-token flow via useGoogleLogin */}
+            <button
+              type="button"
+              onClick={() => googleLogin()}
+              disabled={googleLoading || loading}
+              className="w-full mb-4 py-2.5 px-4 bg-[#FFFDF6] hover:bg-[#F4EEDA] text-[#16223F] text-xs font-semibold rounded-xl border border-[#D9A63C]/50 shadow-xs transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60"
+            >
+              {googleLoading ? (
+                <>
+                  <span className="material-symbols-outlined text-[16px] animate-spin text-[#D9A63C]">hourglass_top</span>
+                  <span>Aligning with Google…</span>
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                  </svg>
+                  <span>Continue with Google</span>
+                </>
+              )}
+            </button>
+
+            {/* Email divider */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-px flex-1 bg-[#D9A63C]/25" />
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#8E9BB5]">or use email</span>
+              <div className="h-px flex-1 bg-[#D9A63C]/25" />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -285,24 +376,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
               </button>
             </form>
 
-            {/* Offline Mock / Demo Account Shortcut */}
-            <div className="mt-5 pt-4 border-t border-[#D9A63C]/20 text-center">
-              <p className="text-[11px] text-[#5D6B88] mb-2 font-mono">Exploring without credentials?</p>
-              <button
-                type="button"
-                onClick={() => {
-                  switchToMockUser();
-                  setSuccessMsg('Active as Scholar Arjun Sharma (Mock Offline Mode)');
-                  setTimeout(() => {
-                    onClose();
-                  }, 500);
-                }}
-                className="w-full py-2 px-3 bg-[#F4EEDA] hover:bg-[#EAE2C8] text-[#16223F] text-xs font-semibold rounded-xl border border-[#D9A63C]/40 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <span className="material-symbols-outlined text-[16px] text-[#8C6718]">badge</span>
-                <span>Enter as Verified Scholar (One-Click Demo)</span>
-              </button>
-            </div>
           </div>
         )}
       </div>

@@ -46,3 +46,4 @@ astrology-backend/test_*.py
 # Deployment Folders
 temp_hf_deploy/
 language_feature_guide.md
+.freebuff/

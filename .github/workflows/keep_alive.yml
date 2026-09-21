@@ -1,0 +1,29 @@
+name: Keep Alive (Backend & Database)
+
+on:
+  schedule:
+    # Runs every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
+    # 6 hours ensures Aiven's 24-hour inactivity timer never triggers
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allows manual trigger anytime from GitHub Actions tab
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend and Database (via /health)
+        run: |
+          BACKEND_URL="${{ secrets.BACKEND_URL || 'https://brocoai-trikal-darshi-api.hf.space' }}"
+          echo "Pinging backend at $BACKEND_URL/health ..."
+          
+          # Use curl with retry to allow sleeping HF Spaces up to 60s to wake up
+          RESPONSE=$(curl -s -L --retry 3 --retry-delay 10 --max-time 60 "$BACKEND_URL/health" || echo "FAILED")
+          echo "Response from /health:"
+          echo "$RESPONSE"
+
+      - name: Verify Live Transit Engine
+        run: |
+          BACKEND_URL="${{ secrets.BACKEND_URL || 'https://brocoai-trikal-darshi-api.hf.space' }}"
+          echo "Requesting live transit calculations..."
+          TRANSIT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 30 "$BACKEND_URL/chart/gochar?lat=28.6139&lng=77.2090" || echo "000")
+          echo "Transit endpoint HTTP status: $TRANSIT_STATUS"

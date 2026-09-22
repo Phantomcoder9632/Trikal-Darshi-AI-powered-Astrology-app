@@ -621,7 +621,7 @@ export default function DashboardPage() {
       <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex flex-col">
 
         {/* ── Upper Zone: Cosmic Summary (2×3 detail grid) + Chart Viewer, side by side ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
           <div className="lg:col-span-7">
             <CosmicSummary
               chartData={chartData}

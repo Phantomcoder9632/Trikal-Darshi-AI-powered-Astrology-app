@@ -82,10 +82,10 @@ export default React.memo(function CosmicSummary({
     ? Math.max(totalCount - completedCount, 0)
     : null;
 
-  const chipCls = 'bg-[#FAF5E8]/80 border border-[#E8D5A7]/70 rounded-xl px-3 py-2.5 flex flex-col justify-center gap-1 min-w-0 hover:border-[#D9A63C]/80 hover:shadow-xs hover:bg-[#FBF7EC] transition-all group';
+  const chipCls = 'bg-[#FAF5E8]/80 border border-[#E8D5A7]/70 rounded-lg px-2.5 py-1.5 flex flex-col justify-center gap-0.5 min-w-0 hover:border-[#D9A63C]/80 hover:shadow-xs hover:bg-[#FBF7EC] transition-all group';
 
   return (
-    <div className="relative bg-[#FFFDF6] border border-[#E8D5A7]/80 rounded-2xl p-4 sm:p-5 shadow-xs overflow-hidden w-full h-full flex flex-col">
+    <div className="relative bg-[#FFFDF6] border border-[#E8D5A7]/80 rounded-2xl p-3 sm:p-4 shadow-xs overflow-hidden w-full h-full flex flex-col">
       {/* Decorative golden corner accents + sheen */}
       <div aria-hidden="true" className="absolute top-2.5 left-2.5 w-2.5 h-2.5 border-t-2 border-l-2 border-[#D9A63C]/70 rounded-tl-sm" />
       <div aria-hidden="true" className="absolute top-2.5 right-2.5 w-2.5 h-2.5 border-t-2 border-r-2 border-[#D9A63C]/70 rounded-tr-sm" />
@@ -96,41 +96,41 @@ export default React.memo(function CosmicSummary({
       <div aria-hidden="true" className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-[#D9A63C]/60 to-transparent" />
 
       {/* Header row */}
-      <div className="flex flex-wrap items-center gap-2 pb-2.5 border-b border-[#E8D5A7]/40 relative z-10">
-        <span className="material-symbols-outlined text-[#D9A63C] text-[17px]">explore</span>
-        <span className="text-[10.5px] font-bold uppercase tracking-widest text-[#7b5800] font-sans">
+      <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-[#E8D5A7]/40 relative z-10">
+        <span className="material-symbols-outlined text-[#D9A63C] text-[15px]">explore</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-[#7b5800] font-sans">
           Janma Kundali Ephemeris • Precision Grid
         </span>
-        <span className="text-[10.5px] px-2 py-0.5 rounded-full bg-[#EBF1FA] text-[#1F3A6B] font-semibold border border-[#C3D6EF]/70 truncate max-w-[260px]">
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EBF1FA] text-[#1F3A6B] font-semibold border border-[#C3D6EF]/70 truncate max-w-[240px]">
           {chartData?.full_name || 'Unknown Native'}{chartData?.city_of_birth ? ` • ${chartData.city_of_birth}` : ''}
         </span>
         {retroCount > 0 && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F4EEDA] text-[#7b5800] font-semibold border border-[#D9A63C]/40" title={retroPlanets.map((p) => p.name).join(', ')}>
+          <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-[#F4EEDA] text-[#7b5800] font-semibold border border-[#D9A63C]/40" title={retroPlanets.map((p) => p.name).join(', ')}>
             ℞ {retroCount} retrograde
           </span>
         )}
       </div>
 
-      {/* ── Detail chips: 4 per row, rows stretch to fill the panel height ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3 relative z-10 auto-rows-fr flex-1 min-h-0">
+      {/* ── Detail chips: 4 per row, compact proportions ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 relative z-10 auto-rows-fr flex-1 min-h-0">
         {chips.map((c) => (
           <div key={c.label} className={chipCls} title={`${c.label} — ${c.sub}`}>
             <div className="flex items-center gap-1.5 w-full">
-              <span className={`material-symbols-outlined text-[15px] ${c.alert ? 'text-[#BA1A1A]' : 'text-[#D9A63C]'} group-hover:scale-110 transition-transform`}>{c.icon}</span>
-              <span className="text-[11px] font-semibold text-[#535E73] uppercase tracking-wider truncate">{c.label}</span>
+              <span className={`material-symbols-outlined text-[13.5px] ${c.alert ? 'text-[#BA1A1A]' : 'text-[#D9A63C]'} group-hover:scale-110 transition-transform`}>{c.icon}</span>
+              <span className="text-[10px] font-semibold text-[#535E73] uppercase tracking-wider truncate">{c.label}</span>
             </div>
-            <span className={`font-['Fraunces',serif] text-[16px] font-semibold leading-tight truncate w-full ${c.alert ? 'text-[#93000A]' : c.good ? 'text-[#1E6E3E]' : 'text-[#022454]'}`}>
+            <span className={`font-['Fraunces',serif] text-[13.5px] sm:text-[14px] font-semibold leading-tight truncate w-full ${c.alert ? 'text-[#93000A]' : c.good ? 'text-[#1E6E3E]' : 'text-[#022454]'}`}>
               {c.value}
             </span>
-            <span className={`text-[11px] font-medium truncate w-full ${c.subCls || 'text-[#7b5800]'}`}>{c.sub}</span>
+            <span className={`text-[10px] font-medium truncate w-full ${c.subCls || 'text-[#7b5800]'}`}>{c.sub}</span>
           </div>
         ))}
       </div>
 
       {/* ── Dasha timeline strip (real windows) ── */}
       {dashaTl && (
-        <div className="mt-3 pt-2.5 border-t border-dashed border-[#E8D5A7]/60 flex items-center gap-2.5 relative z-10">
-          <span className="text-[11px] font-bold text-[#7b5800] uppercase tracking-wider whitespace-nowrap">
+        <div className="mt-2 pt-2 border-t border-dashed border-[#E8D5A7]/60 flex items-center gap-2 relative z-10">
+          <span className="text-[10px] font-bold text-[#7b5800] uppercase tracking-wider whitespace-nowrap">
             {dasha.mahadasha} Mahadasha
           </span>
           <div className="flex-1 relative h-1.5 rounded-full bg-[#F0E7D0] overflow-hidden border border-[#E8D5A7]/50">
@@ -149,7 +149,7 @@ export default React.memo(function CosmicSummary({
               />
             )}
           </div>
-          <span className="text-[11px] text-[#535E73] font-medium whitespace-nowrap">
+          <span className="text-[10px] text-[#535E73] font-medium whitespace-nowrap">
             ends {dasha.mahadasha_end}
           </span>
         </div>

@@ -55,30 +55,30 @@ export default React.memo(function ChartSidebar({
   return (
     <div className="flex flex-col gap-4 w-full h-full">
       {/* ── Divisional Chart Viewer Card ── */}
-      <div className="bg-[#FFFDF6] border border-[#E8D5A7]/80 rounded-2xl p-5 shadow-xs flex flex-col gap-3 flex-1">
+      <div className="bg-[#FFFDF6] border border-[#E8D5A7]/80 rounded-2xl p-3.5 sm:p-4 shadow-xs flex flex-col gap-2.5 flex-1">
 
         {/* Card Header */}
-        <div className="flex items-center justify-between pb-2 border-b border-[#E8D5A7]/40">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#FAF3E3] border border-[#E8D5A7] flex items-center justify-center text-[#D9A63C]">
-              <span className="material-symbols-outlined text-[20px]">filter_vintage</span>
+        <div className="flex items-center justify-between pb-1.5 border-b border-[#E8D5A7]/40">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-md bg-[#FAF3E3] border border-[#E8D5A7] flex items-center justify-center text-[#D9A63C]">
+              <span className="material-symbols-outlined text-[17px]">filter_vintage</span>
             </div>
             <div>
-              <h2 className="font-['Fraunces',serif] text-[#022454] text-[18px] font-bold tracking-tight">
+              <h2 className="font-['Fraunces',serif] text-[#022454] text-[15px] sm:text-[16px] font-bold tracking-tight">
                 {activeVargaConfig.name} Varga
               </h2>
-              <p className="text-[11px] text-[#535E73]">
+              <p className="text-[10px] text-[#535E73]">
                 Microscopic Vedic Harmonic &amp; Karmic Dimension
               </p>
             </div>
           </div>
-          <span className="text-[10.5px] font-bold bg-[#EBF1FA] border border-[#C3D6EF] text-[#1F3A6B] px-2.5 py-1 rounded-full uppercase tracking-wider">
+          <span className="text-[9.5px] font-bold bg-[#EBF1FA] border border-[#C3D6EF] text-[#1F3A6B] px-2 py-0.5 rounded-full uppercase tracking-wider">
             Mahat Phalam
           </span>
         </div>
 
         {/* 9-Button Varga Toggle Grid */}
-        <div className="grid grid-cols-5 gap-1.5 bg-[#FAF5E8] p-1.5 rounded-xl border border-[#E8D5A7]/60">
+        <div className="grid grid-cols-5 gap-1 bg-[#FAF5E8] p-1 rounded-lg border border-[#E8D5A7]/60">
           {VARGA_LIST.map((v) => {
             const isSelected = selectedVarga === v.id;
             return (
@@ -86,7 +86,7 @@ export default React.memo(function ChartSidebar({
                 key={v.id}
                 type="button"
                 onClick={() => setSelectedVarga(v.id)}
-                className={`py-1.5 px-2 rounded-lg text-[11.5px] font-semibold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                className={`py-1 px-1.5 rounded-md text-[10.5px] font-semibold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                   v.isWide ? 'col-span-2' : ''
                 } ${
                   isSelected
@@ -101,8 +101,8 @@ export default React.memo(function ChartSidebar({
           })}
         </div>
 
-        {/* North Indian Chart Framed Container — enlarged so glyphs stay legible */}
-        <div className="w-full max-w-[440px] mx-auto bg-[#FAF5E8]/80 rounded-xl p-4 border-2 border-[#E8D5A7] relative shadow-inner flex items-center justify-center flex-1">
+        {/* North Indian Chart Framed Container — scaled down for comfortable viewport fit */}
+        <div className="w-full max-w-[340px] sm:max-w-[360px] mx-auto bg-[#FAF5E8]/80 rounded-xl p-2.5 sm:p-3 border-2 border-[#E8D5A7] relative shadow-inner flex items-center justify-center flex-1">
           <DivisionalChart
             chartType={selectedVarga}
             chartData={resolvedChartData}
@@ -112,12 +112,12 @@ export default React.memo(function ChartSidebar({
         </div>
 
         {/* Chart Metadata Footer */}
-        <div className="flex items-center justify-between text-[11.5px] bg-[#FAF3E3]/80 px-3 py-2 rounded-lg border border-[#E8D5A7]/70">
+        <div className="flex items-center justify-between text-[10.5px] bg-[#FAF3E3]/80 px-2.5 py-1.5 rounded-lg border border-[#E8D5A7]/70">
           <span className="flex items-center gap-1.5 text-[#535E73]">
-            <span className="material-symbols-outlined text-[#7b5800] text-[16px]">verified</span>
+            <span className="material-symbols-outlined text-[#7b5800] text-[15px]">verified</span>
             <span>Ayanamsha: <strong className="text-[#022454] font-semibold">Lahiri 24°11'42"</strong></span>
           </span>
-          <span className="px-2 py-0.5 rounded bg-[#FFFDF6] text-[#1F3A6B] font-semibold border border-[#E8D5A7]/80 text-[10.5px]">
+          <span className="px-2 py-0.5 rounded bg-[#FFFDF6] text-[#1F3A6B] font-semibold border border-[#E8D5A7]/80 text-[10px]">
             Sthira Lagna (Fixed)
           </span>
         </div>

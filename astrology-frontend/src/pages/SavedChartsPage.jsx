@@ -109,7 +109,7 @@ export default function SavedChartsPage() {
     <div className="bg-[#FBF6EA] text-[#16223F] font-['Inter',sans-serif] antialiased min-h-screen flex flex-col selection:bg-[#F0DFAF] selection:text-[#12244A]">
       {/* ── TOP NAVIGATION BAR ── */}
       <header className="w-full bg-[#FFFDF6] border-b border-[#D9A63C]/30 sticky top-0 z-40 shadow-xs">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 h-16 flex items-center justify-between">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Brand & Status Group */}
           <div className="flex items-center space-x-6">
             <button
@@ -224,7 +224,7 @@ export default function SavedChartsPage() {
       )}
 
       {/* ── MAIN CONTENT VAULT ── */}
-      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-8 lg:px-16 py-8">
+      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* VAULT PAGE HEADER */}
         <section className="mb-8">
           <div className="flex items-center space-x-2 text-xs font-mono tracking-widest uppercase text-[#8C6718] mb-2 font-medium">
@@ -591,7 +591,7 @@ export default function SavedChartsPage() {
 
       {/* ── FOOTER ── */}
       <footer className="w-full bg-[#F4EEDA] border-t border-[#D9A63C]/30 py-6 mt-12 text-xs text-[#5D6B88]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <span className="font-['Fraunces',serif] font-bold text-sm tracking-wider text-[#1F3A6B]">
               TRIKAL DARSHI

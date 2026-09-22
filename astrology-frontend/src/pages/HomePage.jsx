@@ -207,7 +207,7 @@ export default function HomePage() {
 
       {/* ── TOP NAVIGATION BAR ── */}
       <header className="fixed top-0 left-0 w-full z-50 bg-[#FFFDF6]/95 backdrop-blur-md border-b border-[#E8DFC9] shadow-xs">
-        <div className="h-16 max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 flex items-center justify-between gap-4">
+        <div className="h-16 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           {/* Brand Logo */}
           <button
             type="button"
@@ -360,16 +360,16 @@ export default function HomePage() {
           </div>
 
           {/* ── SECTION 1: HERO CONTAINER WITH CELESTIAL ASTROLABE ── */}
-          <section className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 pt-8 pb-16 lg:pt-12 lg:pb-20">
+          <section className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-10 lg:pt-6 lg:pb-12">
             {/* Dynamic Animated Atmospheric Canvas & Astrolabe Layer */}
             <div aria-hidden="true" className="absolute inset-0 pointer-events-none overflow-hidden -z-10 select-none">
               <HeroStarCanvas />
-              <div className="absolute -top-16 left-1/4 w-[600px] h-[600px] bg-gradient-to-br from-[#D9A63C]/35 via-[#F0DFAF]/30 to-transparent rounded-full blur-3xl animate-cosmic-pulse" />
+              <div className="absolute -top-16 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-[#D9A63C]/35 via-[#F0DFAF]/30 to-transparent rounded-full blur-3xl animate-cosmic-pulse" />
               <div
-                className="absolute top-20 right-8 w-[580px] h-[580px] bg-gradient-to-tl from-[#1F3A6B]/25 via-[#aec6ff]/35 to-transparent rounded-full blur-3xl animate-cosmic-pulse"
+                className="absolute top-20 right-8 w-[480px] h-[480px] bg-gradient-to-tl from-[#1F3A6B]/25 via-[#aec6ff]/35 to-transparent rounded-full blur-3xl animate-cosmic-pulse"
                 style={{ animationDelay: '-4.5s' }}
               />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[760px] h-[760px] lg:w-[940px] lg:h-[940px] pointer-events-none select-none">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[580px] h-[580px] lg:w-[720px] lg:h-[720px] pointer-events-none select-none">
                 <svg
                   className="w-full h-full animate-astrolabe-reverse drop-shadow-md"
                   fill="none"
@@ -450,7 +450,7 @@ export default function HomePage() {
             </div>
 
             {/* Editorial Masthead Overline Ribbon */}
-            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 mb-8 rounded-lg bg-[#FFFDF6]/90 backdrop-blur-sm border border-[#E8DFC9] shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 mb-5 sm:mb-6 rounded-lg bg-[#FFFDF6]/90 backdrop-blur-sm border border-[#E8DFC9] shadow-xs">
               <div className="flex items-center gap-2 text-[#4A567A]">
                 <span className="material-symbols-outlined text-[18px] text-[#D9A63C]">explore</span>
                 <span className="text-[12px] uppercase tracking-widest text-[#022454] font-bold">Kala-Chakra Observatory</span>
@@ -465,10 +465,10 @@ export default function HomePage() {
             </div>
 
             {/* 2-Column Hero Architecture */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
               
               {/* LEFT HERO COLUMN */}
-              <div className="lg:col-span-7 flex flex-col gap-6 lg:gap-8">
+              <div className="lg:col-span-7 flex flex-col gap-4 sm:gap-6">
                 {/* Brand Pre-badge */}
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-wrap items-center gap-2 self-start">
@@ -483,14 +483,14 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  <h1 className="font-['Fraunces',serif] text-4xl sm:text-5xl lg:text-[54px] font-semibold leading-[1.12] text-[#0E1A37] tracking-tight pt-1">
+                  <h1 className="font-['Fraunces',serif] text-3xl sm:text-4xl lg:text-[44px] font-semibold leading-[1.15] text-[#0E1A37] tracking-tight pt-1">
                     The Geometry of <br />
                     <span className="italic font-['Fraunces',serif] font-bold gold-shimmer-text decoration-[#D9A63C] decoration-2 underline underline-offset-8 drop-shadow-sm">
                       Soul &amp; Time.
                     </span>
                   </h1>
 
-                  <p className="text-base sm:text-lg text-[#4A567A] leading-relaxed max-w-2xl pt-1">
+                  <p className="text-sm sm:text-base text-[#4A567A] leading-relaxed max-w-2xl pt-0.5">
                     Mathematical Vedic delineations anchored in immutable celestial coordinates. Unveiling sixteen levels of karmic projection through razor-sharp planetary mechanics.
                   </p>
                 </div>
@@ -516,49 +516,49 @@ export default function HomePage() {
                 </div>
 
                 {/* 4 Distinct Numerical Metrics Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-2">
-                  <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-4 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                  <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-3 sm:p-3.5 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
                     <div className="flex items-center justify-between pb-1">
-                      <span className="font-['Fraunces',serif] text-3xl font-bold text-[#022454]">16+</span>
-                      <div className="w-8 h-8 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
-                        <span className="material-symbols-outlined text-[19px] text-[#D9A63C]">grid_view</span>
+                      <span className="font-['Fraunces',serif] text-2xl sm:text-3xl font-bold text-[#022454]">16+</span>
+                      <div className="w-7 h-7 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
+                        <span className="material-symbols-outlined text-[17px] text-[#D9A63C]">grid_view</span>
                       </div>
                     </div>
-                    <span className="text-[13px] font-bold text-[#16223F] mt-1">Divisional Charts</span>
-                    <span className="text-[11px] text-[#7b5800] font-semibold mt-0.5">Shodashvarga</span>
+                    <span className="text-[12px] font-bold text-[#16223F] mt-1">Divisional Charts</span>
+                    <span className="text-[10.5px] text-[#7b5800] font-semibold mt-0.5">Shodashvarga</span>
                   </div>
 
-                  <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-4 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
+                  <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-3 sm:p-3.5 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
                     <div className="flex items-center justify-between pb-1">
-                      <span className="font-['Fraunces',serif] text-3xl font-bold text-[#022454]">10</span>
-                      <div className="w-8 h-8 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
-                        <span className="material-symbols-outlined text-[19px] text-[#D9A63C]">timeline</span>
+                      <span className="font-['Fraunces',serif] text-2xl sm:text-3xl font-bold text-[#022454]">10</span>
+                      <div className="w-7 h-7 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
+                        <span className="material-symbols-outlined text-[17px] text-[#D9A63C]">timeline</span>
                       </div>
                     </div>
-                    <span className="text-[13px] font-bold text-[#16223F] mt-1">Life Sections</span>
-                    <span className="text-[11px] text-[#7b5800] font-semibold mt-0.5">Dasha &amp; Gochara</span>
+                    <span className="text-[12px] font-bold text-[#16223F] mt-1">Life Sections</span>
+                    <span className="text-[10.5px] text-[#7b5800] font-semibold mt-0.5">Dasha &amp; Gochara</span>
                   </div>
 
-                  <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-4 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
+                  <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-3 sm:p-3.5 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
                     <div className="flex items-center justify-between pb-1">
-                      <span className="font-['Fraunces',serif] text-3xl font-bold text-[#022454]">3</span>
-                      <div className="w-8 h-8 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
-                        <span className="material-symbols-outlined text-[19px] text-[#D9A63C]">menu_book</span>
+                      <span className="font-['Fraunces',serif] text-2xl sm:text-3xl font-bold text-[#022454]">3</span>
+                      <div className="w-7 h-7 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
+                        <span className="material-symbols-outlined text-[17px] text-[#D9A63C]">menu_book</span>
                       </div>
                     </div>
-                    <span className="text-[13px] font-bold text-[#16223F] mt-1">Wisdom Streams</span>
-                    <span className="text-[11px] text-[#7b5800] font-semibold mt-0.5">Parashari, Jaimini, KP</span>
+                    <span className="text-[12px] font-bold text-[#16223F] mt-1">Wisdom Streams</span>
+                    <span className="text-[10.5px] text-[#7b5800] font-semibold mt-0.5">Parashari, Jaimini, KP</span>
                   </div>
 
-                  <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-4 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
+                  <div className="hero-stat-card bg-gradient-to-b from-[#FFFDF6] to-[#FAF5E6] p-3 sm:p-3.5 rounded-xl border-2 border-[#E0CF9B] hover:border-[#D9A63C] shadow-md flex flex-col">
                     <div className="flex items-center justify-between pb-1">
-                      <span className="font-['Fraunces',serif] text-3xl font-bold text-[#022454]">∞</span>
-                      <div className="w-8 h-8 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
-                        <span className="material-symbols-outlined text-[19px] text-[#D9A63C]">cyclone</span>
+                      <span className="font-['Fraunces',serif] text-2xl sm:text-3xl font-bold text-[#022454]">∞</span>
+                      <div className="w-7 h-7 rounded-lg bg-[#FBF5E5] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs">
+                        <span className="material-symbols-outlined text-[17px] text-[#D9A63C]">cyclone</span>
                       </div>
                     </div>
-                    <span className="text-[13px] font-bold text-[#16223F] mt-1">Cosmic Insights</span>
-                    <span className="text-[11px] text-[#7b5800] font-semibold mt-0.5">Real-Time Transit</span>
+                    <span className="text-[12px] font-bold text-[#16223F] mt-1">Cosmic Insights</span>
+                    <span className="text-[10.5px] text-[#7b5800] font-semibold mt-0.5">Real-Time Transit</span>
                   </div>
                 </div>
 
@@ -652,36 +652,36 @@ export default function HomePage() {
               </div>
 
               {/* RIGHT HERO COLUMN: Janma Kundali Generator Form Card */}
-              <div className="lg:col-span-5 lg:sticky lg:top-24" id="birth-form-card" ref={formRef}>
-                <div className="hero-card-glow bg-[#FFFDF6]/95 backdrop-blur-md p-6 sm:p-8 rounded-2xl border-2 border-[#E5DEC7] relative border-[#D9A63C]/50 shadow-md">
+              <div className="lg:col-span-5 lg:sticky lg:top-20" id="birth-form-card" ref={formRef}>
+                <div className="hero-card-glow bg-[#FFFDF6]/95 backdrop-blur-md p-5 sm:p-6 rounded-2xl border-2 border-[#E5DEC7] relative border-[#D9A63C]/50 shadow-md">
                   
                   {/* Corner Decorative Accents */}
                   <div
                     aria-hidden="true"
-                    className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#FBF5E5] border border-[#E0CF9B] text-[#7b5800] font-mono text-[11px] font-bold"
+                    className="absolute top-3.5 right-3.5 flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#FBF5E5] border border-[#E0CF9B] text-[#7b5800] font-mono text-[10.5px] font-bold"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D9A63C]" />
                     <span>COORD • J108</span>
                   </div>
 
                   {/* Form Header */}
-                  <div className="flex flex-col gap-1.5 pb-6 border-b border-[#EAE3D2]">
+                  <div className="flex flex-col gap-1 pb-3.5 border-b border-[#EAE3D2]">
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px] text-[#D9A63C]">auto_awesome</span>
-                      <span className="text-[12px] uppercase tracking-widest text-[#7b5800] font-bold">
+                      <span className="material-symbols-outlined text-[17px] text-[#D9A63C]">auto_awesome</span>
+                      <span className="text-[11px] uppercase tracking-widest text-[#7b5800] font-bold">
                         Janma Kundali Generator
                       </span>
                     </div>
-                    <h2 className="font-['Fraunces',serif] text-2xl font-bold text-[#022454] tracking-tight">
+                    <h2 className="font-['Fraunces',serif] text-xl sm:text-2xl font-bold text-[#022454] tracking-tight">
                       Cast Celestial Chart
                     </h2>
-                    <p className="text-[13px] text-[#4A567A] leading-relaxed">
+                    <p className="text-[12.5px] text-[#4A567A] leading-relaxed">
                       Enter birth coordinates to compute exact ascendant degrees, nakshatra pada, and planetary vargas.
                     </p>
                   </div>
 
                   {error && (
-                    <div className="my-3 p-3 bg-[#FFDAD6] border border-[#BA1A1A]/30 text-[#93000A] text-xs rounded-lg flex items-center gap-2">
+                    <div className="my-2.5 p-2.5 bg-[#FFDAD6] border border-[#BA1A1A]/30 text-[#93000A] text-xs rounded-lg flex items-center gap-2">
                       <span className="material-symbols-outlined text-[16px]">error</span>
                       <span>{error}</span>
                     </div>
@@ -689,7 +689,7 @@ export default function HomePage() {
 
                   {submitting && <CalculationMilestones />}
 
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-5 pt-6">
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 pt-4">
                     {/* Full Name */}
                     <div className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between">
@@ -891,7 +891,7 @@ export default function HomePage() {
 
           {/* ── SECTION 2: THE THREE CELESTIAL STREAMS (Exact 3-Column Section) ── */}
           <section className="relative z-10 border-t border-[#E8DFC9] bg-gradient-to-b from-[#FAF5E6] to-[#F5EEDC]/80 py-16 lg:py-20">
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center max-w-2xl mx-auto mb-12">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FBF5E5] border border-[#E0CF9B] text-[#7b5800] text-xs font-bold uppercase tracking-widest mb-3">
                   <span className="text-[#D9A63C]">✦</span> Integrated Jyotish Canon <span className="text-[#D9A63C]">✦</span>
@@ -982,7 +982,7 @@ export default function HomePage() {
 
           {/* ── SECTION 3: KUNDLI D1 MATRIX & EPHEMERIS SHOWCASE (2-Column) ── */}
           <section className="relative z-10 py-16 lg:py-20 border-t border-[#E8DFC9] bg-[#FBF6EA]" id="matrix-showcase">
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
                 
                 {/* Left Sub-column: Interactive Signature Yantra Kundali Graphic */}
@@ -1121,7 +1121,7 @@ export default function HomePage() {
 
           {/* ── SECTION 4: TESTIMONIALS (Voices of Inquiry) ── */}
           <section className="relative z-10 py-16 lg:py-20 border-t border-[#E8DFC9] bg-gradient-to-b from-[#FBF6EA] to-[#F5EEDC]">
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
                 <div>
                   <div className="flex items-center gap-2 text-[#7B5800] text-xs font-bold uppercase tracking-widest mb-2">
@@ -1206,7 +1206,7 @@ export default function HomePage() {
 
           {/* ── SECTION 5: LIVE EPHEMERIS CLOCK BANNER ── */}
           <section className="relative z-10 border-t border-[#E8DFC9] bg-[#FFFDF6] py-6">
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
               <div className="p-4 rounded-xl bg-gradient-to-r from-[#EBF2FA] via-[#FFFDF6] to-[#FFF6DC] border border-[#E0D8C3] shadow-xs flex flex-col lg:flex-row items-center justify-between gap-4 text-[#4A567A]">
                 <div className="flex items-center gap-3">
                   <span className="w-3 h-3 rounded-full bg-[#D9A63C] animate-pulse shadow-xs"></span>
@@ -1234,7 +1234,7 @@ export default function HomePage() {
 
       {/* ── ORGANIZED SCHOLARLY FOOTER ── */}
       <footer className="w-full bg-[#12244A] text-[#F0DFAF] border-t border-[#D9A63C]/30 py-12">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
           <div className="flex flex-col gap-2 max-w-md">
             <div className="flex items-center justify-center md:justify-start gap-2">
               <span className="material-symbols-outlined text-[#D9A63C] text-[20px]">flare</span>

@@ -501,7 +501,7 @@ export default function DashboardPage() {
 
       {/* ── Sticky Header ────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 w-full bg-[#FFFDF6]/95 backdrop-blur-md border-b border-[#E8D5A7]/70 shadow-xs">
-        <div className="max-w-[1580px] mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
 
           {/* Logo */}
           <button
@@ -618,7 +618,7 @@ export default function DashboardPage() {
       </header>
 
       {/* ── Main Content ──────────────────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-[1580px] mx-auto px-4 sm:px-6 lg:px-10 py-6 flex flex-col">
+      <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex flex-col">
 
         {/* ── Upper Zone: Cosmic Summary (2×3 detail grid) + Chart Viewer, side by side ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
@@ -708,7 +708,7 @@ export default function DashboardPage() {
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className="w-full border-t border-outline-variant/20 bg-white/70 mt-12">
-        <div className="max-w-[1650px] mx-auto px-4 sm:px-8 md:px-10 py-7 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex flex-col items-center sm:items-start gap-1">
             <span className="font-wordmark text-primary text-[15px] tracking-wider">
               TRIKAL DARSHI

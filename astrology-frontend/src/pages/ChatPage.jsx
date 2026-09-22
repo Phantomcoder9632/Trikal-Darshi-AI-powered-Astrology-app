@@ -191,7 +191,7 @@ export default function ChatPage() {
     <div className="w-full min-h-screen bg-[#FBF6EA] text-[#0E1A37] flex flex-col font-['Inter',sans-serif]">
       {/* Top Header */}
       <header className="sticky top-0 z-50 w-full bg-[#FFFDF6]/95 backdrop-blur-md border-b border-[#E8D5A7]/70 shadow-xs">
-        <div className="max-w-[1580px] mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -247,7 +247,7 @@ export default function ChatPage() {
       </header>
 
       {/* Main Chat Workspace */}
-      <div className="max-w-[1580px] mx-auto w-full px-4 sm:px-6 lg:px-10 py-6 flex-1 flex flex-col lg:flex-row items-start gap-6">
+      <div className="max-w-[1440px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex-1 flex flex-col lg:flex-row items-start gap-6">
         {/* LEFT SIDEBAR */}
         <aside
           className={`w-full lg:w-80 flex-shrink-0 flex flex-col gap-4 ${

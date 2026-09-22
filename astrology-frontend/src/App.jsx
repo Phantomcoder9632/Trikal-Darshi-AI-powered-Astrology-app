@@ -6,7 +6,6 @@ import './styles/theme.css';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import ChatPage from './pages/ChatPage';
-import SavedChartsPage from './pages/SavedChartsPage';
 import ProfilePage from './pages/ProfilePage';
 import { useAuth } from './context/AuthContext';
 import LanguageWelcomeModal, { useFirstVisit } from './components/LanguageWelcomeModal';
@@ -64,20 +63,21 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
-          <Route path="/charts" element={<SavedChartsPage />} />
-          <Route path="/saved-charts" element={<SavedChartsPage />} />
-          <Route path="/account" element={<SavedChartsPage />} />
+          {/* Saved Charts page was merged into the Profile page — legacy routes redirect */}
+          <Route path="/charts" element={<Navigate to="/profile" replace />} />
+          <Route path="/saved-charts" element={<Navigate to="/profile" replace />} />
+          <Route path="/account" element={<Navigate to="/profile" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/chat" element={<ChatPage />} />
+          {/* /chat without a chart has no context — silently redirect home */}
+          <Route path="/chat" element={<Navigate to="/" replace />} />
           <Route path="/chat/:chartId" element={<ChatPage />} />
-          {/* No mock ID here: real users land on their vault; unauthenticated
-              users are bounced home. The old redirect injected a mock chart ID
-              that the backend rejects with 422. */}
+          {/* No chart ID: authenticated users go to their profile (chart hub); */}
+          {/* unauthenticated users are bounced home by ProtectedRoute. */}
           <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Navigate to="/charts" replace />
+                <Navigate to="/profile" replace />
               </ProtectedRoute>
             }
           />

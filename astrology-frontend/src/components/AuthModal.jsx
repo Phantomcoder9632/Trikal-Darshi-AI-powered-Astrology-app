@@ -195,7 +195,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
                 type="button"
                 onClick={() => {
                   onClose();
-                  navigate('/charts');
+                  navigate('/profile');
                 }}
                 className="flex items-center justify-center gap-2 py-2.5 px-4 bg-[#1F3A6B] hover:bg-[#152A50] text-[#F0DFAF] text-xs font-semibold rounded-xl border border-[#D9A63C]/40 shadow-xs transition-colors cursor-pointer"
               >
@@ -205,7 +205,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onAu
               <button
                 type="button"                  onClick={() => {
                   onClose();
-                  navigate('/charts');
+                  navigate('/dashboard');
                 }}
                 className="flex items-center justify-center gap-2 py-2.5 px-4 bg-[#F4EEDA] hover:bg-[#EAE2C8] text-[#16223F] text-xs font-semibold rounded-xl border border-[#D9A63C]/40 shadow-xs transition-colors cursor-pointer"
               >

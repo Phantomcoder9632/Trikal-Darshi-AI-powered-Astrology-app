@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { backendLangToI18n } from '../i18n';
 import AuthModal from '../components/AuthModal';
+import AppHeader from '../components/AppHeader';
+import AppFooter from '../components/AppFooter';
 import { CalculationMilestones } from '../components/StatusBanners';
 
 // Cosmic Stardust & Twinkling Celestial Canvas matching exact Stitch script
@@ -205,137 +207,46 @@ export default function HomePage() {
         pendingNote="Your birth details are saved — create your profile and the calculation will begin automatically."
       />
 
-      {/* ── TOP NAVIGATION BAR ── */}
-      <header className="fixed top-0 left-0 w-full z-50 bg-[#FFFDF6]/95 backdrop-blur-md border-b border-[#E8DFC9] shadow-xs">
-        <div className="h-16 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-          {/* Brand Logo */}
+      {/* ── TOP NAVIGATION BAR — clean minimal: logo / language / avatar ── */}
+      <AppHeader
+        variant="landing"
+        onBeginReading={() => formRef.current?.scrollIntoView({ behavior: 'smooth' })}
+        onRequireAuth={() => {
+          setAuthModalMode('login');
+          setShowAuthModal(true);
+        }}
+      >
+        {/* Language control passed into the shared header's right cluster */}
+        <div className="relative flex items-center bg-[#FFFDF6] px-2.5 py-1 rounded-md border border-[#E8DFC9] shadow-xs">
+          <span aria-hidden="true" className="text-[13px] mr-1.5">🇮🇳</span>
+          <select
+            aria-label="Select Language"
+            value={formData.language}
+            onChange={handleChange}
+            name="language"
+            className="bg-transparent text-[13px] text-[#16223F] font-medium focus:outline-hidden cursor-pointer pr-1"
+          >
+            <option value="english">EN (English)</option>
+            <option value="hindi">HI (हिन्दी)</option>
+            <option value="bengali">BN (বাংলা)</option>
+          </select>
+        </div>
+
+        {/* Sign In trigger for guests */}
+        {!isAuthenticated && (
           <button
             type="button"
-            onClick={() => navigate('/')}
-            className="flex items-center gap-3 group text-left cursor-pointer bg-transparent border-none p-0"
+            onClick={() => {
+              setAuthModalMode('login');
+              setShowAuthModal(true);
+            }}
+            className="hidden sm:inline-flex items-center gap-1.5 bg-[#FFFDF6] hover:bg-[#F4EEDA] text-[#1F3A6B] text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#D9A63C]/40 transition-all cursor-pointer shadow-xs"
           >
-            <div className="w-9 h-9 rounded-lg bg-[#1F3A6B] flex items-center justify-center shadow-md border border-[#D9A63C]/40 text-[#F0DFAF]">
-              <span className="material-symbols-outlined text-[20px]">flare</span>
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="font-['Fraunces',serif] text-[18px] font-bold text-[#022454] tracking-tight">
-                  TRIKAL DARSHI
-                </span>
-                <span className="text-[#D9A63C] text-[13px]">✦</span>
-              </div>
-              <span className="text-[10px] text-[#7b5800] font-semibold uppercase tracking-widest mt-0.5">
-                Jyotish Ephemeris
-              </span>
-            </div>
+            <span className="material-symbols-outlined text-[16px] text-[#D9A63C]">login</span>
+            <span>Sign In</span>
           </button>
-
-          {/* Center Links Navigation */}
-          <nav className="hidden md:flex items-center gap-1 bg-[#F5EEDC]/60 p-1 rounded-lg border border-[#E8DFC9]">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="px-3.5 py-1.5 rounded bg-[#1F3A6B] text-[#F0DFAF] text-xs font-semibold shadow-xs cursor-pointer"
-            >
-              Observatory
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/charts')}
-              className="px-3.5 py-1.5 rounded text-xs text-[#4A567A] hover:text-[#022454] hover:bg-[#FFFDF6] transition-colors cursor-pointer"
-            >
-              Soul Dashboard
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/chat')}
-              className="px-3.5 py-1.5 rounded text-xs text-[#4A567A] hover:text-[#022454] hover:bg-[#FFFDF6] transition-colors cursor-pointer"
-            >
-              AskAI Guide
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/charts')}
-              className="px-3.5 py-1.5 rounded text-xs text-[#4A567A] hover:text-[#022454] hover:bg-[#FFFDF6] transition-colors cursor-pointer"
-            >
-              Saved Charts
-            </button>
-            {isAuthenticated && (
-              <button
-                type="button"
-                onClick={() => navigate('/profile')}
-                className="px-3.5 py-1.5 rounded text-xs text-[#4A567A] hover:text-[#022454] hover:bg-[#FFFDF6] transition-colors cursor-pointer"
-              >
-                Profile
-              </button>
-            )}
-          </nav>
-
-          {/* Right Actions: Language, Sign In / Profile, CTA */}
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex items-center bg-[#FFFDF6] px-2.5 py-1 rounded-md border border-[#E8DFC9] shadow-xs">
-              <span aria-hidden="true" className="text-[13px] mr-1.5">🇮🇳</span>
-              <select
-                aria-label="Select Language"
-                value={formData.language}
-                onChange={handleChange}
-                name="language"
-                className="bg-transparent text-[13px] text-[#16223F] font-medium focus:outline-hidden cursor-pointer pr-1"
-              >
-                <option value="english">EN (English)</option>
-                <option value="hindi">HI (हिन्दी)</option>
-                <option value="bengali">BN (বাংলা)</option>
-              </select>
-            </div>
-
-            {/* Sign In / Register Trigger */}
-            {!isAuthenticated ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthModalMode('login');
-                  setShowAuthModal(true);
-                }}
-                className="hidden sm:inline-flex items-center gap-1.5 bg-[#FFFDF6] hover:bg-[#F4EEDA] text-[#1F3A6B] text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#D9A63C]/40 transition-all cursor-pointer shadow-xs"
-              >
-                <span className="material-symbols-outlined text-[16px] text-[#D9A63C]">login</span>
-                <span>Sign In / Profile</span>
-              </button>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={() => formRef.current?.scrollIntoView({ behavior: 'smooth' })}
-              className="hidden sm:inline-flex items-center gap-2 bg-[#1F3A6B] hover:bg-[#022454] text-[#F0DFAF] text-xs font-semibold px-4 py-2 rounded-lg border border-[#D9A63C]/50 transition-all shadow-md hover:shadow-lg cursor-pointer"
-            >
-              <span className="text-[#D9A63C] text-[14px]">✦</span>
-              <span>Begin Reading</span>
-            </button>
-
-            {/* Profile Avatar Button */}
-            <button
-              type="button"
-              onClick={() => {
-                if (isAuthenticated) {
-                  // Full profile page (identity, Kundali generator, vault link)
-                  navigate('/profile');
-                } else {
-                  setAuthModalMode('login');
-                  setShowAuthModal(true);
-                }
-              }}
-              className="w-9 h-9 rounded-full bg-[#1F3A6B] text-[#F0DFAF] flex items-center justify-center border border-[#D9A63C]/40 shadow-xs cursor-pointer text-xs font-bold hover:scale-105 transition-transform"
-              title={isAuthenticated ? `Profile: ${user?.name || user?.email}` : 'Sign In / Register Profile'}
-            >
-              {isAuthenticated && user?.name ? (
-                <span>{user.name.slice(0, 2).toUpperCase()}</span>
-              ) : (
-                <span className="material-symbols-outlined text-[18px]">person</span>
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
+        )}
+      </AppHeader>
 
       {/* ── MAIN CONTENT ── */}
       <main className="w-full pt-16 min-h-screen">
@@ -580,14 +491,6 @@ export default function HomePage() {
                     See Features
                   </a>
 
-                  <button
-                    type="button"
-                    onClick={() => navigate('/chat')}
-                    className="text-[#7b5800] hover:text-[#022454] text-base font-bold flex items-center gap-1 px-3 py-2 transition-colors cursor-pointer bg-transparent border-none"
-                  >
-                    <span>AI Astrologer</span>
-                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                  </button>
                 </div>
 
                 {/* Scholarly Precision Vignettes */}
@@ -675,9 +578,6 @@ export default function HomePage() {
                     <h2 className="font-['Fraunces',serif] text-xl sm:text-2xl font-bold text-[#022454] tracking-tight">
                       Cast Celestial Chart
                     </h2>
-                    <p className="text-[12.5px] text-[#4A567A] leading-relaxed">
-                      Enter birth coordinates to compute exact ascendant degrees, nakshatra pada, and planetary vargas.
-                    </p>
                   </div>
 
                   {error && (
@@ -772,47 +672,48 @@ export default function HomePage() {
                       </p>
                     </div>
 
-                    {/* Place of Birth */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm text-[#16223F] font-semibold" htmlFor="city_of_birth">
-                        Place of Birth
-                      </label>
-                      <div className="relative flex items-center">
-                        <input
-                          id="city_of_birth"
-                          name="city_of_birth"
-                          type="text"
-                          required
-                          value={formData.city_of_birth}
-                          onChange={handleChange}
-                          placeholder="e.g. Varanasi, India"
-                          className="w-full h-11 pl-3.5 pr-10 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] placeholder-[#4A567A]/60 text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors"
-                        />
-                        <span className="material-symbols-outlined absolute right-3 text-[20px] text-[#D9A63C] pointer-events-none">
-                          location_on
-                        </span>
+                    {/* Place of Birth + Current City — side by side */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm text-[#16223F] font-semibold" htmlFor="city_of_birth">
+                          Place of Birth
+                        </label>
+                        <div className="relative flex items-center">
+                          <input
+                            id="city_of_birth"
+                            name="city_of_birth"
+                            type="text"
+                            required
+                            value={formData.city_of_birth}
+                            onChange={handleChange}
+                            placeholder="e.g. Varanasi, India"
+                            className="w-full h-11 pl-3.5 pr-10 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] placeholder-[#4A567A]/60 text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors"
+                          />
+                          <span className="material-symbols-outlined absolute right-3 text-[20px] text-[#D9A63C] pointer-events-none">
+                            location_on
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-[#4A567A]">Geo-coordinates are resolved automatically.</span>
                       </div>
-                      <span className="text-[11px] text-[#4A567A]">Geo-coordinates are resolved automatically by the backend geocoder.</span>
-                    </div>
 
-                    {/* Current City */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm text-[#16223F] font-semibold" htmlFor="current_city">
-                        Current City (for Gochara Transits)
-                      </label>
-                      <div className="relative flex items-center">
-                        <input
-                          id="current_city"
-                          name="current_city"
-                          type="text"
-                          value={formData.current_city}
-                          onChange={handleChange}
-                          placeholder="e.g. Bengaluru, India"
-                          className="w-full h-11 pl-3.5 pr-10 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] placeholder-[#4A567A]/60 text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors"
-                        />
-                        <span className="material-symbols-outlined absolute right-3 text-[20px] text-[#4A567A] pointer-events-none">
-                          my_location
-                        </span>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm text-[#16223F] font-semibold" htmlFor="current_city">
+                          Current City (for Gochara Transits)
+                        </label>
+                        <div className="relative flex items-center">
+                          <input
+                            id="current_city"
+                            name="current_city"
+                            type="text"
+                            value={formData.current_city}
+                            onChange={handleChange}
+                            placeholder="e.g. Bengaluru, India"
+                            className="w-full h-11 pl-3.5 pr-10 bg-[#FAF8FF] border border-[#DCD5C0] text-[#16223F] placeholder-[#4A567A]/60 text-sm rounded-lg shadow-inner focus:outline-none focus:border-[#1F3A6B] focus:bg-[#FFFDF6] transition-colors"
+                          />
+                          <span className="material-symbols-outlined absolute right-3 text-[20px] text-[#4A567A] pointer-events-none">
+                            my_location
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -1233,40 +1134,7 @@ export default function HomePage() {
       </main>
 
       {/* ── ORGANIZED SCHOLARLY FOOTER ── */}
-      <footer className="w-full bg-[#12244A] text-[#F0DFAF] border-t border-[#D9A63C]/30 py-12">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
-          <div className="flex flex-col gap-2 max-w-md">
-            <div className="flex items-center justify-center md:justify-start gap-2">
-              <span className="material-symbols-outlined text-[#D9A63C] text-[20px]">flare</span>
-              <span className="font-['Fraunces',serif] text-lg font-bold text-[#FFFDF6] tracking-tight">TRIKAL DARSHI</span>
-              <span className="text-[#D9A63C]">✦</span>
-              <span className="text-xs text-[#F0DFAF] uppercase tracking-widest font-sans">त्रिकाल दर्शी</span>
-            </div>
-            <p className="text-xs text-[#F0DFAF]/75 leading-relaxed">
-              Vedic precision computing, Kundali delineations, and celestial timelines anchored in traditional Jyotish Shastra. Micro-arc precision ephemeris engine.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-[#F0DFAF]/90">
-            <button type="button" onClick={() => navigate('/dashboard')} className="hover:text-[#D9A63C] transition-colors cursor-pointer">
-              Soul Dashboard
-            </button>
-            <button type="button" onClick={() => navigate('/panchang')} className="hover:text-[#D9A63C] transition-colors cursor-pointer">
-              Daily Panchang
-            </button>
-            <button type="button" onClick={() => navigate('/ask-ai')} className="hover:text-[#D9A63C] transition-colors cursor-pointer">
-              AskAI Jyotish Guide
-            </button>
-            <button type="button" onClick={() => navigate('/charts')} className="hover:text-[#D9A63C] transition-colors cursor-pointer">
-              Saved Ephemeris Charts
-            </button>
-          </div>
-
-          <div className="text-xs text-[#F0DFAF]/60">
-            © {new Date().getFullYear()} Trikal Darshi. All planetary coordinates verified.
-          </div>
-        </div>
-      </footer>
+      <AppFooter />
     </div>
   );
 }

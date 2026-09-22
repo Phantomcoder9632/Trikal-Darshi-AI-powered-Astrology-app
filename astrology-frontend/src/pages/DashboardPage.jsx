@@ -112,6 +112,11 @@ export default function DashboardPage() {
   const [bgProgress, setBgProgress] = useState(null);
   const pollIntervalRef = useRef(null);
 
+  // Sticky-scroll: measure tab nav height so content section fills remaining viewport
+  const tabNavRef = useRef(null);
+  const contentScrollRef = useRef(null);
+  const [tabNavHeight, setTabNavHeight] = useState(53);
+
   // Offline reading state — set when data came from the localStorage cache of
   // the user's REAL chart (backend unreachable). Never fabricated data.
   const [offlineSince, setOfflineSince] = useState(null);
@@ -142,6 +147,25 @@ export default function DashboardPage() {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   useEffect(() => {
     setShowMobileSidebar(false);
+  }, [activeTab]);
+
+  // Measure tab nav height for scroll container sizing
+  useEffect(() => {
+    const el = tabNavRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      setTabNavHeight(el.offsetHeight);
+    });
+    observer.observe(el);
+    setTabNavHeight(el.offsetHeight);
+    return () => observer.disconnect();
+  }, []);
+
+  // Scroll content panel back to top whenever the active tab changes
+  useEffect(() => {
+    if (contentScrollRef.current) {
+      contentScrollRef.current.scrollTop = 0;
+    }
   }, [activeTab]);
 
   const handleThemeChange = (newTheme) => {
@@ -641,8 +665,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Tab Navigation Headers (11 Numbered Tabs Bar) ── */}
-        <div className="w-full mt-6">
+        {/* ── Tab Navigation Headers (11 Numbered Tabs Bar — Sticky Sub-Navigation) ── */}
+        <div
+          ref={tabNavRef}
+          className="sticky top-16 z-40 w-full pt-3 pb-2.5 bg-[#FBF6EA]/95 backdrop-blur-md border-b border-[#E8D5A7]/60 shadow-xs mt-3"
+        >
           <TabNavigation
             chartId={chartId}
             activeTab={activeTab}
@@ -654,8 +681,19 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Full-width Reading Exegesis below */}
-        <div className="flex flex-col gap-6 mt-2">
+        {/* Full-width Reading Exegesis below — locked scroll panel */}
+        {/* height = viewport minus sticky header (64px) minus sticky tab nav — so content fills exactly the remaining viewport */}
+        {/* overscroll-behavior: contain means this panel scrolls independently; when it hits the end the outer page scroll continues to the footer */}
+        <div
+          ref={contentScrollRef}
+          className="flex flex-col gap-6 mt-4 pb-8 overflow-y-auto"
+          style={{
+            height: `calc(100vh - 64px - ${tabNavHeight}px)`,
+            overscrollBehavior: 'contain',
+            scrollBehavior: 'smooth',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
 
             {/* Tab Content Card (Editorial Chapter Layout) */}
             <TabContentCard

@@ -168,7 +168,7 @@ ${sectionsHtml}
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   };
   return (
-    <div className="w-full flex flex-col gap-3 mb-4 no-print">
+    <div className="w-full flex flex-col no-print">
       {/* ── 11-Tab Horizontal Scrollable Navigation Bar ── */}
       <div className="bg-[#FFFDF6] border border-[#E8D5A7]/80 rounded-xl p-2 shadow-xs flex items-center justify-between gap-3 overflow-x-auto">
         <div className="flex items-center gap-1.5 min-w-max">

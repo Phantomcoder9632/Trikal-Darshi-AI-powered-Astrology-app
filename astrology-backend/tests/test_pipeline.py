@@ -21,8 +21,8 @@ from rag.pipeline import (
 # Model names come from the cascade itself so tests survive env-driven model changes
 CF_MODEL = next(t["model"] for t in LLM_CASCADE if t["name"] == "cloudflare-primary")
 GEMINI_MODEL = next(t["model"] for t in LLM_CASCADE if t["name"] == "gemini-primary")
-GROQ70B_MODEL = next(t["model"] for t in LLM_CASCADE if t["name"] == "groq-llama70b")
-QWEN_MODEL = next(t["model"] for t in LLM_CASCADE if t["name"] == "groq-qwen32b")
+GPTOSS120B_MODEL = next(t["model"] for t in LLM_CASCADE if t["name"] == "groq-gptoss120b")
+QWEN_MODEL = next(t["model"] for t in LLM_CASCADE if t["name"] == "groq-qwen27b")
 OPENROUTER_MODEL = next(t["model"] for t in LLM_CASCADE if t["name"] == "openrouter-safetynet")
 
 
@@ -57,8 +57,8 @@ class TestLLMProvidersAndCascade(unittest.IsolatedAsyncioTestCase):
         en_cascade = cascade_for_language("english")
         self.assertEqual(en_cascade[0]["name"], "cloudflare-primary")
         self.assertEqual(en_cascade[1]["name"], "gemini-primary")
-        self.assertEqual(en_cascade[2]["name"], "groq-llama70b")
-        self.assertEqual(en_cascade[3]["name"], "groq-qwen32b")
+        self.assertEqual(en_cascade[2]["name"], "groq-qwen27b")
+        self.assertEqual(en_cascade[3]["name"], "groq-gptoss120b")
         self.assertEqual(len(en_cascade), len(LLM_CASCADE))
 
         hi_cascade = cascade_for_language("hi")
@@ -111,7 +111,7 @@ class TestLLMProvidersAndCascade(unittest.IsolatedAsyncioTestCase):
         return chunk
 
     async def test_rate_limit_fallthrough_to_tier3(self):
-        """Tiers 1 (Cloudflare, neuron quota) and 2 (Gemini, 429) fail; tier 3 (Groq 70B) succeeds."""
+        """Tiers 1 (Cloudflare, neuron quota) and 2 (Gemini, 429) fail; tier 3 (Groq GPT-OSS-120B) succeeds."""
         tier3_content = "X" * 1200  # >= 1000 chars
 
         def mock_create(*args, **kwargs):
@@ -120,7 +120,7 @@ class TestLLMProvidersAndCascade(unittest.IsolatedAsyncioTestCase):
                 raise Exception("429: exceeded neuron quota for this account")
             elif model == GEMINI_MODEL:
                 raise Exception("429 ResourceExhausted: rate limit exceeded")
-            elif model == GROQ70B_MODEL:
+            elif model == GPTOSS120B_MODEL:
                 return [self._mock_chunk(tier3_content[:600]), self._mock_chunk(tier3_content[600:])]
             raise Exception("Unexpected model")
 
@@ -135,7 +135,7 @@ class TestLLMProvidersAndCascade(unittest.IsolatedAsyncioTestCase):
 
             full_text = "".join(chunks)
             self.assertEqual(full_text, tier3_content)
-            self.assertEqual(model_info.get("model"), f"groq-llama70b/{GROQ70B_MODEL}")
+            self.assertEqual(model_info.get("model"), f"groq-gptoss120b/{GPTOSS120B_MODEL}")
 
     async def test_short_output_rejection_falls_through(self):
         """A < 1000-char response from Tier 1 (Cloudflare) is rejected and falls through to Tier 2 (Gemini)."""

@@ -72,10 +72,9 @@ async def translate_content(english_text: str, language: str) -> str:
         if env_model and env_model.strip():
             fallback_models.append(env_model.strip())
         for default_m in [
-            "meta-llama/llama-3.3-70b-instruct:free",
-            "google/gemma-3-27b-it:free",
-            "meta-llama/llama-3-8b-instruct:free",
-            "openrouter/free",
+            "qwen/qwen3.8-27b:free",
+            "dots-studio/dots-3-note-preview:free",
+            "inclusionai/ling-3.0-flash-vl:free",
         ]:
             if default_m not in fallback_models:
                 fallback_models.append(default_m)

@@ -20,6 +20,16 @@ from contextlib import asynccontextmanager
 cors_origins_str = os.getenv("CORS_ORIGINS", "")
 app_env = os.getenv("APP_ENV", "production").lower()
 
+# ── Security: fail fast on weak/missing JWT secret in production ─────────
+_jwt_secret = os.getenv("JWT_SECRET", "")
+if app_env != "development" and (not _jwt_secret or len(_jwt_secret) < 32):
+    raise RuntimeError(
+        "JWT_SECRET must be set to at least 32 random characters in production. "
+        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+    )
+if _jwt_secret and len(_jwt_secret) < 32:
+    logger.warning("JWT_SECRET is shorter than 32 characters — generate a stronger secret before going live.")
+
 if cors_origins_str:
     cors_origins = [o.strip() for o in cors_origins_str.split(",") if o.strip()]
 else:
@@ -61,6 +71,18 @@ app = FastAPI(
     version="2.0.0",
     lifespan=app_lifespan
 )
+
+# ── Security Headers (defense-in-depth; native apps ignore CORS) ──────────
+@app.middleware("http")
+async def security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+    # A conservative CSP only matters for browser clients visiting the API directly
+    response.headers.setdefault("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+    return response
 
 # ── CORS Middleware Configuration (added BEFORE any route includes) ──
 app.add_middleware(

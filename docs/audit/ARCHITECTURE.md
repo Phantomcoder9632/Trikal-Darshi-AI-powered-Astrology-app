@@ -4,7 +4,7 @@
 
 ```
 ┌─────────────────────────── Browser (React 19 SPA) ───────────────────────────┐
-│  HomePage (form)   DashboardPage (11 tabs + SVG charts)   ChatPage   SavedCharts
+│  HomePage (form)   DashboardPage (11 tabs + SVG charts)   ChatPage   ProfilePage  │
 │         │  axios/fetch + JWT header        ▲ streaming ReadableStream             │
 └─────────┼──────────────────────────────────┼────────────────────────────────────┘
           ▼                                  │
@@ -16,10 +16,10 @@
 │ db/: DualPool(asyncpg) self-healing schema                                    │
 └──────┬──────────────┬───────────────┬──────────────┬────────────────────────┘
        ▼              ▼               ▼              ▼
-  PostgreSQL     Redis 7        ChromaDB      External: Gemini/Groq/OpenRouter,
-  (primary +     (caches,       (local        AstrologyAPI.com, OSM Nominatim,
-   optional      locks)         54 MB)        Google OAuth
-   secondary)
+  PostgreSQL     Redis 7        ChromaDB      External: Cloudflare Workers AI /
+  (primary +     (caches,       (local        Gemini / Groq / OpenRouter,
+   optional      locks)         54 MB)        AstrologyAPI.com, OSM Nominatim,
+   secondary)                                 Google OAuth
 ```
 
 Two deployable units, one process each: the SPA (static files served by Vite dev server or any CDN) and a **modular monolith** FastAPI backend. No message queue; background work runs in-process (FastAPI `BackgroundTasks` + `asyncio.to_thread`).
@@ -87,7 +87,7 @@ D:\AstrologyApp\
 │       ├── services/api.js (418 L)  # axios client + all endpoint wrappers + stream helpers
 │       ├── services/mockData.js     # VITE_MOCK_MODE demo data
 │       ├── locales/{en,hi,bn}.json
-│       ├── pages/  HomePage (1,254 L) · DashboardPage (1,034 L) · ChatPage · SavedChartsPage
+│       ├── pages/  HomePage (1,254 L) · DashboardPage (1,188 L) · ChatPage · ProfilePage (41,934 bytes)
 │       └── components/  AskAI · AuthModal · ChartSidebar · CosmicSummary · DivisionalChart ·
 │               KundaliChart · PlanetTable · TabNavigation · TransitBanner · RemedyCards ·
 │               ProfileCard · LanguageSelect · LanguageWelcomeModal · LoadingSpinner · formatters

@@ -24,12 +24,12 @@ Every AI reading is anchored to the user's *exact computed planetary positions* 
 | Feature | Where |
 |---|---|
 | Birth-details form → geocoded chart generation | `astrology-frontend/src/pages/HomePage.jsx`, `POST /chart/generate` (`astrology-backend/routes/chart.py:267`) |
-| Sidereal natal chart — 9 grahas, Lagna, nakshatras, dashas, doshas | `astrology-backend/services/ephemeris.py` (982 lines) |
+| Sidereal natal chart — 9 grahas, Lagna, nakshtras, dashas, doshas | `astrology-backend/services/ephemeris.py` (982 lines) |
 | 8 computed divisional/special charts: D1, D4, D7, D9, D10, D30, Chandra (Moon), Surya (Sun) + live Gochar transits | `services/ephemeris.py` (`compute_divisional_chart` :656, `compute_gochar_chart` :754) |
 | Hybrid calculation: AstrologyAPI.com (≤200 calls/month) → local Swiss Ephemeris fallback | `services/hybrid.py:37-97` |
 | **11 interpretation tabs**, streamed token-by-token from an LLM | `routes/interpret.py:34`, `services/ai_prompts.py` (905 lines of tab prompts) |
 | RAG over 4 classical texts (BPHS, Lal Kitab, Phaladeepika, Brihat Jataka) in ChromaDB (6,129 chunks, 54 MB) | `rag/` package, `books/*.pdf` |
-| 6-tier LLM fallback cascade (Gemini → Groq ×4 → OpenRouter) | `services/llm_providers.py:8-51` |
+| **7-tier LLM fallback cascade** (Cloudflare Workers AI Llama-3.3-70B/DeepSeek-32B → Gemini 2.5 Flash → Groq Qwen-27B → Groq GPT-OSS-120B → OpenRouter Qwen-27B:free → Groq GPT-OSS-20B) | `services/llm_providers.py`, `rag/pipeline.py` |
 | Background pre-generation of all 11 tabs with progress polling | `services/background_generator.py`, `routes/progress.py:29` |
 | "AskAI" streaming chatbot, per-chart persisted history | `routes/chat.py:35,166`, `src/components/AskAI.jsx` |
 | Auth: Google OAuth + email/password (PBKDF2), 30-day HS256 JWTs, rate limiting | `routes/auth.py:189,336,400`, `services/security.py` |
@@ -37,8 +37,9 @@ Every AI reading is anchored to the user's *exact computed planetary positions* 
 | North-Indian diamond Kundali SVG renderer + divisional chart switcher | `src/components/KundaliChart.jsx`, `src/components/DivisionalChart.jsx` |
 | Print/PDF report builder (all 11 tabs, print-only container) | `src/pages/DashboardPage.jsx` (print styles in `src/index.css`) |
 | 3 UI language themes + first-visit language modal | `src/styles/theme.css`, `src/components/LanguageWelcomeModal.jsx` |
-| Multiplayer of interfaces: Home, Dashboard, Saved Charts, Chat pages | `src/pages/{HomePage,DashboardPage,SavedChartsPage,ChatPage}.jsx` |
+| Multiplayer of interfaces: Home, Dashboard, Profile, Chat pages | `src/pages/{HomePage,DashboardPage,ProfilePage,ChatPage}.jsx` |
 | Offline demo mode (`VITE_MOCK_MODE=true`) with mock data | `src/services/api.js:6-7`, `src/services/mockData.js` |
+| GitHub Actions keep-alive workflow (`backend-keepalive.yml`) | `.github/workflows/backend-keepalive.yml` pinging HF Space API |
 | LLM fine-tuning pipeline (separate subsystem, QLoRA → GGUF) | `astrology-backend/astrology_finetuning/` — see TECH_STACK.md §Fine-tuning |
 
 ## The 11 Interpretation Tabs

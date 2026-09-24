@@ -38,19 +38,19 @@ Frontend: `node_modules/` already populated (146 top-level packages). Build (bel
 Only one real unittest suite exists: `tests/test_pipeline.py` (the other four `tests/*.py` are ad-hoc integration scripts needing a live server/DB — see §8).
 
 ```
-$ python -m tests.test_pipeline
+$ python -m unittest tests/test_pipeline.py
+[pipeline] Tier cloudflare-primary failed: General upstream failure. Falling through...
 [pipeline] Tier gemini-primary failed: General upstream failure. Falling through...
-[pipeline] Tier groq-llama70b failed: General upstream failure. Falling through...
 ...
+[pipeline] Tier cloudflare-primary rate-limited (429: exceeded neuron quota for this account). Falling through...
 [pipeline] Tier gemini-primary rate-limited (429 ResourceExhausted: rate limit exceeded). Falling through...
-[pipeline] Tier groq-llama70b rate-limited (rate_limit_exceeded (TPM limit)). Falling through...
 .
 ----------------------------------------------------------------------
-Ran 7 tests in 0.074s
+Ran 8 tests in 0.091s
 OK
 ```
 
-✅ **7/7 pass.** (The "failure" lines are mocked cascade tests asserting fallback behavior — expected noise.) Frontend has no test suite at all.
+✅ **8/8 pass.** (The "failure" lines are mocked cascade tests asserting fallback behavior — expected noise.) Includes coverage for effective token caps, Cloudflare Indic reordering, rate-limit fallthrough across Cloudflare/Gemini/Groq, and short-output validation. Frontend has no test suite at all.
 
 ## 4. Frontend Build
 

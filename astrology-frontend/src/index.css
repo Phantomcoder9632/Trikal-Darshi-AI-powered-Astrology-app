@@ -628,17 +628,23 @@ body {
    AI PROSE TYPOGRAPHY
    ────────────────────────────────────────────────────────────────────────── */
 
-.prose-interpretation {
-  font-family: "Inter", sans-serif;
-  font-size: 16px;
-  line-height: 1.85;
-  color: #1a1c1b;
+/* Canonical prose typography lives in the later "Prose & AI Interpretation
+   Styling" section below — this block only carries the readable-measure caps. */
+
+/* Readable measure: cap paragraph-style prose at ~68 characters per line
+   (ch-based so it self-adjusts for Devanagari/Bengali glyph widths).
+   Tables and layout blocks stay full-width by exempting them below. */
+.prose-interpretation .prose-para,
+.prose-interpretation .prose-bullet-list,
+.prose-interpretation .prose-numbered-item,
+.prose-interpretation .prose-blockquote {
+  max-width: 68ch;
 }
 
-@media (min-width: 768px) {
-  .prose-interpretation {
-    font-size: 17px;
-  }
+/* Long tables and key-value pairs keep the full reading width. */
+.prose-interpretation .prose-table-wrapper,
+.prose-interpretation .prose-key {
+  max-width: none;
 }
 
 .prose-interpretation .prose-section-header {
@@ -3537,9 +3543,15 @@ body {
 
 .prose-interpretation {
   font-family: "Inter", sans-serif;
-  font-size: 14px;
-  line-height: 1.8;
+  font-size: 16px;
+  line-height: 1.65;
   color: #3d372e; /* Warm dark grey */
+}
+
+@media (min-width: 768px) {
+  .prose-interpretation {
+    font-size: 18px;
+  }
 }
 
 .prose-para {
@@ -5130,5 +5142,41 @@ body.theme-solar .lp-footer-brand:hover .lp-footer-logo-img {
   }
   50% {
     box-shadow: 0 0 0 4px rgba(217, 166, 60, 0.12);
+  }
+}
+
+/* ── Micro-interaction upgrades ─────────────────────────────────────────── */
+
+/* Tactile press: everything with .pressable shrinks slightly while tapped */
+.pressable {
+  transition: transform 0.12s ease, box-shadow 0.2s ease;
+}
+.pressable:active {
+  transform: scale(0.97);
+}
+
+/* Planet glyphs in the kundali SVG: hover ring + slight grow */
+.planet-glyph {
+  cursor: pointer;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.planet-glyph:hover {
+  transform: scale(1.25);
+  filter: drop-shadow(0 0 3px rgba(201, 149, 42, 0.65));
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-button::after,
+  .shimmer-gold,
+  .animate-ping,
+  .animate-pulse {
+    animation: none !important;
+  }
+  .pressable:active,
+  .blueprint-button:hover {
+    transform: none;
   }
 }

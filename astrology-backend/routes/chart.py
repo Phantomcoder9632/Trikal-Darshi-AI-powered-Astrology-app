@@ -15,6 +15,7 @@ from services.numerology import get_numerology
 from services.cache import cache_chart, get_cached_chart, generate_chart_cache_key, get_redis
 from services.ephemeris import compute_divisional_chart, compute_gochar_chart, ZODIAC_SIGNS
 from services.background_generator import pregenerate_all_tabs, prefetch_rag_contexts
+from services.security import RateLimiter
 from routes.auth import get_current_user, get_optional_current_user
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,11 @@ def normalize_chart_language(lang: Optional[str]) -> str:
     return mapping.get(lang, "english")
 
 
-@router.get("/gochar", response_model=Dict[str, Any])
+@router.get(
+    "/gochar",
+    response_model=Dict[str, Any],
+    dependencies=[Depends(RateLimiter("gochar", limit=30, window=60))],
+)
 async def get_gochar_chart(lat: float = 28.6139, lng: float = 77.2090):
     """
     GET /chart/gochar?lat=...&lng=...
@@ -264,7 +269,12 @@ class ChartGenerateRequest(BaseModel):
     birth_time_confidence: str  # exact | approximate | unknown
     language: Optional[str] = "english"  # Per-chart language preference
 
-@router.post("/generate", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/generate",
+    response_model=Dict[str, Any],
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(RateLimiter("chart_gen", limit=6, window=3600))],
+)
 async def generate_chart(
     payload: ChartGenerateRequest,
     background_tasks: BackgroundTasks,

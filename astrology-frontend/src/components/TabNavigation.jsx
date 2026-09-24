@@ -274,7 +274,7 @@ export function TabContentCard({
       </div>
 
       {/* Reading Prose Body */}
-      <div className="prose-interpretation min-h-[220px] text-[14.5px] text-[#0E1A37] leading-[1.75]">
+      <div className="prose-interpretation w-full min-h-[220px] text-[#0E1A37]">
         {activeTab === 'vedic_report' ? (
           <div className="w-full flex flex-col gap-6">
             {/* Report Header */}

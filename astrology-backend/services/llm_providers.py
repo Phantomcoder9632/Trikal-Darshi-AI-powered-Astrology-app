@@ -40,32 +40,16 @@ LLM_CASCADE: List[Dict[str, Any]] = [
         "max_completion_tokens": 16384,
     },
     {
-        # Tier 3 — Groq LPU llama-3.3-70b
-        "name": "groq-llama70b",
+        # Tier 3 — Groq Qwen3 27B (reasoning hidden, multilingual)
+        "name": "groq-qwen27b",
         "base_url": "https://api.groq.com/openai/v1",
         "api_key_env": "GROQ_API_KEY",
-        "model": "llama-3.3-70b-versatile",
-        "max_completion_tokens": 32768,
-    },
-    {
-        # Tier 4 — Groq Qwen 32B (reasoning hidden)
-        "name": "groq-qwen32b",
-        "base_url": "https://api.groq.com/openai/v1",
-        "api_key_env": "GROQ_API_KEY",
-        "model": "qwen/qwen3-32b",
+        "model": "qwen/qwen3.8-27b",
         "max_completion_tokens": 32768,
         "reasoning_format": "hidden",
     },
     {
-        # Tier 5 — OpenRouter free safety net
-        "name": "openrouter-safetynet",
-        "base_url": "https://openrouter.ai/api/v1",
-        "api_key_env": "OPENROUTER_API_KEY",
-        "model": "meta-llama/llama-3.3-70b-instruct:free",
-        "max_completion_tokens": 4096,
-    },
-    {
-        # Tier 6 — Groq GPT-OSS 120B (reasoning hidden)
+        # Tier 4 — Groq GPT-OSS 120B (best available reasoning model, hidden chain-of-thought)
         "name": "groq-gptoss120b",
         "base_url": "https://api.groq.com/openai/v1",
         "api_key_env": "GROQ_API_KEY",
@@ -74,12 +58,21 @@ LLM_CASCADE: List[Dict[str, Any]] = [
         "reasoning_format": "hidden",
     },
     {
-        # Tier 7 — Groq instant 8B last resort
-        "name": "groq-llama8b",
+        # Tier 5 — OpenRouter free safety net (Qwen3 27B free endpoint)
+        "name": "openrouter-safetynet",
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key_env": "OPENROUTER_API_KEY",
+        "model": "qwen/qwen3.8-27b:free",
+        "max_completion_tokens": 8192,
+    },
+    {
+        # Tier 6 — Groq GPT-OSS 20B (lighter reasoning fallback)
+        "name": "groq-gptoss20b",
         "base_url": "https://api.groq.com/openai/v1",
         "api_key_env": "GROQ_API_KEY",
-        "model": "llama-3.1-8b-instant",
-        "max_completion_tokens": 8192,
+        "model": "openai/gpt-oss-20b",
+        "max_completion_tokens": 32768,
+        "reasoning_format": "hidden",
     },
 ]
 
@@ -115,12 +108,12 @@ def cascade_for_language(lang: str) -> List[Dict[str, Any]]:
     """Hindi/Bengali requests try the strongest multilingual model first,
     without duplicating the list. Cloudflare's DeepSeek-R1 distill handles
     Indic scripts well, so it leads the non-English cascade (with Groq's
-    Qwen32B right behind); English keeps cloudflare-primary (Llama 70B) on top."""
+    Qwen27B right behind); English keeps cloudflare-primary (Llama 70B) on top."""
     norm_lang = (lang or "en").lower().strip()
     if norm_lang in ("hi", "bn", "hindi", "bengali"):
         priority_name = "cloudflare-deepseek32b"
         if not any(t["name"] == priority_name for t in LLM_CASCADE):
-            priority_name = "groq-qwen32b"
+            priority_name = "groq-qwen27b"
         names_in_order = [priority_name] + [t["name"] for t in LLM_CASCADE if t["name"] != priority_name]
         return sorted(LLM_CASCADE, key=lambda t: names_in_order.index(t["name"]))
     return list(LLM_CASCADE)

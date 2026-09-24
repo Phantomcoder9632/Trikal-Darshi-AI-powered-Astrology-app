@@ -3,8 +3,9 @@ import asyncio
 import json
 import httpx
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from services.cache import get_redis
+from services.security import RateLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,8 @@ async def geocode_city_cached(city: str) -> dict:
     Returns:
         dict: {"lat": float, "lng": float, "display_name": str}
     """
-    city_key = city.strip().lower()
+    city = city.strip()[:120]  # cap length before it touches cache/OSM
+    city_key = city.lower()
     redis_key = f"geocode_cache:{city_key}"
     
     try:
@@ -76,7 +78,11 @@ async def geocode_city_cached(city: str) -> dict:
 
     return result
 
-@router.post("/geocode", response_model=GeocodeResponse)
+@router.post(
+    "/geocode",
+    response_model=GeocodeResponse,
+    dependencies=[Depends(RateLimiter("geocode", limit=20, window=60))],
+)
 async def geocode_city(payload: GeocodeRequest):
     """
     POST /geocode

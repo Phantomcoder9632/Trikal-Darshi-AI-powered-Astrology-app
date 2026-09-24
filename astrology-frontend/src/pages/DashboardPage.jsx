@@ -9,10 +9,12 @@ import i18n, { backendLangToI18n } from '../i18n';
 // Child Components
 import ChartSidebar, { TAB_CHART_CONFIG } from '../components/ChartSidebar';
 import CosmicSummary from '../components/CosmicSummary';
+import TodaysSky from '../components/TodaysSky';
 import TabNavigation, { TabContentCard } from '../components/TabNavigation';
 import RemedyCards from '../components/RemedyCards';
 import LanguageSelect from '../components/LanguageSelect';
 import { ShimmerSkeleton } from '../components/StatusBanners';
+import { ReadingProgressBar, ChapterTOC, JumpToLatest } from '../components/ReadingExtras';
 
 // Helper: get 1-2 capital initials from a full name
 function getInitials(name) {
@@ -112,10 +114,9 @@ export default function DashboardPage() {
   const [bgProgress, setBgProgress] = useState(null);
   const pollIntervalRef = useRef(null);
 
-  // Sticky-scroll: measure tab nav height so content section fills remaining viewport
+  // Sticky sub-nav ref (kept for scroll-anchoring on tab change)
   const tabNavRef = useRef(null);
   const contentScrollRef = useRef(null);
-  const [tabNavHeight, setTabNavHeight] = useState(53);
 
   // Offline reading state — set when data came from the localStorage cache of
   // the user's REAL chart (backend unreachable). Never fabricated data.
@@ -149,22 +150,22 @@ export default function DashboardPage() {
     setShowMobileSidebar(false);
   }, [activeTab]);
 
-  // Measure tab nav height for scroll container sizing
-  useEffect(() => {
-    const el = tabNavRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(() => {
-      setTabNavHeight(el.offsetHeight);
-    });
-    observer.observe(el);
-    setTabNavHeight(el.offsetHeight);
-    return () => observer.disconnect();
-  }, []);
+  // Focus mode: collapse the observatory zone while reading a chapter
+  const [focusMode, setFocusMode] = useState(false);
 
-  // Scroll content panel back to top whenever the active tab changes
+  // Measure tab nav height for scroll container sizing
+  // (removed — single page scroll needs no height measurement)
+
+  // On tab change: if the user has scrolled past the chapter start (reading deep),
+  // bring the new chapter's top just under the sticky tab bar. If they're still
+  // above it (viewing the observatory zone), leave the page where it is.
   useEffect(() => {
-    if (contentScrollRef.current) {
-      contentScrollRef.current.scrollTop = 0;
+    const panel = document.getElementById('reading-panel');
+    const nav = tabNavRef.current;
+    if (!panel) return;
+    const navBottom = nav ? nav.getBoundingClientRect().bottom : 0;
+    if (navBottom > 0 && panel.getBoundingClientRect().top < navBottom) {
+      panel.scrollIntoView({ behavior: 'auto', block: 'start' });
     }
   }, [activeTab]);
 
@@ -365,14 +366,48 @@ export default function DashboardPage() {
 
       const targetTabNumber = activeTab === 11 ? 11 : activeTab;
 
-      try {
-        const chartLang = chartData?.language || 'english';
-        await getInterpretation(chartId, targetTabNumber, chartLang, (chunk) => {
+      // ── Buffered streaming: release tokens only at safe markdown boundaries.
+      // Prevents flickering “dangling **” / half-table artifacts mid-stream.
+      const streamBuffer = { text: '' };
+      const safeCut = (txt) => {
+        let cut = txt.lastIndexOf('\n\n');
+        if (cut < 2) cut = txt.lastIndexOf('\n');
+        if (cut < 2) cut = txt.lastIndexOf(' ');
+        if (cut < 2) return ['', txt]; // no boundary yet — hold everything
+        let end = cut + 1;
+        // Never release an unpaired ** opener
+        const segment = txt.slice(0, end);
+        const boldCount = (segment.match(/\*\*/g) || []).length;
+        if (boldCount % 2 !== 0) {
+          const lastOpen = segment.lastIndexOf('**');
+          if (lastOpen > 1) end = lastOpen;
+        }
+        return [txt.slice(0, end), txt.slice(end)];
+      };
+      const onChunk = (chunk) => {
+        streamBuffer.text += chunk;
+        const [ready, hold] = safeCut(streamBuffer.text);
+        streamBuffer.text = hold;
+        if (ready) {
           setInterpretations((prev) => ({
             ...prev,
-            [activeTab]: (prev[activeTab] || '') + chunk,
+            [activeTab]: (prev[activeTab] || '') + ready,
           }));
-        });
+        }
+      };
+
+      try {
+        const chartLang = chartData?.language || 'english';
+        await getInterpretation(chartId, targetTabNumber, chartLang, onChunk);
+        // Stream complete — flush any remainder held at a boundary
+        if (streamBuffer.text) {
+          const rest = streamBuffer.text;
+          streamBuffer.text = '';
+          setInterpretations((prev) => ({
+            ...prev,
+            [activeTab]: (prev[activeTab] || '') + rest,
+          }));
+        }
       } catch (err) {
         console.error(err);
         setTabError((prev) => ({
@@ -484,7 +519,7 @@ export default function DashboardPage() {
           <button
             id="returnHomeBtn"
             onClick={() => navigate('/')}
-            className="blueprint-button shimmer-button max-w-xs w-full"
+            className="blueprint-button shimmer-button pressable max-w-xs w-full"
           >
             <span className="material-symbols-outlined text-[16px]">arrow_back</span>
             {t('dashboard.return_to_birth_chamber')}
@@ -644,7 +679,12 @@ export default function DashboardPage() {
       {/* ── Main Content ──────────────────────────────────────────────────── */}
       <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex flex-col">
 
-        {/* ── Upper Zone: Cosmic Summary (2×3 detail grid) + Chart Viewer, side by side ── */}
+        {/* ── Today's Sky: live panchanga + graha strip (hidden in focus mode) ── */}
+        {!focusMode && <TodaysSky />}
+
+        {/* ── Upper Zone: Cosmic Summary + Chart Viewer, side by side.
+            Collapsed entirely in Focus Mode for distraction-free reading. ── */}
+        {!focusMode && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
           <div className="lg:col-span-7">
             <CosmicSummary
@@ -664,6 +704,7 @@ export default function DashboardPage() {
             />
           </div>
         </div>
+        )}
 
         {/* ── Tab Navigation Headers (11 Numbered Tabs Bar — Sticky Sub-Navigation) ── */}
         <div
@@ -679,22 +720,45 @@ export default function DashboardPage() {
             chartData={chartData}
             onGenerateMissingTabs={generateMissingTabs}
           />
+
+          {/* Focus Mode toggle — collapse the observatory zone while reading */}
+          <button
+            type="button"
+            onClick={() => setFocusMode((v) => !v)}
+            aria-pressed={focusMode}
+            title={focusMode
+              ? 'Exit focus mode — show chart & summary again'
+              : 'Focus mode — hide chart & summary for distraction-free reading'}
+            className={`shrink-0 w-9 h-9 flex items-center justify-center rounded-lg border transition-colors cursor-pointer ${focusMode
+              ? 'bg-[#1F3A6B] border-[#D9A63C]/50 text-[#D9A63C]'
+              : 'bg-[#FAF3E3] hover:bg-[#E8D5A7]/60 border-[#E8D5A7] text-[#7b5800]'}`}
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              {focusMode ? 'close_fullscreen' : 'open_in_full'}
+            </span>
+          </button>
+
+          {/* Article-scoped reading progress hairline (2px gold) */}
+          <ReadingProgressBar targetRef={contentScrollRef} activeTab={activeTab} />
         </div>
 
-        {/* Full-width Reading Exegesis below — locked scroll panel */}
-        {/* height = viewport minus sticky header (64px) minus sticky tab nav — so content fills exactly the remaining viewport */}
-        {/* overscroll-behavior: contain means this panel scrolls independently; when it hits the end the outer page scroll continues to the footer */}
+        {/* Full-width Reading Exegesis below — natural page flow (Option A single scroll).
+            No nested overflow panel: the page scrolls as one continuous document
+            (header + tab bar remain sticky), eliminating the scroll-trap/rigidity
+            of the old fixed-height inner scroller. */}
         <div
           ref={contentScrollRef}
-          className="flex flex-col gap-6 mt-4 pb-8 overflow-y-auto"
-          style={{
-            height: `calc(100vh - 64px - ${tabNavHeight}px)`,
-            overscrollBehavior: 'contain',
-            scrollBehavior: 'smooth',
-            WebkitOverflowScrolling: 'touch',
-          }}
+          id="reading-panel"
+          className="flex items-start gap-6 mt-4 pb-8 scroll-mt-[120px]"
         >
-
+            {/* Within-chapter scrollspy rail (desktop ≥1280px) */}
+            <ChapterTOC
+              contentRef={contentScrollRef}
+              activeTab={activeTab}
+              streaming={!!tabLoading[activeTab]}
+            />
+r
+            <div className="flex-1 min-w-0 flex flex-col gap-6">
             {/* Tab Content Card (Editorial Chapter Layout) */}
             <TabContentCard
               chartId={chartId}
@@ -741,6 +805,13 @@ export default function DashboardPage() {
             {activeTab === 8 && !tabLoading[8] && interpretations[8] && (
               <RemedyCards remedyText={interpretations[8]} />
             )}
+            </div>
+
+            {/* “Jump to latest” pill — appears only when the user scrolled up mid-stream */}
+            <JumpToLatest
+              contentRef={contentScrollRef}
+              streaming={!!tabLoading[activeTab]}
+            />
         </div>
       </main>
 
@@ -1168,7 +1239,7 @@ export default function DashboardPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 blueprint-button shimmer-button mt-0"
+                    className="flex-1 blueprint-button shimmer-button pressable mt-0"
                   >
                     <span className="material-symbols-outlined text-[16px]">refresh</span>
                     {t('dashboard.modal.recalculate')}

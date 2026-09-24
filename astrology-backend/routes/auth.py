@@ -21,9 +21,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Authentication"])
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+# Mobile apps mint ID tokens for an Android-type OAuth client (custom-scheme
+# redirect). Accept both audiences so the website and the APK share one login
+# endpoint. Configure GOOGLE_ANDROID_CLIENT_ID in the Space env vars.
+GOOGLE_ANDROID_CLIENT_ID = os.getenv("GOOGLE_ANDROID_CLIENT_ID")
+GOOGLE_CLIENT_IDS = [c for c in (GOOGLE_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID) if c]
 JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
+
+# OWASP 2024 guidance: PBKDF2-HMAC-SHA256 should use >= 600,000 iterations.
+# Legacy hashes with fewer iterations still verify and are upgraded on login.
+PBKDF2_ITERATIONS = 600000
+
+# Pre-computed dummy hash used to equalize timing when an account does not exist.
+DUMMY_HASH = "pbkdf2_sha256$600000$0123456789abcdef0123456789abcdef$" + "0" * 64
 
 security = HTTPBearer(auto_error=False)
 
@@ -74,12 +86,15 @@ def normalize_language(lang: Optional[str]) -> str:
 def create_access_token(user_id: uuid.UUID, email: str) -> str:
     """
     Generate a signed JWT access token for local session management.
+    Includes iat/jti claims; requires JWT_SECRET >= 32 chars.
     """
-    expire = datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+    now = datetime.utcnow()
     payload = {
         "user_id": str(user_id),
         "email": email,
-        "exp": expire
+        "iat": now,
+        "jti": secrets.token_hex(16),
+        "exp": now + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -204,11 +219,21 @@ async def google_login(payload: GoogleLoginPayload, conn = Depends(get_db)):
 
     # ── Strategy 1: Try verifying as a JWT ID token ──────────────────────────
     try:
-        idinfo = id_token.verify_oauth2_token(
-            payload.token,
-            requests.Request(),
-            GOOGLE_CLIENT_ID
-        )
+        idinfo = None
+        last_err: Exception | None = None
+        for audience in GOOGLE_CLIENT_IDS:
+            try:
+                idinfo = id_token.verify_oauth2_token(
+                    payload.token,
+                    requests.Request(),
+                    audience
+                )
+                break
+            except Exception as aud_err:
+                last_err = aud_err
+                continue
+        if idinfo is None:
+            raise last_err or ValueError("no configured Google client audience matched")
         google_id = idinfo["sub"]
         email     = idinfo["email"]
         name      = idinfo.get("name", "")
@@ -300,15 +325,18 @@ async def google_login(payload: GoogleLoginPayload, conn = Depends(get_db)):
 def hash_password(password: str) -> str:
     """
     Generates a secure PBKDF2 hash of the password using hashlib.
+    600,000 iterations (OWASP 2024 guidance for PBKDF2-HMAC-SHA256).
+    Existing 100k hashes still verify (iteration count is stored per-hash)
+    and are transparently re-hashed on next successful login.
     """
     salt = secrets.token_hex(16)
     key = hashlib.pbkdf2_hmac(
         'sha256',
         password.encode('utf-8'),
         salt.encode('utf-8'),
-        100000
+        PBKDF2_ITERATIONS
     )
-    return f"pbkdf2_sha256$100000${salt}${key.hex()}"
+    return f"pbkdf2_sha256${PBKDF2_ITERATIONS}${salt}${key.hex()}"
 
 
 def verify_password(password: str, hashed: str) -> bool:
@@ -411,6 +439,8 @@ async def email_login(payload: EmailLoginPayload, conn = Depends(get_db)):
     )
 
     if not row or not row["password_hash"]:
+        # Burn comparable CPU time so 'user not found' is indistinguishable
+        verify_password(password, DUMMY_HASH)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password."
@@ -423,6 +453,19 @@ async def email_login(payload: EmailLoginPayload, conn = Depends(get_db)):
         )
 
     user_id = row["id"]
+
+    # Transparent hash upgrade for legacy password hashes
+    if f"pbkdf2_sha256${PBKDF2_ITERATIONS}$" not in row["password_hash"]:
+        try:
+            await conn.execute(
+                "UPDATE users SET password_hash = $1 WHERE id = $2",
+                hash_password(password),
+                user_id,
+            )
+            logger.info(f"Upgraded password hash strength for user {user_id}")
+        except Exception as upgrade_err:
+            logger.warning(f"Could not upgrade password hash for {user_id}: {upgrade_err}")
+
     access_token = create_access_token(user_id, email)
 
     return {

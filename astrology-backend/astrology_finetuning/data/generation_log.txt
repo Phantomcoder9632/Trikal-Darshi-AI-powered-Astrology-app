@@ -1,2 +1,0 @@
-REJECTED | tab=1 lang=english reason=Contains self-correction artifact
-OK | tab=1 lang=english name=Indu Biswas dob=1997-01-18 chars=45889 set=train

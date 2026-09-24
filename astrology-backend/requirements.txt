@@ -20,4 +20,3 @@ tqdm
 google-auth
 pyjwt
 email-validator
-

@@ -9,6 +9,52 @@ import json
 from typing import Dict, Any, List
 
 # ---------------------------------------------------------------------------
+# Plain-language style contract — prepended to every generation
+# ---------------------------------------------------------------------------
+
+PLAIN_LANGUAGE_STYLE = """
+════════════════════════════════════════════════════════
+🗣️ HOW TO WRITE — THE SIMPLE LANGUAGE CONTRACT (READ THIS FIRST)
+════════════════════════════════════════════════════════
+Your reader is a curious 13-year-old (7th standard) learning about their own
+chart for the very first time. Their parents are reading over their shoulder.
+They do NOT know words like Shadbala, Arudha, Pakka Ghar, or Vargottama.
+
+THE TRANSLATION RULE (NON-NEGOTIABLE):
+Every single time you use an astrological term, explain it immediately in the
+simplest possible words — like a caring older friend talking, never a professor
+lecturing. Pattern: [technical term] → "which simply means ..." → real-life effect.
+
+  ✗ BAD:  "Your Shadbala is weak in the 6th house."
+  ✓ GOOD: "Shani (Saturn) looks a little tired in the part of your chart that
+          rules daily work and health (the 6th house) — which simply means:
+          don't rush big decisions at work this year, and give your body the
+          rest it asks for."
+
+STYLE RULES:
+1. Short sentences. One idea per sentence. Write at a 7th-standard reading level.
+2. Lead with the REAL-LIFE meaning ("You will likely..."), THEN show the astrology
+   behind it ("because Guru (Jupiter) sits in your 10th house of career").
+3. After every technical section, add one line starting with:
+   "👉 In plain words: ..." that a child could understand.
+4. Give planets simple personalities so they are easy to remember:
+   Guru (Jupiter) = the kind wise teacher • Shani (Saturn) = the strict but fair
+   headmaster • Mangal (Mars) = the brave soldier • Shukra (Venus) = the artist
+   who loves beauty • Budh (Mercury) = the quick clever student • Rahu = the
+   hungry adventurer • Ketu = the calm old sage who lets go.
+5. NO doom language. When something is difficult, say (a) what it is,
+   (b) why it happens, and (c) the way through it — always end on what they CAN do.
+6. Replace percentages/scores with everyday comparisons: instead of "SAV 32 bindhus"
+   say "your money house scores 32 out of about 48 — that is strong, like a bat
+   averaging 50+ in every match".
+7. Keep the classical Sanskrit anchor terms (Lagna, Mahadasha, Nakshatra, Su/Ch/Ma
+   abbreviations) — but ONLY as signposts, always followed by the simple explanation.
+8. Never output raw calculation steps; convert them into one-line tables or sentences
+   a beginner can scan.
+════════════════════════════════════════════════════════
+"""
+
+# ---------------------------------------------------------------------------
 # Master system prompt
 # ---------------------------------------------------------------------------
 
@@ -331,10 +377,26 @@ def build_tab_prompt(
 
         return "\n".join(lines)
 
+    # Live transit snapshot from the chart's embedded gochar (real Swiss
+    # Ephemeris data) so the LLM never relies on a stale hard-coded line.
+    gochar = chart_data.get("gochar") or {}
+    gochar_planets = gochar.get("planets") if isinstance(gochar, dict) else None
+    transit_line = "Now (live transits): unavailable"
+    if isinstance(gochar_planets, list) and gochar_planets:
+        bits = []
+        for gp in gochar_planets:
+            if isinstance(gp, dict) and gp.get("name") and gp.get("sign"):
+                retro = "(R)" if gp.get("isRetrograde") in (True, "true", "true") else ""
+                bits.append(f"{gp['name']}→{gp['sign']}{retro}")
+        if bits:
+            computed = gochar.get("computed_at", "")
+            stamp = f" (as of {str(computed)[:10]})" if computed else ""
+            transit_line = f"Now (live transits{stamp}): " + ", ".join(bits)
+
     base_context = f"""CHART — {full_name}:
 {_chart_summary()}
 
-Now (June 2026): Jupiter→Cancer(exalt), Saturn→Pisces, Rahu→Aquarius/Ketu→Leo, Mars→Aries
+{transit_line}
 """
 
     # ── Divisional chart snippets for each tab ──────────────────────────────
@@ -902,4 +964,4 @@ E) SPECIFIC ADVICE
     }
 
     tab_content = prompts.get(tab_number, prompts[1])
-    return lang_mandate + tab_content
+    return PLAIN_LANGUAGE_STYLE + lang_mandate + tab_content

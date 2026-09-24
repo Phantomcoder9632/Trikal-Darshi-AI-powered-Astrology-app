@@ -83,9 +83,10 @@ No test framework (Jest/Vitest/Playwright) is installed. TypeScript is not used 
 
 | Service | Used for | Client |
 |---|---|---|
-| **Google AI Studio (Gemini)** `gemini-2.5-flash` | Primary LLM for interpretations, chat, translations | OpenAI-compatible endpoint `generativelanguage.googleapis.com/v1beta/openai/` (`services/llm_providers.py:11-17`) |
-| **Groq** | LLM fallback tiers ×4: `llama-3.3-70b-versatile`, `qwen/qwen3-32b`, `openai/gpt-oss-120b`, `llama-3.1-8b-instant` | OpenAI-compatible `api.groq.com/openai/v1` |
-| **OpenRouter** | Safety-net tier `meta-llama/llama-3.3-70b-instruct:free` | OpenAI-compatible `openrouter.ai/api/v1` |
+| **Cloudflare Workers AI** | **Primary Tier 1 LLM** (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`, and `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b` for Hindi/Bengali) | OpenAI-compatible endpoint `https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1` |
+| **Google AI Studio (Gemini)** `gemini-2.5-flash` | Secondary Tier 2 LLM for interpretations, chat, translations | OpenAI-compatible endpoint `generativelanguage.googleapis.com/v1beta/openai/` |
+| **Groq** | LLM fallback tiers: `qwen/qwen3.8-27b`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b` | OpenAI-compatible `api.groq.com/openai/v1` |
+| **OpenRouter** | Safety-net tier `qwen/qwen3.8-27b:free` + free translation models | OpenAI-compatible `openrouter.ai/api/v1` |
 | **AstrologyAPI.com** | Primary ephemeris provider (≤200 calls/month quota guard) | REST `services/astrologyapi.py` (15 parallel calls per chart) |
 | **OSM Nominatim** | City → lat/lng geocoding (1 s rate limit, 30-day cache) | `routes/geocode.py:36` |
 | **Google Identity Services** | OAuth login | `@react-oauth/google` + `google-auth` verification |

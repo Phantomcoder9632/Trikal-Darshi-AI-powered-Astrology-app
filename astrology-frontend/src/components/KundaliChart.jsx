@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const ZODIAC_SIGNS = [
   "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
@@ -16,6 +16,42 @@ const SANSKRIT_ABBRS = {
   "Rahu": "Ra",
   "Ketu": "Ke"
 };
+
+const SANSKRIT_NAMES = {
+  Sun: "Surya", Moon: "Chandra", Mars: "Mangal", Mercury: "Budha",
+  Jupiter: "Guru", Venus: "Shukra", Saturn: "Shani", Rahu: "Rahu", Ketu: "Ketu",
+};
+
+const PLANET_LORE = {
+  Sun: "The soul, vitality, father, and royal authority.",
+  Moon: "Mind, emotions, mother, and the tides of memory.",
+  Mars: "Courage, siblings, energy, and the warrior instinct.",
+  Mercury: "Intellect, speech, commerce, and wit.",
+  Jupiter: "Wisdom, dharma, children, and divine grace.",
+  Venus: "Love, art, comfort, and the partner of the flesh.",
+  Saturn: "Discipline, longevity, karma, and patient labor.",
+  Rahu: "Insatiable desire, foreign things, and worldly illusion.",
+  Ketu: "Detachment, moksha, and past-life mastery.",
+};
+
+function fmtDegree(d) {
+  if (d == null || Number.isNaN(Number(d))) return "\u2014";
+  const deg = Math.floor(d);
+  const min = Math.floor((d - deg) * 60);
+  const sec = Math.round(((d - deg) * 60 - min) * 60);
+  return `${deg}\u00b0${String(min).padStart(2, "0")}\u2032${String(sec).padStart(2, "0")}\u2033`;
+}
+
+function dignityWord(planetName, signNum, isRetro) {
+  if (isRetro) return "Retrograde";
+  const exaltedSigns = { Sun: 1, Moon: 2, Mars: 10, Mercury: 6, Jupiter: 4, Venus: 12, Saturn: 7, Rahu: 2, Ketu: 8 };
+  const debilitatedSigns = { Sun: 7, Moon: 8, Mars: 4, Mercury: 12, Jupiter: 10, Venus: 6, Saturn: 1, Rahu: 8, Ketu: 2 };
+  const ownSigns = { Sun: [5], Moon: [4], Mars: [1, 8], Mercury: [3, 6], Jupiter: [9, 12], Venus: [2, 7], Saturn: [10, 11] };
+  if (exaltedSigns[planetName] === signNum) return "Exalted \u2726";
+  if (debilitatedSigns[planetName] === signNum) return "Debilitated";
+  if (ownSigns[planetName]?.includes(signNum)) return "Own Sign";
+  return "Neutral";
+}
 
 /**
  * Determine dignity color and style for a planet in Light mode.
@@ -73,6 +109,7 @@ function getPlanetStyle(planetName, signNum, isRetrograde) {
 }
 
 export default function KundaliChart({ chartData }) {
+  const [selectedPlanet, setSelectedPlanet] = useState(null);
   // Define house display centers in 400x400 SVG
   const houseCoordinates = {
     1: { cx: 200, cy: 105, labelY: 140 },
@@ -127,6 +164,8 @@ export default function KundaliChart({ chartData }) {
           abbr,
           signNum,
           isRetro,
+          planet: p,
+          houseNum,
           ...styleInfo
         });
       }
@@ -206,28 +245,105 @@ export default function KundaliChart({ chartData }) {
                 const py = coord.cy - (totalOffset / 2) + (index * offsetStep);
 
                 return (
-                  <text
-                    key={p.name}
-                    x={coord.cx}
-                    y={py}
-                    fill={p.color}
-                    fontSize="12"
-                    fontWeight="700"
-                    fontFamily="Inter"
-                    textAnchor="middle"
-                    filter={p.glow ? "url(#gold-glow)" : undefined}
-                    style={{
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    {p.abbr}
-                  </text>
+                  <g key={p.name}>
+                    {/* Invisible generous tap target + hover ring */}
+                    <circle
+                      cx={coord.cx}
+                      cy={py - 4}
+                      r={11}
+                      fill="transparent"
+                      className="cursor-pointer"
+                      onClick={() => setSelectedPlanet(p)}
+                    />
+                    <text
+                      x={coord.cx}
+                      y={py}
+                      fill={p.color}
+                      fontSize="12"
+                      fontWeight="700"
+                      fontFamily="Inter"
+                      textAnchor="middle"
+                      filter={p.glow ? "url(#gold-glow)" : undefined}
+                      className="planet-glyph"
+                      style={{ userSelect: 'none' }}
+                      onClick={() => setSelectedPlanet(p)}
+                    >
+                      {p.abbr}
+                    </text>
+                  </g>
                 );
               })}
             </g>
           );
         })}
       </svg>
+
+      {/* ── Planet detail popup ── */}
+      {selectedPlanet && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center p-6"
+          style={{ background: "rgba(14,26,55,0.55)" }}
+          onClick={() => setSelectedPlanet(null)}
+        >
+          <div
+            className="glass-card relative w-full max-w-[340px] rounded-2xl border border-[#D9A63C]/55 p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedPlanet(null)}
+              className="absolute right-3 top-3 text-[#7b5800]/50 hover:text-[#7b5800] transition-colors text-lg leading-none"
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-[#FFFDF6]"
+                style={{
+                  background: selectedPlanet.color === "#ba1a1a" ? "#ba1a1a" : "#C9952A",
+                }}
+              >
+                {selectedPlanet.abbr}
+              </div>
+              <div>
+                <h3 className="font-['Fraunces',serif] text-lg font-bold text-[#022454] leading-tight">
+                  {selectedPlanet.name}
+                </h3>
+                <p className="text-[11.5px] text-[#7b5800] italic -mt-0.5">
+                  {SANSKRIT_NAMES[selectedPlanet.name] ?? ""}
+                </p>
+              </div>
+              <span className="ml-auto bg-[#EBF1FA] text-[#1F3A6B] text-[11px] font-bold px-2.5 py-1 rounded-full">
+                H{selectedPlanet.houseNum}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 mt-4">
+              <PopupCell label="SIGN" value={ZODIAC_SIGNS[selectedPlanet.signNum - 1] ?? "—"} />
+              <PopupCell label="DEGREE" value={fmtDegree(selectedPlanet.planet?.normDegree ?? selectedPlanet.planet?.fullDegree)} />
+              <PopupCell label="NAKSHATRA" value={selectedPlanet.planet?.nakshatra ?? "—"} />
+              <PopupCell label="NAK LORD" value={selectedPlanet.planet?.nakshatra_lord ?? selectedPlanet.planet?.nakshatraLord ?? "—"} />
+              <PopupCell label="MOTION" value={selectedPlanet.isRetro ? "Retrograde" : "Direct"} />
+              <PopupCell label="DIGNITY" value={dignityWord(selectedPlanet.name, selectedPlanet.signNum, selectedPlanet.isRetro)} />
+            </div>
+
+            {PLANET_LORE[selectedPlanet.name] && (
+              <p className="mt-3.5 text-[12px] leading-relaxed text-[#5d5c73] italic">
+                {PLANET_LORE[selectedPlanet.name]}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PopupCell({ label, value }) {
+  return (
+    <div className="bg-[#FBF6EA]/70 rounded-lg px-2.5 py-1.5 border border-[#E8D5A7]/60">
+      <p className="text-[8.5px] font-bold tracking-[0.12em] text-[#7b5800]/60">{label}</p>
+      <p className="text-[12px] font-semibold text-[#022454] truncate">{value}</p>
     </div>
   );
 }

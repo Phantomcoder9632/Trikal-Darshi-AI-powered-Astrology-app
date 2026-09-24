@@ -33,9 +33,10 @@ Note the port inconsistency: compose maps host 7860, while local dev runs uvicor
 - Frontend: `npm run dev` (Vite, port 5173, `vite.config.js`).
 - See SETUP.md for the full verified procedure.
 
-## CI/CD
+## CI/CD & Automation
 
-**None.** No `.github/workflows/`, no GitLab CI, no pre-commit config. All deployment is manual (git push to HF Spaces / `docker compose up`). Tests are also not wired into any pipeline.
+- GitHub Actions: `.github/workflows/backend-keepalive.yml` runs every 48 hours to ping the Hugging Face Space health endpoint (`https://brocoai-trikal-darshi-api.hf.space/health`), preventing HF free-tier Spaces from sleeping.
+- Deployment to Hugging Face Spaces is performed by pushing the `temp_hf_deploy/` directory to the Space git remote `origin main`.
 
 ## Required Environment Variables
 
@@ -46,12 +47,15 @@ Backend (from `.env.example` + code scan; the live `.env` matches this shape):
 | `DATABASE_URL` | **Yes** (startup aborts without a working DB, `db/database.py:163`) | primary Postgres DSN |
 | `LOCAL_DATABASE_URL` | No | secondary Postgres DSN for DualPool failover |
 | `REDIS_URL` | Yes (soft-fails per op) | `redis://localhost:6379` |
-| `GEMINI_API_KEY` | **Yes** for full function (tier-1 LLM) | Google AI Studio key |
+| `CLOUDFLARE_ACCOUNT_ID` | **Yes** for Tier-1 LLM | Cloudflare Account ID |
+| `CLOUDFLARE_API_TOKEN` | **Yes** for Tier-1 LLM | Workers AI permission API token |
+| `CLOUDFLARE_MODEL` | No | Default: `@cf/meta/llama-3.3-70b-instruct-fp8-fast` (Indic: `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`) |
+| `GEMINI_API_KEY` | **Yes** for full function (Tier-2 LLM fallback) | Google AI Studio key |
 | `GEMINI_MODEL` | No | default `gemini-2.5-flash` |
 | `GEMINI_CHAT_API_KEY` | No | dedicated key for AskAI chat stream |
 | `GEMINI_TRANSLATION_KEY` | No | dedicated key for HI/BN translation jobs |
-| `GROQ_API_KEY` | No (recommended) | 4 Groq fallback tiers |
-| `OPENROUTER_API_KEY` / `OPENROUTER_MODEL` | No | safety-net tier |
+| `GROQ_API_KEY` | No (recommended) | Groq fallback tiers (`qwen/qwen3.8-27b`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b`) |
+| `OPENROUTER_API_KEY` / `OPENROUTER_MODEL` | No | safety-net tier (`qwen/qwen3.8-27b:free`) |
 | `ASTROLOGYAPI_USER_ID` / `ASTROLOGYAPI_API_KEY` | No | external ephemeris; without it the app is pure Swiss Ephemeris |
 | `GOOGLE_CLIENT_ID` | For Google login | backend token verification |
 | `JWT_SECRET` | For auth | HS256 signing |

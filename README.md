@@ -57,9 +57,11 @@
 
 > *"Trikal" means the three dimensions of time — Past, Present, and Future. "Darshi" means one who sees. Together: **The One Who Sees Across All Time.***
 
-**Trikal Darshi** is not just another horoscope generator. It is a **full-stack cosmic intelligence platform** that fuses **three ancient Indian knowledge systems** with **modern Generative AI** to deliver deeply personalized, chart-grounded life interpretations.
+**Trikal Darshi** is not just another horoscope generator. It is a **full-stack cosmic intelligence platform** that fuses **three ancient Indian knowledge systems** with **modern Generative AI** to deliver deeply personalized, chart-grounded life interpretations — written in **plain, warm language that anyone from a curious 7th-standard student to a practicing jyotishi can enjoy**.
 
 Enter your exact birth details. Watch as the cosmos reveals itself — from your Lagna blueprint to your Gochar transits, from Lal Kitab karma debts to Numerology soul numbers. Every reading is anchored to **your exact planetary positions**, not generic sun-sign content.
+
+> **Platforms:** 🌐 React web app (`astrology-frontend/`) · 📱 React Native mobile app (`mobile_app/`, Expo SDK 54) — same backend, same design language.
 
 <div align="center">
 
@@ -95,6 +97,15 @@ Enter your exact birth details. Watch as the cosmos reveals itself — from your
 
 Here are the latest architectural and visual updates implemented for maximum reliability and Vedic consistency:
 
+* **Plain-Language AI (“7th-Standard Contract”)**: Every AI interpretation and chat response now follows a strict simple-language style contract — every technical term (Shadbala, Arudha, Pakka Ghar, dignity names…) is explained in everyday words the moment it appears, real-life meaning leads and astrology follows, sections end with a “👉 In plain words:” summary line, planets get friendly personalities (Guru = kind teacher, Shani = strict headmaster), and doom-language is replaced with (a) what it is, (b) why, (c) what you can do. Applies across all 11 chapters, all 3 languages, and the AI chat guide.
+* **Live Transit Grounding**: Removed the hard-coded “June 2026” transit line from prompts — the engine now reads real Swiss-Ephemeris gochar positions (with computed-at stamp and retrograde marks) from each chart’s embedded live data, eliminating stale-transit hallucinations.
+* **Security Hardening Pass**: Production startup now refuses to boot with a weak/missing `JWT_SECRET` (<32 chars); security headers (`X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, CSP) added to every response; PBKDF2 upgraded to 600,000 iterations (OWASP 2024) with transparent re-hash of legacy passwords on login; timing-safe login (dummy hash burn) prevents account enumeration; JWTs now carry `iat`/`jti` claims; rate limits added to `/chart/generate` (6/h), `/chart/gochar` (30/min) and `/geocode` (20/min); chat payload caps (message ≤2000 chars, history ≤20 turns); geocode input length capping; strengthened `.env.example` security guidance.
+* **Today Screen (Mobile) & Today’s Sky (Web)**: A daily almanac on both platforms — live Panchanga (tithi, nakshatra + pada, yoga, karana, Moon phase, weekday lord) computed from the `/chart/gochar` Swiss-Ephemeris endpoint, all nine grahas’ current sidereal positions, and (mobile) a “For Your Chart” overlay mapping transit Moon/Jupiter/Saturn onto the user’s natal houses with one-tap streaming AI daily reading.
+* **Tappable Planet Popups**: Every planet glyph in the kundali SVG — web and mobile — now opens a detail popup with sign, exact degree (°′″), nakshatra + lord, retrograde/direct state, dignity (Exalted ✦/Debilitated/Own), house badge, Sanskrit name, and one line of classical lore.
+* **Haptic Micro-Interactions (Mobile)**: A shared tactile vocabulary — light ticks on tab/varga/selection changes, medium thud on primary buttons, success haptic on login and chapter-stream completion, warning buzz on errors.
+* **Navagraha Convergence Splash (Mobile)**: A unique cosmic loader — nine graha sigils orbit a glowing golden bindu at classical speeds (Moon fastest, Saturn slowest, Rahu–Ketu retrograde) between counter-rotating dashed zodiac rings, synchronized with a seven-star constellation progress indicator.
+* **Custom App Icon & Splash (Mobile)**: Generated golden four-point star on parchment for the app icon, Android adaptive icon, and native splash logo (reproducible via `mobile_app/scripts/gen-icon.py`).
+* **Friendly Error Translation (Mobile)**: Raw network/API errors are translated into kind human sentences (“The observatory may be waking up…”, “The stars need a short rest…”) so beginners are never confronted with timeouts or status codes.
 * **Cosmic Banner Cropping & Parallax Shifting**: Cropped out the bottom dark bar of the banner image using CSS `clip-path` for a clean blend with the cream background. Enabled dynamic vertical scroll-based parallax shifting on the banner container using `requestAnimationFrame`.
 * **Clean Logged-In Flow & Welcome Bar**: Redesigned the home layout so logged-in users skip the marketing banners, guest hero section, features list, and testimonials entirely. Users now see a compact personalized Welcome Bar (`.lp-logged-welcome`) and proceed straight to their saved blueprints grid and birth details form.
 * **Full Mobile & Tablet Responsiveness**: Added comprehensive CSS media query overrides to guarantee a flawless, stackable, and touch-friendly layout on portrait mobile viewports and landscape tablets.
@@ -115,6 +126,23 @@ Here are the latest architectural and visual updates implemented for maximum rel
 * **Unified Vedic Whole-Sign House System**: Replaced the Western Placidus house placement calculations for planets in both local Swiss Ephemeris (`ephemeris.py`) and API reconciliation engine (`hybrid.py`) with the standard Vedic Whole-Sign house mapping relative to the Lagna, eliminating data contradictions (such as Rahu in Aries H12 instead of H1).
 * **Corrected North Indian SVG Layouts**: Fixed a clockwise visual rendering bug in both [`DivisionalChart.jsx`](file:///d:/AstrologyApp/astrology-frontend/src/components/DivisionalChart.jsx) and [`KundaliChart.jsx`](file:///d:/AstrologyApp/astrology-frontend/src/components/KundaliChart.jsx) by swapping the SVG coordinates of houses 2–12 back to the traditional counter-clockwise North Indian sequence.
 * **Bilingual Planet Naming in AI Reports**: Updated `SYSTEM_PROMPT` rules to enforce bilingual planetary references in generated AI interpretations (e.g. `Budh/Bu (Mercury)`, `Guru/Gu (Jupiter)`) to match the visual Sanskrit abbreviations shown in the SVG chart nodes.
+
+---
+
+## 🔐 Security Model
+
+| Layer | Protection |
+|---|---|
+| **Passwords** | PBKDF2-HMAC-SHA256, 600,000 iterations (OWASP 2024), per-user salt; legacy hashes transparently re-hashed on login |
+| **Sessions** | JWT (HS256) with `iat`/`jti` claims, 24h expiry; production refuses weak/missing `JWT_SECRET` (<32 chars) |
+| **Login timing** | Dummy-hash burn on unknown accounts → response time never reveals whether an email exists |
+| **Rate limits** | Redis fixed-window per IP: auth 5/min · chat 10/min · interpret 15/min · chart gen 6/hour · gochar 30/min · geocode 20/min |
+| **Input caps** | Chat message ≤2000 chars, history ≤20 turns; geocode query ≤120 chars; Pydantic validation everywhere |
+| **Ownership** | Charts, interpretations, chat history and progress enforce per-user ownership (403 on mismatch); guests isolated |
+| **Headers** | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, conservative CSP |
+| **Secrets** | `.env` is git-ignored; `.env.example` documents safe generation; SQL access is parameterized ($1/$2) — no string interpolation |
+
+> **Deployment note:** set `APP_ENV=production` and list only your real frontend origins in `CORS_ORIGINS` (comma-separated). Wildcard CORS is accepted only in development.
 
 ---
 
@@ -540,13 +568,15 @@ Trikal-Darshi-AI-powered-Astrology-app/
         │
         ├── pages/
         │   ├── HomePage.jsx      # Birth details form + validation
-        │   └── DashboardPage.jsx # 11-tab dashboard with chart sidebar
+        │   ├── DashboardPage.jsx # 11-tab dashboard w/ Today's Sky + chart sidebar
+        │   └── ProfilePage.jsx   # Saved charts vault
         │
         ├── components/
         │   ├── AskAI.jsx         # Floating AI chatbot with per-profile DB history
         │   ├── ChartSidebar.jsx  # Kundali chart + divisional chart toggler
         │   ├── DivisionalChart.jsx # SVG chart renderer + "best used for" badge
-        │   ├── KundaliChart.jsx  # North Indian Kundali SVG renderer
+        │   ├── KundaliChart.jsx  # North Indian Kundali SVG (tappable planet popups)
+        │   ├── TodaysSky.jsx     # Live panchanga + graha strip card
         │   ├── PlanetTable.jsx   # Planetary positions table (synced to active chart)
         │   ├── TabNavigation.jsx # 11-tab navigator with load states
         │   ├── CosmicSummary.jsx # Birth details summary card
@@ -556,6 +586,8 @@ Trikal-Darshi-AI-powered-Astrology-app/
         │
         └── services/
             └── api.js            # Axios API client + getChatHistory + streamChatResponse
+
+mobile_app/                    # Expo SDK 54 + TypeScript — see mobile_app/README.md
 ```
 
 ---

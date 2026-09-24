@@ -25,7 +25,11 @@
 | Jun 16 | `8b39770`, `2bc5e6f` | **Persistent per-chart DB chat history** + chatbot frontend |
 | Jun 17–19 | `49c3255`, `8c42c5d`, `12e4477` | UI polish wave: banner crop/parallax, glassmorphism, **security hardening** (rate limiting, password rules, JWT lifespan), observatory landing redesign, saved-charts vault, AuthModal |
 | Sep 6 | `ba02a1b` | Stitch editorial-redesign templates committed |
-| (uncommitted era) | — | Fine-tuning experiment (`astrology_finetuning/`) ran ~Sep 7 per `dataset_report.md`; changed files in the worktree show dataset artifacts & training scripts post-date the last commit |
+| Sep 21 | `6f846fb` | Backend and database keep-alive workflow (`backend-keepalive.yml`) |
+| Sep 22 | `df77f8e` | **Cloudflare Workers AI integration** (Tier 1 edge cascade), frontend UI safeguards, and initial audit documentation |
+| Sep 22 | `18492b9`, `63369d4`, `6f81c3e` | Responsive scaling, North-Indian chart viewport fit, and **seamless sticky scroll-lock** for interpretation panel |
+| Sep 23 | `2afb483` | Consolidate chart hub into Profile, unify header/footer components, and strengthen RAG safety guardrails |
+| Sep 23 | (current) | Upgrade LLM cascade models (`qwen/qwen3.8-27b`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b`), update Hugging Face Space deploy, and audit docs |
 
 ## Abandoned / Dormant Directions
 

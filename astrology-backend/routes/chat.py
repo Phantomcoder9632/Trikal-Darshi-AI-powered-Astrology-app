@@ -3,7 +3,7 @@ import json
 import logging
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import uuid
 
 from db.database import get_db_pool
@@ -31,6 +31,27 @@ class ChatRequest(BaseModel):
     user_msg_id: Optional[str] = None
     ai_msg_id: Optional[str] = None
     language: Optional[str] = "english"
+
+    # ── Payload caps: block token-stuffing / LLM-cost abuse ────────────────
+    @field_validator("message")
+    @classmethod
+    def _cap_message(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Message cannot be empty.")
+        if len(v) > 2000:
+            raise ValueError("Message is too long (2000 character limit).")
+        return v
+
+    @field_validator("history")
+    @classmethod
+    def _cap_history(cls, v: List[ChatMessage]) -> List[ChatMessage]:
+        if len(v) > 20:
+            raise ValueError("History is too long (20 turn limit).")
+        for m in v:
+            if len(m.text) > 4000:
+                raise ValueError("History messages are too long.")
+        return v
 
 @router.post("/chat", dependencies=[Depends(RateLimiter("chat", limit=10))])
 async def chat_endpoint(

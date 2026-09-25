@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Trikal Darshi",
+    "slug": "trikal-darshi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "trikaldarshi",
+    "jsEngine": "hermes",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0E0825",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "backgroundColor": "#0E0825",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.trikaldarshi.app",
+      "jsEngine": "hermes"
+    },
+    "android": {
+      "package": "com.trikaldarshi.app",
+      "jsEngine": "hermes",
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0E0825"
+      },
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiUrl": "https://brocoai-trikal-darshi-api.hf.space",
+      "useLocalBackend": false
+    },
+    "plugins": [
+      "expo-web-browser",
+      "expo-video",
+      "expo-secure-store",
+      "expo-status-bar"
+    ]
+  }
+}

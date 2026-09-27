@@ -54,6 +54,10 @@ MIN_CONTENT_LENGTH = 1000
 
 # Module-level cached OpenAI clients (1 instance per tier)
 _CLIENT_CACHE: Dict[str, OpenAI] = {}
+# When a chat call gets 401/403, GEMINI_CHAT_API_KEY is bad — remember it so
+# get_cached_client() stops preferring it (until process restart), without
+# mutating the shared LLM_CASCADE dicts.
+_CHAT_KEY_DISABLED = False
 
 
 class AllProvidersExhaustedError(Exception):
@@ -211,7 +215,14 @@ def _is_rate_limit(exc: Exception) -> bool:
     status = getattr(exc, "status_code", None)
     if status == 429:
         return True
+    # 413/431 = payload too large. Free tiers reject oversized prompts with
+    # 413 ("Request too large ... ITPM/TPM"), which must trigger fall-through
+    # just like a 429 — otherwise one huge prompt kills the whole cascade.
+    if status in (413, 431):
+        return True
     msg = str(exc).lower()
+    if "request too large" in msg or "payload too large" in msg:
+        return True
     return (
         "rate_limit" in msg
         or "429" in msg
@@ -225,6 +236,68 @@ def _is_rate_limit(exc: Exception) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Prompt size safety net: keep assembled prompts inside free-tier budgets
+# ---------------------------------------------------------------------------
+
+# Safety net for free-tier token ceilings (e.g. Groq on-demand ITPM/TPM of
+# 7–8k tokens): an oversized prompt would 413-fail EVERY tier in the cascade
+# and surface "Chat Failed" to the user. ~200k chars ≈ 50k tokens would be
+# rejected; we cap well below the tightest limit (Groq 7k tokens ≈ 26k chars).
+MAX_PROMPT_CHARS = 20000
+
+
+def trim_messages_to_budget(messages: list, budget_chars: int = MAX_PROMPT_CHARS) -> list:
+    """Return a copy of `messages` whose total character count fits `budget_chars`.
+
+    Strategy, in order:
+      1. Squeeze the system prompt middle-out (keep head + tail; interpretations
+         and long reference blocks live in the middle — persona/basic info and
+         the final language instruction survive at the edges).
+      2. Drop oldest conversation-history messages until it fits. The final
+         user message is never dropped.
+    If even the non-droppable content exceeds the budget, the trimmed result is
+    returned as-is (best effort — real prompts never get this large).
+    """
+    def _total(msgs: list) -> int:
+        return sum(len(m.get("content", "")) for m in msgs if isinstance(m, dict))
+
+    if _total(messages) <= budget_chars:
+        return messages
+
+    out = [dict(m) for m in messages if isinstance(m, dict)]
+
+    # 1. Shrink the system prompt middle-out
+    sys_i = next((i for i, m in enumerate(out) if m.get("role") == "system"), None)
+    if sys_i is not None:
+        content = out[sys_i].get("content", "")
+        keep_head, keep_tail = 4500, 3000
+        if len(content) > keep_head + keep_tail + 500:
+            content = (
+                content[:keep_head]
+                + "\n\n[...older reading sections trimmed to fit the model's token budget...]\n\n"
+                + content[-keep_tail:]
+            )
+        out[sys_i]["content"] = content
+
+    # 2. Drop oldest history messages (never the final user message)
+    total = _total(out)
+    while total > budget_chars:
+        history_idx = [i for i, m in enumerate(out) if m.get("role") in ("user", "assistant")]
+        droppable = [i for i in history_idx if i != len(out) - 1]
+        if not droppable:
+            break
+        target = droppable[0]
+        total -= len(out[target].get("content", ""))
+        out.pop(target)
+
+    logger.info(
+        f"[pipeline] Prompt trimmed to fit cascade budget: "
+        f"{_total(messages)} -> {_total(out)} chars (budget {budget_chars})"
+    )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Cached OpenAI Client Getter
 # ---------------------------------------------------------------------------
 
@@ -233,6 +306,7 @@ def get_cached_client(tier: Dict[str, Any], is_chat: bool = False) -> OpenAI:
     Retrieve or instantiate a singleton OpenAI client for a specific tier.
     """
     load_dotenv(override=True)
+    global _CHAT_KEY_DISABLED
     tier_name = tier["name"]
     cache_key = f"{tier_name}_chat" if (is_chat and tier_name == "gemini-primary") else tier_name
 
@@ -240,7 +314,7 @@ def get_cached_client(tier: Dict[str, Any], is_chat: bool = False) -> OpenAI:
         api_key_env = tier["api_key_env"]
         api_key = os.environ.get(api_key_env, "")
 
-        if is_chat and tier_name == "gemini-primary":
+        if is_chat and tier_name == "gemini-primary" and not _CHAT_KEY_DISABLED:
             chat_key = os.environ.get("GEMINI_CHAT_API_KEY")
             if chat_key and not chat_key.startswith("your_"):
                 api_key = chat_key
@@ -346,6 +420,11 @@ async def stream_with_cascade(
     tiers = cascade_for_language(language)
     tier_errors = []
 
+    # Keep the assembled prompt inside the tightest provider budget — a huge
+    # prompt (e.g. all 11 tab readings injected for chat) would 413-fail the
+    # free tiers and exhaust the whole cascade.
+    messages = trim_messages_to_budget(messages)
+
     for tier in tiers:
         tier_name = tier["name"]
 
@@ -356,6 +435,7 @@ async def stream_with_cascade(
         max_tokens = effective_max_tokens(tier)
         model_name = tier["model"]
         logger.info(f"[pipeline] Attempting tier: {tier_name} (model: {model_name}, max_tokens: {max_tokens})")
+        create_kwargs = None
 
         extra_body = {}
         if "reasoning_format" in tier:
@@ -408,6 +488,37 @@ async def stream_with_cascade(
             return
 
         except Exception as tier_err:
+            # Self-heal an invalid Gemini chat key: a 401/403 on the chat
+            # client almost always means GEMINI_CHAT_API_KEY is wrong or
+            # expired. Drop the cached chat client so a single retry uses
+            # the main GEMINI_API_KEY instead of failing the whole tier.
+            if (
+                is_chat
+                and tier_name == "gemini-primary"
+                and create_kwargs is not None
+                and getattr(tier_err, "status_code", None) in (401, 403)
+            ):
+                _CHAT_KEY_DISABLED = True
+                _CLIENT_CACHE.pop("gemini-primary_chat", None)
+                logger.warning(
+                    "[pipeline] Gemini chat key rejected (401/403) — "
+                    "retrying once with the main GEMINI_API_KEY."
+                )
+                try:
+                    client = get_cached_client(tier, is_chat=True)
+                    stream = client.chat.completions.create(**create_kwargs)
+                    total_output_chars = 0
+                    for token in _yield_tokens(stream):
+                        total_output_chars += len(token)
+                        yield token
+                    if model_info is not None:
+                        model_info["model"] = f"{tier_name}/{model_name} (chat-key fallback)"
+                    logger.info(f"[pipeline] ✓ Tier {tier_name} succeeded after chat-key fallback.")
+                    return
+                except Exception as retry_err:
+                    logger.warning(f"[pipeline] Gemini chat-key retry failed: {retry_err}")
+                    tier_err = retry_err
+
             if _is_rate_limit(tier_err):
                 logger.warning(f"[pipeline] Tier {tier_name} rate-limited ({tier_err}). Falling through...")
             else:
@@ -486,8 +597,13 @@ async def stream_with_rag(
         ):
             yield chunk
     except AllProvidersExhaustedError as e:
+        # Never leak provider/org details to end users — log everything,
+        # show a short actionable message.
         logger.error(f"[pipeline] Report generation failed: {e}")
-        yield f"\n\n⚠️ **AI Generation Failed** — All models in the cascade are unavailable. Details: {e}"
+        yield (
+            "\n\n⚠️ The AI guides are all busy right now. "
+            "Please open this tab again in a minute to generate your reading."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -665,4 +781,10 @@ async def stream_chat_response(
         ):
             yield chunk
     except AllProvidersExhaustedError as e:
-        yield f"\n\n⚠️ **Chat Failed** — Models are unavailable: {e}"
+        # Never leak provider/org details to end users — log everything,
+        # show a short actionable message.
+        logger.error(f"[pipeline] Chat cascade exhausted: {e}")
+        yield (
+            "\n\n⚠️ The AI guides are all busy right now. "
+            "Please send your message again in a minute."
+        )

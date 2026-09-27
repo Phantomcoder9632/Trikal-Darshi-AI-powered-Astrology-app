@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import os
 from datetime import date, time
 from typing import Dict, Any
 
@@ -38,8 +39,9 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
     Decision engine: Chooses between AstrologyAPI.com and local Swiss Ephemeris.
     
     1. Counts monthly API usage.
-    2. If count < 200: Use AstrologyAPI in parallel (using asyncio.gather). Fall back on error.
-    3. If count >= 200: Direct Swiss Ephemeris fallback, logging limit reason.
+    2. If count < ASTROLOGYAPI_MONTHLY_LIMIT (default 200): Use AstrologyAPI in
+       parallel (using asyncio.gather). Fall back on error.
+    3. Otherwise: Direct Swiss Ephemeris fallback, logging limit reason.
     """
     # Normalize user input (supports Pydantic model or dict)
     if hasattr(user_input, "model_dump"):
@@ -66,11 +68,21 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
         tob = time.fromisoformat(tob)
 
     # ── 1. Check current month's usage ──────────────────────────────────────
-    monthly_calls = await count_monthly_api_calls()
-    logger.info(f"AstrologyAPI monthly calls counted: {monthly_calls}/250 (Threshold: 200)")
+    try:
+        _limit_for_log = int(os.environ.get("ASTROLOGYAPI_MONTHLY_LIMIT", "200"))
+    except (TypeError, ValueError):
+        _limit_for_log = 200
+    logger.info(f"AstrologyAPI monthly calls counted: {monthly_calls} (Threshold: {_limit_for_log})")
 
     # ── 2. Route request based on quota threshold ───────────────────────────
-    if monthly_calls < 200:
+    # ASTROLOGYAPI_MONTHLY_LIMIT is tunable from HF Space settings without a
+    # redeploy; set it higher (e.g. 9999) to always try the external API first.
+    try:
+        monthly_limit = int(os.environ.get("ASTROLOGYAPI_MONTHLY_LIMIT", "200"))
+    except (TypeError, ValueError):
+        monthly_limit = 200
+
+    if monthly_calls < monthly_limit:
         try:
             logger.info("Under quota threshold. Invoking AstrologyAPI.com in parallel...")
             
@@ -182,7 +194,7 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
             # Graceful fall through to local fallback calculations below
 
     else:
-        logger.warning("Monthly call limit threshold (200) reached. Launching local Swiss Ephemeris directly.")
+        logger.warning(f"Monthly call limit threshold ({monthly_limit}) reached. Launching local Swiss Ephemeris directly.")
         # Log that limit was reached inside api_usage
         await external.track_api_call(
             service="ephemeris",

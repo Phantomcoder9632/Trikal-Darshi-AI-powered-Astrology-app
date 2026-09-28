@@ -59,6 +59,43 @@ _CLIENT_CACHE: Dict[str, OpenAI] = {}
 # mutating the shared LLM_CASCADE dicts.
 _CHAT_KEY_DISABLED = False
 
+# Circuit breaker for provider outages: a connect-level failure (e.g. Cloudflare
+# edge unreachable, TCP hangs until timeout) costs every request ~15s before the
+# cascade falls through. After CB_THRESHOLD consecutive connect failures the
+# tier is skipped entirely for CB_COOLDOWN_SECONDS, then one probe request is
+# allowed through to test recovery. Reset manually by redeploying/restarting.
+import time as _time
+
+CB_THRESHOLD = 2
+CB_COOLDOWN_SECONDS = 300
+_CB_STATE: Dict[str, Dict[str, float]] = {}
+
+
+def _cb_record_failure(tier_name: str) -> None:
+    st = _CB_STATE.setdefault(tier_name, {"fails": 0, "opened_at": 0.0})
+    st["fails"] += 1
+    if st["fails"] >= CB_THRESHOLD:
+        st["opened_at"] = _time.time()
+        logger.warning(
+            f"[pipeline] Circuit breaker OPENED for {tier_name} — skipping this tier "
+            f"for {CB_COOLDOWN_SECONDS}s after {st['fails']} consecutive failures."
+        )
+
+
+def _cb_record_success(tier_name: str) -> None:
+    _CB_STATE.pop(tier_name, None)
+
+
+def _cb_is_open(tier_name: str) -> bool:
+    st = _CB_STATE.get(tier_name)
+    if not st or st["fails"] < CB_THRESHOLD:
+        return False
+    if _time.time() - st["opened_at"] >= CB_COOLDOWN_SECONDS:
+        # Cooldown elapsed — allow one probe request through.
+        st["fails"] = CB_THRESHOLD - 1
+        return False
+    return True
+
 
 class AllProvidersExhaustedError(Exception):
     """Raised when every tier in the fallback cascade has failed or rate-limited."""
@@ -432,6 +469,10 @@ async def stream_with_cascade(
             logger.debug(f"[pipeline] Skipping tier {tier_name} (API key not configured).")
             continue
 
+        if _cb_is_open(tier_name):
+            logger.info(f"[pipeline] Skipping tier {tier_name} (circuit breaker open — provider down).")
+            continue
+
         max_tokens = effective_max_tokens(tier)
         model_name = tier["model"]
         logger.info(f"[pipeline] Attempting tier: {tier_name} (model: {model_name}, max_tokens: {max_tokens})")
@@ -484,6 +525,7 @@ async def stream_with_cascade(
             # Successfully completed stream
             if model_info is not None:
                 model_info["model"] = f"{tier_name}/{model_name}"
+            _cb_record_success(tier_name)
             logger.info(f"[pipeline] ✓ Tier {tier_name} succeeded.")
             return
 
@@ -523,6 +565,15 @@ async def stream_with_cascade(
                 logger.warning(f"[pipeline] Tier {tier_name} rate-limited ({tier_err}). Falling through...")
             else:
                 logger.warning(f"[pipeline] Tier {tier_name} failed: {tier_err}. Falling through...")
+            # Connect-level failures (DNS/TCP dead, connection refused/reset) mean
+            # the provider itself is unreachable — trip the breaker so the next
+            # requests skip the dead tier instead of paying the full timeout.
+            _err_text = str(tier_err).lower()
+            if any(sig in _err_text for sig in (
+                "connection error", "connection refused", "connection reset",
+                "name or service not known", "timed out", "connect timeout",
+            )):
+                _cb_record_failure(tier_name)
             tier_errors.append(f"{tier_name}: {tier_err}")
             continue
 

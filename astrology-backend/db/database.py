@@ -130,7 +130,7 @@ async def get_db_pool() -> DualPool:
                 primary_pool = await asyncpg.create_pool(
                     dsn=DATABASE_URL,
                     min_size=1,
-                    max_size=3,
+                    max_size=10,
                     command_timeout=60.0
                 )
                 # Test connection

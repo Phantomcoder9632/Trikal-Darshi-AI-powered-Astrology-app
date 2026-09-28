@@ -68,6 +68,7 @@ async def get_complete_chart(user_input: Any) -> Dict[str, Any]:
         tob = time.fromisoformat(tob)
 
     # ── 1. Check current month's usage ──────────────────────────────────────
+    monthly_calls = await count_monthly_api_calls()
     try:
         _limit_for_log = int(os.environ.get("ASTROLOGYAPI_MONTHLY_LIMIT", "200"))
     except (TypeError, ValueError):
